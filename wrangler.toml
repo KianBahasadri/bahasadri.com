@@ -10,14 +10,14 @@ compatibility_flags = ["nodejs_compat"]
 directory = ".open-next/assets"
 binding = "ASSETS"
 
-# Custom domain routes
+# Custom domains
 [[routes]]
-pattern = "bahasadri.com/*"
-zone_name = "bahasadri.com"
+pattern = "bahasadri.com"
+custom_domain = true
 
 [[routes]]
-pattern = "www.bahasadri.com/*"
-zone_name = "bahasadri.com"
+pattern = "www.bahasadri.com"
+custom_domain = true
 
 # For production deployments, you can configure:
 # - Environment variables
