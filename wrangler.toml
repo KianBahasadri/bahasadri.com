@@ -2,7 +2,7 @@
 # This file configures how your Next.js application is deployed to Cloudflare Workers
 
 main = ".open-next/worker.js"
-name = "bahasadri-com"
+name = "bahasadri-website"
 compatibility_date = "2025-03-25"
 compatibility_flags = ["nodejs_compat"]
 
