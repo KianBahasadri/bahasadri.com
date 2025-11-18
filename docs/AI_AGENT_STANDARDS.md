@@ -205,7 +205,7 @@ Before making ANY code changes, AI agents MUST:
 
 ### File-Level Documentation (MANDATORY)
 
-Every file MUST start with comprehensive documentation:
+Every file MUST start with comprehensive documentation including links to relevant project documentation:
 
 ````typescript
 /**
@@ -222,10 +222,29 @@ Every file MUST start with comprehensive documentation:
  * <ComponentName prop1="value" />
  * ```
  *
- * @see [ARCHITECTURE.md](./ARCHITECTURE.md)
- * @see [DEVELOPMENT.md](./DEVELOPMENT.md)
+ * @see [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) - System architecture
+ * @see [docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md) - Development guidelines
+ * @see [docs/COMPONENTS.md](../docs/COMPONENTS.md) - Component patterns
+ * @see [docs/AI_AGENT_STANDARDS.md](../docs/AI_AGENT_STANDARDS.md) - AI agent standards
  */
 ````
+
+**Required Documentation Links:**
+
+All files MUST include `@see` links to relevant documentation:
+
+-   **All files**: Link to `AI_AGENT_STANDARDS.md` (for AI agents)
+-   **Components**: Link to `COMPONENTS.md` and `ARCHITECTURE.md`
+-   **Pages/Routes**: Link to `ARCHITECTURE.md` and `DEVELOPMENT.md`
+-   **Utilities/Lib**: Link to `DEVELOPMENT.md`
+-   **Configuration**: Link to `DEPLOYMENT.md` and `ARCHITECTURE.md`
+
+**Path Guidelines:**
+
+-   From `app/` directory: Use `../docs/` prefix
+-   From `docs/` directory: Use relative paths like `./ARCHITECTURE.md`
+-   From root: Use `docs/` prefix
+-   Always use relative paths for portability
 
 ### Component Documentation (MANDATORY)
 
@@ -255,7 +274,9 @@ All components MUST include:
  * <ComponentName title="Hello" onClick={() => {}} />
  * ```
  *
- * @see [COMPONENTS.md](./COMPONENTS.md)
+ * @see [docs/COMPONENTS.md](../docs/COMPONENTS.md) - Component patterns
+ * @see [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) - System architecture
+ * @see [docs/AI_AGENT_STANDARDS.md](../docs/AI_AGENT_STANDARDS.md) - AI agent standards
  */
 ````
 
