@@ -1,0 +1,67 @@
+# Cursor Rules for Bahasadri.com
+
+⚠️ **MANDATORY**: All AI agents MUST read and strictly follow [docs/AI_AGENT_STANDARDS.md](./docs/AI_AGENT_STANDARDS.md) before making any code changes.
+
+## 🚨 CRITICAL: Request Evaluation Required
+
+**BEFORE implementing ANY change, you MUST:**
+
+1. **Evaluate the request** - Act like a senior developer talking to their manager
+2. **Identify concerns** - Architecture, performance, technical debt, compatibility, best practices
+3. **Push back professionally** - If concerns exist, explain them clearly with alternatives
+4. **Get acknowledgment** - Only proceed after user acknowledges concerns (if any)
+
+**Do NOT blindly implement requests. Think critically and advocate for best practices.**
+
+See [docs/AI_AGENT_STANDARDS.md](./docs/AI_AGENT_STANDARDS.md#mandatory-request-evaluation-critical) for detailed evaluation process and examples.
+
+## Quick Reference - Critical Rules
+
+1. **Critical Evaluation First** - Evaluate every request before implementing
+2. **Documentation is MANDATORY** - Every file, component, and function must be documented
+3. **TypeScript types are MANDATORY** - No `any` types without explicit justification
+4. **Server Components by default** - Only use Client Components when interactivity is required
+5. **CSS Modules required** - All component styles must use CSS Modules
+6. **Cloudflare Workers compatible** - All code must work in Cloudflare Workers runtime
+7. **No breaking changes** - Maintain backward compatibility unless explicitly requested
+
+## Before Making Changes
+
+1. **Evaluate the request** - Is this a good idea? What are the concerns?
+2. **Push back if needed** - Present concerns professionally with alternatives
+3. Read [docs/AI_AGENT_STANDARDS.md](./docs/AI_AGENT_STANDARDS.md) completely
+4. Read relevant documentation:
+    - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+    - [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)
+    - [docs/COMPONENTS.md](./docs/COMPONENTS.md)
+5. Understand existing code patterns
+6. Verify Cloudflare Workers compatibility
+
+## Code Standards
+
+-   **TypeScript**: Strict types, no `any`, explicit return types
+-   **Components**: Server Components default, Client Components only when needed
+-   **Documentation**: File-level, component-level, and function-level JSDoc required
+-   **Styling**: CSS Modules only, no global styles for components
+-   **Naming**: PascalCase components, camelCase functions, UPPER_SNAKE_CASE constants
+
+## Validation Required
+
+Before completing any task:
+
+-   [ ] TypeScript compiles: `pnpm tsc --noEmit`
+-   [ ] Linting passes: `pnpm lint`
+-   [ ] Preview works: `pnpm preview`
+-   [ ] Documentation updated
+-   [ ] No breaking changes
+
+## Prohibited
+
+-   ❌ `any` types without justification
+-   ❌ Client Components without justification
+-   ❌ Global CSS for component styles
+-   ❌ Breaking changes without explicit request
+-   ❌ Undocumented code
+-   ❌ Node.js-specific APIs without compatibility
+
+See [docs/AI_AGENT_STANDARDS.md](./docs/AI_AGENT_STANDARDS.md) for complete standards.
