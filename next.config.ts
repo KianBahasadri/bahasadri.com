@@ -41,14 +41,11 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['react', 'react-dom'],
   },
 
-  // Production optimizations
-  swcMinify: true, // Use SWC for minification (faster than Terser)
-
-  // Compression
-  compress: true,
-
   // Power optimizations
   poweredByHeader: false, // Remove X-Powered-By header for security and performance
+  
+  // Note: SWC minification is enabled by default in Next.js 16
+  // Compression is handled automatically by Cloudflare Workers
 
   // Output configuration - not needed for Cloudflare Workers
   // The adapter handles this automatically
