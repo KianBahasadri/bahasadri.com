@@ -11,10 +11,13 @@ directory = ".open-next/assets"
 binding = "ASSETS"
 
 # Custom domain routes
-routes = [
-  { pattern = "bahasadri.com/*", zone_name = "bahasadri.com" },
-  { pattern = "www.bahasadri.com/*", zone_name = "bahasadri.com" }
-]
+[[routes]]
+pattern = "bahasadri.com/*"
+zone_name = "bahasadri.com"
+
+[[routes]]
+pattern = "www.bahasadri.com/*"
+zone_name = "bahasadri.com"
 
 # For production deployments, you can configure:
 # - Environment variables
