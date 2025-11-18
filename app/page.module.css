@@ -26,6 +26,9 @@
   /* Max width for readability */
   max-width: 1200px;
   margin: 0 auto;
+  
+  /* Performance: contain layout and style */
+  contain: layout style;
 }
 
 /* Hero Section */
@@ -39,6 +42,9 @@
   /* Spacing */
   margin-bottom: 4rem;
   padding: 2rem 0;
+  
+  /* Performance: contain layout */
+  contain: layout;
 }
 
 /* Main Title */
@@ -88,54 +94,12 @@
   /* Spacing */
   width: 100%;
   margin-top: 2rem;
+  
+  /* Performance: contain layout */
+  contain: layout;
 }
 
-/* Feature Card */
-.card {
-  /* Layout */
-  display: flex;
-  flex-direction: column;
-  
-  /* Spacing */
-  padding: 2rem;
-  
-  /* Styling */
-  background: var(--card-bg);
-  border-radius: 12px;
-  border: 1px solid var(--card-border);
-  
-  /* Transitions */
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px var(--card-hover-shadow);
-  border-color: var(--border-secondary);
-}
-
-/* Card Title */
-.cardTitle {
-  /* Typography */
-  font-size: 1.5rem;
-  font-weight: 600;
-  
-  /* Spacing */
-  margin-bottom: 0.75rem;
-  
-  /* Color */
-  color: var(--text-primary);
-}
-
-/* Card Description */
-.cardDescription {
-  /* Typography */
-  font-size: 1rem;
-  line-height: 1.6;
-  
-  /* Color */
-  color: var(--text-secondary);
-}
+/* Feature Card styles moved to FeatureCard.module.css for better code splitting */
 
 /* Section */
 .section {
@@ -208,6 +172,12 @@
   border-radius: 8px;
   border: 1px solid var(--border-primary);
   overflow-x: auto;
+  
+  /* Performance: contain layout and paint */
+  contain: layout paint;
+  
+  /* Optimize scrolling */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Code */
@@ -238,10 +208,6 @@
   .features {
     grid-template-columns: 1fr;
     gap: 1.5rem;
-  }
-  
-  .card {
-    padding: 1.5rem;
   }
 }
 

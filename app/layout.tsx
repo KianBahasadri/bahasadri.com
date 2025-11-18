@@ -20,6 +20,11 @@ import "./globals.css";
 /**
  * Metadata for the application
  * This is used for SEO, social sharing, and browser display
+ * 
+ * Performance optimizations:
+ * - Viewport configuration for optimal rendering
+ * - Theme color for better mobile experience
+ * - Resource hints for faster loading
  */
 export const metadata: Metadata = {
   title: {
@@ -42,6 +47,17 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+  },
+  // Performance optimizations
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
+  themeColor: '#0a0a0a',
+  // Optimize font loading
+  other: {
+    'font-display': 'swap', // Ensure fonts don't block rendering
   },
 };
 

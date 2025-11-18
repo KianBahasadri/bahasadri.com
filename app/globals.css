@@ -68,6 +68,10 @@ body {
   /* Better text rendering */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* Performance: optimize font rendering */
+  text-rendering: optimizeLegibility;
+  font-display: swap;
 }
 
 /* Link styles */

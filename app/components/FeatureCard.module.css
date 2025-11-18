@@ -1,0 +1,66 @@
+/**
+ * Feature Card Styles
+ * 
+ * Component-scoped CSS Module for the FeatureCard component.
+ * Extracted from page.module.css for better code organization and splitting.
+ */
+
+/* Feature Card */
+.card {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  
+  /* Spacing */
+  padding: 2rem;
+  
+  /* Styling */
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  
+  /* Transitions */
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  
+  /* Performance: contain layout and paint */
+  contain: layout style paint;
+  
+  /* Will-change for smoother animations */
+  will-change: transform;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px var(--card-hover-shadow);
+  border-color: var(--border-secondary);
+}
+
+/* Card Title */
+.cardTitle {
+  /* Typography */
+  font-size: 1.5rem;
+  font-weight: 600;
+  
+  /* Spacing */
+  margin-bottom: 0.75rem;
+  
+  /* Color */
+  color: var(--text-primary);
+}
+
+/* Card Description */
+.cardDescription {
+  /* Typography */
+  font-size: 1rem;
+  line-height: 1.6;
+  
+  /* Color */
+  color: var(--text-secondary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .card {
+    padding: 1.5rem;
+  }
+}

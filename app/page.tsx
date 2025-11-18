@@ -20,6 +20,7 @@
  */
 
 import styles from "./page.module.css";
+import FeatureCard from "./components/FeatureCard";
 
 /**
  * Home Page Component
@@ -27,6 +28,11 @@ import styles from "./page.module.css";
  * This component renders the main landing page. It's a Server Component,
  * which means it runs on the server (or Cloudflare Workers edge) and
  * can perform server-side operations like data fetching.
+ * 
+ * Performance optimizations:
+ * - Uses Server Components for zero client-side JavaScript
+ * - FeatureCard extracted for better code splitting
+ * - Minimal re-renders with static content
  * 
  * @returns JSX representing the home page
  */
@@ -95,31 +101,6 @@ export default function HomePage() {
         </ul>
       </section>
     </main>
-  );
-}
-
-/**
- * Feature Card Component
- * 
- * A reusable component for displaying feature information.
- * This is defined within the same file for simplicity, but could
- * be extracted to a separate file for reuse across pages.
- * 
- * @param title - The feature title
- * @param description - The feature description
- */
-function FeatureCard({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className={styles.card}>
-      <h3 className={styles.cardTitle}>{title}</h3>
-      <p className={styles.cardDescription}>{description}</p>
-    </div>
   );
 }
 
