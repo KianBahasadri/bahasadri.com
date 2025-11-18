@@ -1,0 +1,20 @@
+# Cloudflare Workers configuration for Next.js
+# This file configures how your Next.js application is deployed to Cloudflare Workers
+
+main = ".open-next/worker.js"
+name = "bahasadri-com"
+compatibility_date = "2025-03-25"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+# For production deployments, you can configure:
+# - Custom domains
+# - Environment variables
+# - KV namespaces
+# - Durable Objects
+# - R2 buckets
+# See: https://developers.cloudflare.com/workers/wrangler/configuration/
+

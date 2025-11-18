@@ -1,68 +1,210 @@
-# BahasaDri.com
+# Bahasadri.com
 
-A modern, well-documented website project with structured development practices, auto-deployed on Cloudflare Pages.
+A modern, high-performance website built with **Next.js 15** and deployed on **Cloudflare Workers**. This project follows a structured development approach with comprehensive documentation for every component, page, and feature.
 
-## Project Overview
+## 🚀 Features
 
-This project follows an extremely structured development approach where every page, component, and piece of code is thoroughly documented. The goal is to maintain clarity, maintainability, and ease of collaboration through comprehensive documentation.
+- **Next.js 15** with App Router
+- **Cloudflare Workers** deployment for edge computing
+- **TypeScript** for type-safe development
+- **Server Components** for optimal performance
+- **CSS Modules** for scoped styling
+- **Comprehensive Documentation** for all code
 
-## Project Structure
+## 📋 Prerequisites
 
+- **Node.js** 18+ (v24.9.0 recommended)
+- **pnpm** 8+ (v10.18.3 recommended)
+- **Cloudflare Account** (for deployment)
+
+## 🛠️ Getting Started
+
+### Installation
+
+```bash
+# Install dependencies
+pnpm install
 ```
-bahasadri.com/
-├── README.md                 # This file - project overview and getting started
-├── DEVELOPMENT.md            # Development guidelines and best practices
-├── ARCHITECTURE.md           # System architecture and design decisions
-├── docs/                     # Additional documentation
-│   ├── pages/                # Page-specific documentation
-│   ├── components/           # Component documentation
-│   └── deployment/           # Deployment and infrastructure docs
-├── index.html                # Main landing page
-├── pages/                    # Additional HTML pages
-├── assets/                   # Static assets (images, fonts, etc.)
-│   ├── css/                  # Stylesheets
-│   ├── js/                   # JavaScript files
-│   └── images/               # Image files
-└── wrangler.toml             # Cloudflare Pages configuration
+
+### Development
+
+```bash
+# Start Next.js development server
+pnpm dev
 ```
 
-## Getting Started
+Visit [http://localhost:3000](http://localhost:3000) to see your application.
 
-### Prerequisites
+### Preview with Cloudflare Adapter
 
--   A Cloudflare account
--   Git for version control
--   A text editor or IDE
+To test your application in the Cloudflare Workers runtime (more accurate to production):
 
-### Local Development
+```bash
+# Build and preview with Cloudflare adapter
+pnpm preview
+```
 
-1. Clone the repository
-2. Open `index.html` in your browser or use a local server
-3. Make changes following the guidelines in `DEVELOPMENT.md`
+This command:
+1. Builds your Next.js application
+2. Transforms it using the OpenNext Cloudflare adapter
+3. Serves it locally using `wrangler dev` in the `workerd` runtime
 
 ### Deployment
 
-This project is configured for automatic deployment on Cloudflare Pages. When you push to the main branch, Cloudflare Pages will automatically build and deploy your site.
+```bash
+# Build and deploy to Cloudflare Workers
+pnpm deploy
+```
 
-## Documentation Standards
+This will:
+1. Build your Next.js application
+2. Transform it for Cloudflare Workers
+3. Deploy to your Cloudflare account
 
-Every file in this project should include:
+## 📁 Project Structure
 
-1. **File Header**: Purpose, author, last updated date
-2. **Inline Comments**: Explain complex logic and decisions
-3. **Section Headers**: Clear organization with comments
-4. **Related Documentation**: Links to relevant docs
+```
+bahasadri.com/
+├── app/                    # Next.js App Router directory
+│   ├── layout.tsx         # Root layout component
+│   ├── page.tsx           # Home page component
+│   ├── page.module.css    # Home page styles
+│   └── globals.css        # Global styles
+├── docs/                   # Documentation (see below)
+├── open-next.config.ts    # OpenNext Cloudflare configuration
+├── next.config.ts         # Next.js configuration
+├── wrangler.toml          # Cloudflare Workers configuration
+├── tsconfig.json          # TypeScript configuration
+└── package.json           # Dependencies and scripts
+```
 
-See `DEVELOPMENT.md` for detailed documentation standards.
+## 📚 Documentation
 
-## Contributing
+This project maintains comprehensive documentation:
 
-Please read `DEVELOPMENT.md` before contributing to understand our development practices and documentation requirements.
+- **[README.md](./README.md)** - This file, project overview
+- **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - System architecture and design decisions
+- **[DEVELOPMENT.md](./docs/DEVELOPMENT.md)** - Development guidelines and best practices
+- **[DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - Deployment process and configuration
+- **[COMPONENTS.md](./docs/COMPONENTS.md)** - Component documentation and patterns
 
-## License
+## 🏗️ Architecture
+
+This project uses:
+
+- **Next.js App Router** - Modern routing and layouts
+- **Server Components** - Default rendering on server/edge
+- **Client Components** - For interactivity (when needed)
+- **Cloudflare Workers** - Edge deployment platform
+- **OpenNext Adapter** - Transforms Next.js for Cloudflare
+
+For detailed architecture information, see [ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+
+## 🧩 Development Guidelines
+
+### Code Documentation
+
+Every file, component, and function should include:
+
+1. **File-level documentation** - Purpose and usage
+2. **Component documentation** - Props, behavior, examples
+3. **Function documentation** - Parameters, return values, side effects
+4. **Inline comments** - Complex logic explanations
+
+### Code Style
+
+- Use **TypeScript** for all new code
+- Follow **Next.js conventions** for file structure
+- Use **CSS Modules** for component styles
+- Prefer **Server Components** unless interactivity is needed
+- Write **self-documenting code** with clear naming
+
+See [DEVELOPMENT.md](./docs/DEVELOPMENT.md) for detailed guidelines.
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env.local` file for local development:
+
+```env
+# Add your environment variables here
+```
+
+### Cloudflare Configuration
+
+Edit `wrangler.toml` to configure:
+- Worker name
+- Custom domains
+- KV namespaces
+- Durable Objects
+- R2 buckets
+- Environment variables
+
+### Next.js Configuration
+
+Edit `next.config.ts` to configure:
+- Image optimization
+- Redirects and rewrites
+- Headers and security
+- Experimental features
+
+## 🚢 Deployment
+
+### Automatic Deployment
+
+The project is configured for automatic deployment to Cloudflare Workers. See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for details.
+
+### Manual Deployment
+
+```bash
+pnpm deploy
+```
+
+### CI/CD
+
+Configure your CI/CD pipeline to run `pnpm deploy` on push to main branch.
+
+## 📖 Next.js Features Supported
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| App Router | ✅ Supported | |
+| Pages Router | ✅ Supported | |
+| Server Components | ✅ Supported | |
+| Client Components | ✅ Supported | |
+| Server Actions | ✅ Supported | |
+| Route Handlers | ✅ Supported | |
+| Static Generation | ✅ Supported | |
+| Server-Side Rendering | ✅ Supported | |
+| Incremental Static Regeneration | ✅ Supported | |
+| Middleware | ✅ Supported | |
+| Image Optimization | ✅ Supported | Via Cloudflare Images |
+| Partial Prerendering | ✅ Supported | Experimental |
+
+## 🤝 Contributing
+
+1. Follow the development guidelines in [DEVELOPMENT.md](./docs/DEVELOPMENT.md)
+2. Document all code changes
+3. Test locally with `pnpm preview` before deploying
+4. Ensure TypeScript types are correct
+
+## 📝 License
 
 [Add your license here]
 
-## Contact
+## 🔗 Resources
 
-[Add contact information here]
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
+- [OpenNext Cloudflare Adapter](https://opennext.js.org/cloudflare)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
+
+## 📧 Support
+
+For questions or issues, please [create an issue](https://github.com/yourusername/bahasadri.com/issues).
+
+---
+
+**Built with ❤️ using Next.js and Cloudflare Workers**
+
