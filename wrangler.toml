@@ -6,6 +6,11 @@ name = "bahasadri-website"
 compatibility_date = "2025-03-25"
 compatibility_flags = ["nodejs_compat"]
 
+[[kv_namespaces]]
+binding = "SMS_MESSAGES"
+id = "e1c31d9857df45d49f00c03daa8b9602"
+preview_id = "f4d1f50f55914ddfa5b1e08310e0c04b"
+
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
