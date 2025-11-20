@@ -48,8 +48,12 @@ Deployments are executed manually from the CLI using the OpenNext Cloudflare ada
 1. **Build and Deploy**
 
     ```bash
-    pnpm deploy
+    pnpm run deploy
     ```
+
+    Use the `run` form—pnpm reserves `pnpm deploy` for workspaces, so it exits early in this single-package repo.
+
+    > Ensure your root `.env` file includes `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER`. The deployment helper loads `.env` before syncing the Twilio webhook, so missing values will stop the deploy with a clear error.
 
     This command:
 
@@ -64,7 +68,7 @@ Deployments are executed manually from the CLI using the OpenNext Cloudflare ada
 
 ### Deployment Steps Breakdown
 
-The `pnpm deploy` command runs:
+The `pnpm run deploy` script runs:
 
 ```bash
 # Step 1: Build Next.js application
