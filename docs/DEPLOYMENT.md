@@ -9,52 +9,58 @@ The application is automatically deployed to Cloudflare Workers using the OpenNe
 ## Prerequisites
 
 1. **Cloudflare Account**
-   - Sign up at [cloudflare.com](https://cloudflare.com)
-   - Verify your email address
+
+    - Sign up at [cloudflare.com](https://cloudflare.com)
+    - Verify your email address
 
 2. **Wrangler CLI**
-   - Installed via `pnpm install` (as devDependency)
-   - Authenticated with Cloudflare
+
+    - Installed via `pnpm install` (as devDependency)
+    - Authenticated with Cloudflare
 
 3. **Cloudflare API Token** (for CI/CD)
-   - Create at [Cloudflare Dashboard](https://dash.cloudflare.com/profile/api-tokens)
-   - Needs: Account, Zone, and Worker permissions
+    - Create at [Cloudflare Dashboard](https://dash.cloudflare.com/profile/api-tokens)
+    - Needs: Account, Zone, and Worker permissions
 
 ## Authentication
 
 ### First-Time Setup
 
 1. **Login to Cloudflare**
-   ```bash
-   pnpm wrangler login
-   ```
-   - Opens browser for authentication
-   - Grants Wrangler access to your account
+
+    ```bash
+    pnpm wrangler login
+    ```
+
+    - Opens browser for authentication
+    - Grants Wrangler access to your account
 
 2. **Verify Authentication**
-   ```bash
-   pnpm wrangler whoami
-   ```
-   - Should display your Cloudflare account email
+    ```bash
+    pnpm wrangler whoami
+    ```
+    - Should display your Cloudflare account email
 
 ## Deployment Process
 
 ### Manual Deployment
 
 1. **Build and Deploy**
-   ```bash
-   pnpm deploy
-   ```
-   
-   This command:
-   - Builds the Next.js application (`next build`)
-   - Transforms it for Cloudflare (`opennextjs-cloudflare build`)
-   - Deploys to Cloudflare Workers (`opennextjs-cloudflare deploy`)
+
+    ```bash
+    pnpm deploy
+    ```
+
+    This command:
+
+    - Builds the Next.js application (`next build`)
+    - Transforms it for Cloudflare (`opennextjs-cloudflare build`)
+    - Deploys to Cloudflare Workers (`opennextjs-cloudflare deploy`)
 
 2. **Verify Deployment**
-   - Check Cloudflare Dashboard
-   - Visit your `*.workers.dev` URL
-   - Test all routes and features
+    - Check Cloudflare Dashboard
+    - Visit your `*.workers.dev` URL
+    - Test all routes and features
 
 ### Deployment Steps Breakdown
 
@@ -121,7 +127,7 @@ NODE_ENV = "production"
 
 #### Local Development
 
-Create `.env.local`:
+Create `.env`:
 
 ```env
 NODE_ENV=development
@@ -147,6 +153,16 @@ pnpm wrangler secret put SECRET_NAME
 # Enter value when prompted
 ```
 
+Or let the automation handle it:
+
+```bash
+pnpm sync:cloudflare-secrets -- --env production
+```
+
+-   The script mirrors values from the root `.env` file to Cloudflare via stdin so nothing leaks into logs.
+-   Pass `-- --dry-run` to preview changes or omit `--env` to update the default Worker bindings.
+-   `pnpm deploy` runs the sync script automatically before building, ensuring each deployment picks up the latest secrets.
+
 Access in code:
 
 ```typescript
@@ -159,21 +175,23 @@ const secret = process.env.SECRET_NAME;
 ### Adding a Custom Domain
 
 1. **Add Domain in Cloudflare Dashboard**
-   - Go to Workers & Pages
-   - Select your worker
-   - Add custom domain
+
+    - Go to Workers & Pages
+    - Select your worker
+    - Add custom domain
 
 2. **Update DNS Records**
-   - Add CNAME record pointing to your worker
-   - Or use Cloudflare's automatic setup
+
+    - Add CNAME record pointing to your worker
+    - Or use Cloudflare's automatic setup
 
 3. **Update wrangler.toml** (optional)
-   ```toml
-   routes = [
-     { pattern = "bahasadri.com/*", zone_name = "bahasadri.com" },
-     { pattern = "www.bahasadri.com/*", zone_name = "bahasadri.com" }
-   ]
-   ```
+    ```toml
+    routes = [
+      { pattern = "bahasadri.com/*", zone_name = "bahasadri.com" },
+      { pattern = "www.bahasadri.com/*", zone_name = "bahasadri.com" }
+    ]
+    ```
 
 ## CI/CD Integration
 
@@ -185,46 +203,48 @@ Create `.github/workflows/deploy.yml`:
 name: Deploy to Cloudflare
 
 on:
-  push:
-    branches:
-      - main
+    push:
+        branches:
+            - main
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 10
-      
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-      
-      - run: pnpm install
-      
-      - run: pnpm deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v2
+              with:
+                  version: 10
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "24"
+                  cache: "pnpm"
+
+            - run: pnpm install
+
+            - run: pnpm deploy
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 ```
 
 ### Environment Secrets
 
 Add to GitHub Secrets:
-- `CLOUDFLARE_API_TOKEN` - API token with Worker permissions
-- `CLOUDFLARE_ACCOUNT_ID` - Your Cloudflare account ID
+
+-   `CLOUDFLARE_API_TOKEN` - API token with Worker permissions
+-   `CLOUDFLARE_ACCOUNT_ID` - Your Cloudflare account ID
 
 ### Other CI/CD Platforms
 
 Similar setup for:
-- GitLab CI
-- CircleCI
-- Jenkins
-- Any platform that supports Node.js
+
+-   GitLab CI
+-   CircleCI
+-   Jenkins
+-   Any platform that supports Node.js
 
 ## Preview Deployments
 
@@ -257,11 +277,12 @@ pnpm wrangler deploy --config wrangler.staging.toml
 ### Cloudflare Dashboard
 
 Monitor:
-- Request metrics
-- Error rates
-- Response times
-- Geographic distribution
-- Bandwidth usage
+
+-   Request metrics
+-   Error rates
+-   Response times
+-   Geographic distribution
+-   Bandwidth usage
 
 ### Real-Time Logs
 
@@ -274,67 +295,74 @@ Streams real-time logs from your worker.
 ### Analytics
 
 Enable Analytics in Cloudflare Dashboard:
-- Workers Analytics
-- Web Analytics (for custom domains)
+
+-   Workers Analytics
+-   Web Analytics (for custom domains)
 
 ## Troubleshooting
 
 ### Build Failures
 
 1. **Check Node.js version**
-   ```bash
-   node --version  # Should be 18+
-   ```
+
+    ```bash
+    node --version  # Should be 18+
+    ```
 
 2. **Clear build cache**
-   ```bash
-   rm -rf .next .open-next
-   pnpm deploy
-   ```
+
+    ```bash
+    rm -rf .next .open-next
+    pnpm deploy
+    ```
 
 3. **Check dependencies**
-   ```bash
-   pnpm install
-   ```
+    ```bash
+    pnpm install
+    ```
 
 ### Deployment Failures
 
 1. **Verify authentication**
-   ```bash
-   pnpm wrangler whoami
-   ```
+
+    ```bash
+    pnpm wrangler whoami
+    ```
 
 2. **Check worker name uniqueness**
-   - Worker names must be unique
-   - Try a different name in `wrangler.toml`
+
+    - Worker names must be unique
+    - Try a different name in `wrangler.toml`
 
 3. **Verify compatibility flags**
-   - Ensure `nodejs_compat` is set
-   - Check compatibility date
+    - Ensure `nodejs_compat` is set
+    - Check compatibility date
 
 ### Runtime Errors
 
 1. **Check logs**
-   ```bash
-   pnpm wrangler tail
-   ```
+
+    ```bash
+    pnpm wrangler tail
+    ```
 
 2. **Test locally**
-   ```bash
-   pnpm preview
-   ```
+
+    ```bash
+    pnpm preview
+    ```
 
 3. **Verify environment variables**
-   - Check Cloudflare Dashboard
-   - Verify secrets are set
+    - Check Cloudflare Dashboard
+    - Verify secrets are set
 
 ## Performance Optimization
 
 ### Asset Optimization
 
-- Images: Use Next.js Image component
-- Fonts: Use Next.js font optimization
-- Scripts: Automatic code splitting
+-   Images: Use Next.js Image component
+-   Fonts: Use Next.js font optimization
+-   Scripts: Automatic code splitting
 
 ### Caching
 
@@ -342,73 +370,78 @@ Configure in `open-next.config.ts`:
 
 ```typescript
 export default defineCloudflareConfig({
-  // Configure caching strategies
-  // See: https://opennext.js.org/cloudflare/caching
+    // Configure caching strategies
+    // See: https://opennext.js.org/cloudflare/caching
 });
 ```
 
 ### Edge Caching
 
 Cloudflare automatically caches:
-- Static assets (long-term)
-- HTML pages (based on headers)
-- API responses (configurable)
+
+-   Static assets (long-term)
+-   HTML pages (based on headers)
+-   API responses (configurable)
 
 ## Rollback
 
 ### Previous Versions
 
 1. **List deployments**
-   ```bash
-   pnpm wrangler deployments list
-   ```
+
+    ```bash
+    pnpm wrangler deployments list
+    ```
 
 2. **Rollback to previous version**
-   ```bash
-   pnpm wrangler rollback [deployment-id]
-   ```
+    ```bash
+    pnpm wrangler rollback [deployment-id]
+    ```
 
 ### Git-Based Rollback
 
 1. Revert to previous commit
 2. Redeploy:
-   ```bash
-   pnpm deploy
-   ```
+    ```bash
+    pnpm deploy
+    ```
 
 ## Best Practices
 
 1. **Test before deploying**
-   - Run `pnpm preview` locally
-   - Test all routes and features
+
+    - Run `pnpm preview` locally
+    - Test all routes and features
 
 2. **Use staging environment**
-   - Test changes in staging first
-   - Deploy to production after verification
+
+    - Test changes in staging first
+    - Deploy to production after verification
 
 3. **Monitor deployments**
-   - Watch logs after deployment
-   - Check error rates
-   - Verify functionality
+
+    - Watch logs after deployment
+    - Check error rates
+    - Verify functionality
 
 4. **Version control**
-   - Commit all changes
-   - Tag releases
-   - Document deployments
+
+    - Commit all changes
+    - Tag releases
+    - Document deployments
 
 5. **Environment management**
-   - Use different workers for dev/staging/prod
-   - Manage secrets securely
-   - Document environment variables
+    - Use different workers for dev/staging/prod
+    - Manage secrets securely
+    - Document environment variables
 
 ## Resources
 
-- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
-- [Wrangler CLI Documentation](https://developers.cloudflare.com/workers/wrangler/)
-- [OpenNext Cloudflare Documentation](https://opennext.js.org/cloudflare)
-- [Cloudflare Dashboard](https://dash.cloudflare.com/)
+-   [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
+-   [Wrangler CLI Documentation](https://developers.cloudflare.com/workers/wrangler/)
+-   [OpenNext Cloudflare Documentation](https://opennext.js.org/cloudflare)
+-   [Cloudflare Dashboard](https://dash.cloudflare.com/)
 
 ---
 
 **Last Updated**: 2025-01-27
-

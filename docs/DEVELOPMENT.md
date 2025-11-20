@@ -52,6 +52,13 @@ This document provides comprehensive guidelines for developing on Bahasadri.com.
     - Required for utilities like SMS Commander
     - Reference: [Cloudflare Workers Testing Guidance](https://developers.cloudflare.com/llms.txt)
 
+### Secret Synchronization
+
+-   Keep a single `.env` file at the repository root. It remains git-ignored but serves as the canonical source of truth for all credentials, including the Twilio trio required by SMS Commander.
+-   Run `pnpm sync:cloudflare-secrets` whenever you change a value locally. Pass `-- --env production` (or any Wrangler environment) to target a specific Worker, and add `-- --dry-run` to preview the pending updates without touching Cloudflare.
+-   The script writes secrets through `stdin`, so values never appear in shell history or process listings. It fails fast when a requested key is missing to prevent half-synced deployments.
+-   `pnpm deploy` now invokes `pnpm sync:cloudflare-secrets` automatically, ensuring every deployment pushes the freshest secrets before the Worker build kicks off. Override the command in CI if you need a different promotion flow—don’t edit the script.
+
 ## Code Documentation Standards
 
 ### File-Level Documentation
