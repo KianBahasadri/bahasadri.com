@@ -194,7 +194,9 @@ Before making ANY code changes, AI agents MUST:
 -   [ ] Read and understand relevant documentation:
     -   [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture
     -   [DEVELOPMENT.md](./DEVELOPMENT.md) - Development guidelines
+    -   [CONTENT_STYLE.md](./CONTENT_STYLE.md) - **MANDATORY: Content and humor guidelines**
     -   [COMPONENTS.md](./COMPONENTS.md) - Component patterns
+    -   [UTILITIES.md](./UTILITIES.md) - Utility architecture (if creating utilities)
     -   [DEPLOYMENT.md](./DEPLOYMENT.md) - Deployment requirements
 -   [ ] Understand the existing codebase structure
 -   [ ] Identify all files that will be affected
@@ -552,6 +554,12 @@ async function fetchData(): Promise<Data> {
 
 ## Testing Standards
 
+All automated tests **must** follow the official [Cloudflare Workers Testing
+Guidance](https://developers.cloudflare.com/llms.txt) to guarantee runtime
+parity with the production Workerd environment. When adding or updating tests,
+use the Vitest Workers pool (`pnpm test`) so assertions execute inside
+Miniflare instead of plain Node.js.
+
 ### Before Submitting Code
 
 -   [ ] TypeScript compiles without errors: `pnpm tsc --noEmit`
@@ -559,6 +567,7 @@ async function fetchData(): Promise<Data> {
 -   [ ] Preview works: `pnpm preview` (Cloudflare compatibility)
 -   [ ] No console errors in browser
 -   [ ] Responsive design verified
+-   [ ] Workers-focused test suite passes: `pnpm test`
 
 ### Testing Checklist
 
@@ -637,6 +646,8 @@ When making changes that affect:
 -   **Architecture**: Update [ARCHITECTURE.md](./ARCHITECTURE.md)
 -   **Components**: Update [COMPONENTS.md](./COMPONENTS.md)
 -   **Development practices**: Update [DEVELOPMENT.md](./DEVELOPMENT.md)
+-   **Content/Tone**: Follow [CONTENT_STYLE.md](./CONTENT_STYLE.md) - **MANDATORY for all user-facing text**
+-   **Utilities**: Update [UTILITIES.md](./UTILITIES.md)
 -   **Deployment**: Update [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 ## Code Review Checklist

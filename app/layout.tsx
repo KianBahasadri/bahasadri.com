@@ -19,6 +19,8 @@
  */
 
 import type { Metadata } from "next";
+import Navigation from "./components/Navigation/Navigation";
+import Footer from "./components/Footer/Footer";
 import "./globals.css";
 
 /**
@@ -27,18 +29,31 @@ import "./globals.css";
  */
 export const metadata: Metadata = {
     title: {
-        default: "Bahasadri.com",
+        default: "Bahasadri.com - God's Drunkest Driver",
         template: "%s | Bahasadri.com",
     },
     description:
-        "A modern website built with Next.js and deployed on Cloudflare Workers",
-    keywords: ["Next.js", "Cloudflare", "React", "TypeScript"],
+        "A collection of half-finished tools and utilities. Each one is a testament to my inability to commit to projects and my love of overengineering simple problems. Built with Next.js and Cloudflare Workers because I hate myself.",
+    keywords: [
+        "utility tools",
+        "web tools",
+        "developer tools",
+        "Next.js",
+        "Cloudflare",
+        "React",
+        "TypeScript",
+        "paranoid sysadmin",
+        "femboy coding",
+    ],
     authors: [{ name: "Bahasadri" }],
     creator: "Bahasadri",
     openGraph: {
         type: "website",
         locale: "en_US",
         siteName: "Bahasadri.com",
+        title: "Bahasadri.com - God's Drunkest Driver",
+        description:
+            "Tools forged in ADHD-fueled coding sessions. Welcome to my digital hoarding problem.",
     },
     twitter: {
         card: "summary_large_image",
@@ -54,7 +69,7 @@ export const metadata: Metadata = {
  * Root Layout Component
  *
  * @param children - The child pages/components to render
- * @returns The root HTML structure with metadata
+ * @returns The root HTML structure with metadata and navigation
  */
 export default function RootLayout({
     children,
@@ -64,11 +79,16 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body>
+                {/* Navigation header - appears on all pages */}
+                <Navigation />
                 {/* 
           Main application content
           All pages will be rendered as children of this layout
         */}
-                {children}
+                <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+                    <main style={{ flex: 1 }}>{children}</main>
+                    <Footer />
+                </div>
             </body>
         </html>
     );

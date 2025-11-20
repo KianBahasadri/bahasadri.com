@@ -72,9 +72,18 @@ This document describes the architecture, design decisions, and technical implem
 ```
 app/
 ├── layout.tsx          # Root layout (Server Component)
-├── page.tsx            # Home page (Server Component)
+├── page.tsx            # Home page / Dashboard (Server Component)
 ├── page.module.css     # Scoped styles for home page
-└── globals.css         # Global styles
+├── globals.css         # Global styles
+├── components/         # Shared components
+│   ├── Navigation/
+│   └── UtilityCard/
+└── tools/              # Utility tools (decoupled)
+    └── [utility-name]/
+        ├── page.tsx
+        ├── page.module.css
+        ├── PLAN.md     # Documentation and planning
+        └── components/ # Utility-specific components
 ```
 
 ### Component Architecture

@@ -1,0 +1,16 @@
+# Utilities Directory
+
+This directory contains all utility tools. Each utility is in its own subdirectory
+following the structure:
+
+```
+tools/
+└── [utility-name]/
+    ├── page.tsx
+    ├── page.module.css
+    ├── PLAN.md
+    └── components/
+```
+
+See [docs/UTILITIES.md](../../docs/UTILITIES.md) for complete guidelines.
+

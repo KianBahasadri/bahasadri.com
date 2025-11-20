@@ -1,0 +1,70 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card {
+  border-radius: 1rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 10, 18, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sent {
+  border-left: 4px solid #ff61d8;
+}
+
+.received {
+  border-left: 4px solid #61dfff;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.direction {
+  font-weight: 700;
+}
+
+.timestamp {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+}
+
+.body {
+  margin: 0;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sid {
+  opacity: 0.8;
+}
+
+.emptyState {
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+}
+
