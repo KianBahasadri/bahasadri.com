@@ -10,7 +10,10 @@
  * @see ../docs/DEPLOYMENT.md - Cloudflare deployment process
  */
 
+import { config as loadEnvConfig } from "dotenv";
 import twilio from "twilio";
+
+loadEnvConfig();
 
 const DEFAULT_WEBHOOK_URL =
     "https://bahasadri.com/api/tools/sms-commander/webhook";
