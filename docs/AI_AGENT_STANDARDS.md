@@ -554,6 +554,12 @@ async function fetchData(): Promise<Data> {
 
 ## Testing Standards
 
+All automated tests **must** follow the official [Cloudflare Workers Testing
+Guidance](https://developers.cloudflare.com/llms.txt) to guarantee runtime
+parity with the production Workerd environment. When adding or updating tests,
+use the Vitest Workers pool (`pnpm test`) so assertions execute inside
+Miniflare instead of plain Node.js.
+
 ### Before Submitting Code
 
 -   [ ] TypeScript compiles without errors: `pnpm tsc --noEmit`
@@ -561,6 +567,7 @@ async function fetchData(): Promise<Data> {
 -   [ ] Preview works: `pnpm preview` (Cloudflare compatibility)
 -   [ ] No console errors in browser
 -   [ ] Responsive design verified
+-   [ ] Workers-focused test suite passes: `pnpm test`
 
 ### Testing Checklist
 

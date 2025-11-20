@@ -7,34 +7,50 @@ This document provides comprehensive guidelines for developing on Bahasadri.com.
 ### Local Development
 
 1. **Start Development Server**
-   ```bash
-   pnpm dev
-   ```
-   - Runs Next.js development server
-   - Hot module replacement enabled
-   - Access at http://localhost:3000
+
+    ```bash
+    pnpm dev
+    ```
+
+    - Runs Next.js development server
+    - Hot module replacement enabled
+    - Access at http://localhost:3000
 
 2. **Preview with Cloudflare Adapter**
-   ```bash
-   pnpm preview
-   ```
-   - Builds and runs in Cloudflare Workers runtime
-   - More accurate to production environment
-   - Use for integration testing
+
+    ```bash
+    pnpm preview
+    ```
+
+    - Builds and runs in Cloudflare Workers runtime
+    - More accurate to production environment
+    - Use for integration testing
 
 3. **Type Checking**
-   ```bash
-   pnpm tsc --noEmit
-   ```
-   - Validates TypeScript without building
-   - Can be added to pre-commit hooks
+
+    ```bash
+    pnpm tsc --noEmit
+    ```
+
+    - Validates TypeScript without building
+    - Can be added to pre-commit hooks
 
 4. **Linting**
-   ```bash
-   pnpm lint
-   ```
-   - Runs ESLint with Next.js configuration
-   - Catches common errors and style issues
+
+    ```bash
+    pnpm lint
+    ```
+
+    - Runs ESLint with Next.js configuration
+    - Catches common errors and style issues
+
+5. **Cloudflare-Compatible Tests**
+    ```bash
+    pnpm test
+    ```
+    - Executes the Vitest suite inside the Workers runtime (via Miniflare)
+    - Required for utilities like SMS Commander
+    - Reference: [Cloudflare Workers Testing Guidance](https://developers.cloudflare.com/llms.txt)
 
 ## Code Documentation Standards
 
@@ -42,24 +58,24 @@ This document provides comprehensive guidelines for developing on Bahasadri.com.
 
 Every file should start with a comprehensive header comment:
 
-```typescript
+````typescript
 /**
  * Component Name
- * 
+ *
  * Brief description of what this file/component does.
- * 
+ *
  * Key features:
  * - Feature 1
  * - Feature 2
- * 
+ *
  * Usage:
  * ```tsx
  * <ComponentName prop1="value" />
  * ```
- * 
+ *
  * @see https://relevant-docs-url
  */
-```
+````
 
 ### Component Documentation
 
@@ -73,16 +89,16 @@ Document all components with:
 ```typescript
 /**
  * ComponentName Component
- * 
+ *
  * This component does X, Y, and Z.
- * 
+ *
  * @param props - Component props
  * @param props.title - The title to display
  * @param props.onClick - Callback when clicked
  * @returns JSX element
  */
 export function ComponentName({ title, onClick }: Props) {
-  // Implementation
+    // Implementation
 }
 ```
 
@@ -96,14 +112,14 @@ Document functions with:
 4. **Side Effects**: Any side effects (API calls, state changes)
 5. **Examples**: Usage examples
 
-```typescript
+````typescript
 /**
  * Fetches user data from the API
- * 
+ *
  * @param userId - The unique identifier for the user
  * @returns Promise resolving to user data
  * @throws {Error} If user is not found
- * 
+ *
  * @example
  * ```ts
  * const user = await fetchUserData('123');
@@ -111,18 +127,18 @@ Document functions with:
  * ```
  */
 async function fetchUserData(userId: string): Promise<User> {
-  // Implementation
+    // Implementation
 }
-```
+````
 
 ### Inline Comments
 
 Use inline comments for:
 
-- Complex logic explanations
-- Non-obvious code decisions
-- Workarounds or temporary solutions
-- Performance optimizations
+-   Complex logic explanations
+-   Non-obvious code decisions
+-   Workarounds or temporary solutions
+-   Performance optimizations
 
 ```typescript
 // Calculate the distance using Haversine formula
@@ -142,12 +158,12 @@ const distance = calculateHaversineDistance(point1, point2);
 ```typescript
 // ✅ Good
 interface UserProps {
-  name: string;
-  age: number;
+    name: string;
+    age: number;
 }
 
 // ❌ Bad
-const user: any = { name: 'John', age: 30 };
+const user: any = { name: "John", age: 30 };
 ```
 
 ### React Components
@@ -160,15 +176,15 @@ const user: any = { name: 'John', age: 30 };
 ```typescript
 // ✅ Good - Server Component
 export default function Page() {
-  return <div>Content</div>;
+    return <div>Content</div>;
 }
 
 // ✅ Good - Client Component (when needed)
-'use client';
+("use client");
 
 export default function InteractiveComponent() {
-  const [state, setState] = useState(0);
-  return <button onClick={() => setState(s => s + 1)}>{state}</button>;
+    const [state, setState] = useState(0);
+    return <button onClick={() => setState((s) => s + 1)}>{state}</button>;
 }
 ```
 
@@ -215,18 +231,18 @@ app/
 ```css
 /* ✅ Good */
 .container {
-  padding: 2rem;
-  background: var(--color-background);
+    padding: 2rem;
+    background: var(--color-background);
 }
 
 .title {
-  font-size: 2rem;
-  color: var(--color-text);
+    font-size: 2rem;
+    color: var(--color-text);
 }
 
 /* ❌ Bad */
 .container .title .text {
-  /* Too nested */
+    /* Too nested */
 }
 ```
 
@@ -240,82 +256,87 @@ app/
 ```css
 /* Mobile-first approach */
 .container {
-  padding: 1rem;
+    padding: 1rem;
 }
 
 @media (min-width: 768px) {
-  .container {
-    padding: 2rem;
-  }
+    .container {
+        padding: 2rem;
+    }
 }
 ```
 
 ## Testing Guidelines
 
+-   Prefer `pnpm test` for automated verification—the command runs inside the
+    Cloudflare Workers pool so the runtime matches production. See the official
+    [Cloudflare Workers Testing Guidance](https://developers.cloudflare.com/llms.txt)
+    for details.
+
 ### Component Testing
 
-- Test user interactions
-- Test edge cases
-- Test accessibility
-- Test responsive behavior
+-   Test user interactions
+-   Test edge cases
+-   Test accessibility
+-   Test responsive behavior
 
 ### Integration Testing
 
-- Test API routes
-- Test data flow
-- Test error handling
-- Test with `pnpm preview` for Cloudflare compatibility
+-   Test API routes
+-   Test data flow
+-   Test error handling
+-   Test with `pnpm preview` for Cloudflare compatibility
 
 ## Performance Best Practices
 
 ### Server Components
 
-- Use Server Components for data fetching
-- Minimize Client Components
-- Keep Client Components small
+-   Use Server Components for data fetching
+-   Minimize Client Components
+-   Keep Client Components small
 
 ### Code Splitting
 
-- Next.js handles automatic code splitting
-- Use dynamic imports for large dependencies
-- Lazy load heavy components
+-   Next.js handles automatic code splitting
+-   Use dynamic imports for large dependencies
+-   Lazy load heavy components
 
 ### Image Optimization
 
-- Always use Next.js `Image` component
-- Provide width and height
-- Use appropriate formats (WebP, AVIF)
+-   Always use Next.js `Image` component
+-   Provide width and height
+-   Use appropriate formats (WebP, AVIF)
 
 ```tsx
-import Image from 'next/image';
+import Image from "next/image";
 
 <Image
-  src="/hero.jpg"
-  alt="Hero image"
-  width={1200}
-  height={600}
-  priority // For above-the-fold images
-/>
+    src="/hero.jpg"
+    alt="Hero image"
+    width={1200}
+    height={600}
+    priority // For above-the-fold images
+/>;
 ```
 
 ## Error Handling
 
 ### Error Boundaries
 
-- Use error boundaries for Client Components
-- Provide fallback UI
-- Log errors appropriately
+-   Use error boundaries for Client Components
+-   Provide fallback UI
+-   Log errors appropriately
 
 ### API Error Handling
 
 ```typescript
 try {
-  const data = await fetchData();
-  return data;
+    const data = await fetchData();
+    return data;
 } catch (error) {
-  console.error('Failed to fetch data:', error);
-  // Return fallback or throw
-  throw new Error('Failed to load data');
+    console.error("Failed to fetch data:", error);
+    // Return fallback or throw
+    throw new Error("Failed to load data");
 }
 ```
 
@@ -337,23 +358,23 @@ chore: update dependencies
 
 ### Branch Strategy
 
-- `main` - Production-ready code
-- `develop` - Development branch
-- `feature/*` - Feature branches
-- `fix/*` - Bug fix branches
+-   `main` - Production-ready code
+-   `develop` - Development branch
+-   `feature/*` - Feature branches
+-   `fix/*` - Bug fix branches
 
 ## Code Review Checklist
 
 Before submitting code for review:
 
-- [ ] Code is documented
-- [ ] TypeScript types are correct
-- [ ] No linting errors
-- [ ] Tests pass (if applicable)
-- [ ] Works with `pnpm preview`
-- [ ] Responsive design verified
-- [ ] Accessibility checked
-- [ ] Performance considered
+-   [ ] Code is documented
+-   [ ] TypeScript types are correct
+-   [ ] No linting errors
+-   [ ] Tests pass (if applicable)
+-   [ ] Works with `pnpm preview`
+-   [ ] Responsive design verified
+-   [ ] Accessibility checked
+-   [ ] Performance considered
 
 ## Common Patterns
 
@@ -362,29 +383,27 @@ Before submitting code for review:
 ```typescript
 // Server Component
 async function Page() {
-  const data = await fetch('https://api.example.com/data', {
-    next: { revalidate: 3600 } // ISR: revalidate every hour
-  });
-  const json = await data.json();
-  return <div>{json.content}</div>;
+    const data = await fetch("https://api.example.com/data", {
+        next: { revalidate: 3600 }, // ISR: revalidate every hour
+    });
+    const json = await data.json();
+    return <div>{json.content}</div>;
 }
 ```
 
 ### Client Interactivity
 
 ```typescript
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 export function Counter() {
-  const [count, setCount] = useState(0);
-  
-  return (
-    <button onClick={() => setCount(c => c + 1)}>
-      Count: {count}
-    </button>
-  );
+    const [count, setCount] = useState(0);
+
+    return (
+        <button onClick={() => setCount((c) => c + 1)}>Count: {count}</button>
+    );
 }
 ```
 
@@ -393,7 +412,7 @@ export function Counter() {
 ```typescript
 // app/api/example/route.ts
 export async function GET(request: Request) {
-  return Response.json({ message: 'Hello' });
+    return Response.json({ message: "Hello" });
 }
 ```
 
@@ -407,15 +426,16 @@ The site persona is a **"Paranoid Femboy Sysadmin"** trapped in a simulation. Al
 
 ### Quick Reference
 
-- **Tone**: Manic, accusatory, horny-on-main, technically literate
-- **Worldview**: Everything is a psyop. The code is gangstalking you.
-- **Style**: 4chan /g/ text, Tumblr mental illness romanticism, "Lock In" motivation
-- **Humor**: Gangstalking narratives, glorp nihilism, degenerate specificity, self-targeting edginess
+-   **Tone**: Manic, accusatory, horny-on-main, technically literate
+-   **Worldview**: Everything is a psyop. The code is gangstalking you.
+-   **Style**: 4chan /g/ text, Tumblr mental illness romanticism, "Lock In" motivation
+-   **Humor**: Gangstalking narratives, glorp nihilism, degenerate specificity, self-targeting edginess
 
 ### Mandatory Reading
 
 **Before writing ANY user-facing content, read:**
-- [CONTENT_STYLE.md](./CONTENT_STYLE.md) - Complete content guidelines with examples
+
+-   [CONTENT_STYLE.md](./CONTENT_STYLE.md) - Complete content guidelines with examples
 
 ### Key Rules
 
@@ -427,16 +447,19 @@ The site persona is a **"Paranoid Femboy Sysadmin"** trapped in a simulation. Al
 ### Examples
 
 **Hero Section:**
-- ❌ "Welcome to my utility tools"
-- ✅ "POV: You are the FBI agent assigned to monitor my mental decline"
+
+-   ❌ "Welcome to my utility tools"
+-   ✅ "POV: You are the FBI agent assigned to monitor my mental decline"
 
 **Utility Names:**
-- ❌ "SMS Commander"
-- ✅ "Text Warfare Center" or "Message Psyop Interface"
+
+-   ❌ "SMS Commander"
+-   ✅ "Text Warfare Center" or "Message Psyop Interface"
 
 **Success Messages:**
-- ❌ "Message sent successfully"
-- ✅ "Message launched into the void. The lion ignores the sharp pain. We lock in."
+
+-   ❌ "Message sent successfully"
+-   ✅ "Message launched into the void. The lion ignores the sharp pain. We lock in."
 
 See [CONTENT_STYLE.md](./CONTENT_STYLE.md) for complete guidelines and examples.
 
@@ -451,23 +474,23 @@ When creating a new utility:
 5. **Add to dashboard** - Update `UTILITY_TOOLS` in `app/page.tsx`
 
 Key principles:
-- ✅ Each utility is completely decoupled
-- ✅ Each utility has its own `PLAN.md` file
-- ✅ Use Server Components by default
-- ✅ Scope styles with CSS Modules
-- ✅ Follow content style guide (edgy, dark humor)
+
+-   ✅ Each utility is completely decoupled
+-   ✅ Each utility has its own `PLAN.md` file
+-   ✅ Use Server Components by default
+-   ✅ Scope styles with CSS Modules
+-   ✅ Follow content style guide (edgy, dark humor)
 
 See [UTILITIES.md](./UTILITIES.md) for complete guidelines and templates.
 
 ## Resources
 
-- [Next.js Documentation](https://nextjs.org/docs)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-- [React Documentation](https://react.dev/)
-- [CSS Modules](https://github.com/css-modules/css-modules)
-- [Utilities Architecture](./UTILITIES.md) - Utility creation guide
+-   [Next.js Documentation](https://nextjs.org/docs)
+-   [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+-   [React Documentation](https://react.dev/)
+-   [CSS Modules](https://github.com/css-modules/css-modules)
+-   [Utilities Architecture](./UTILITIES.md) - Utility creation guide
 
 ---
 
 **Last Updated**: 2025-01-27
-

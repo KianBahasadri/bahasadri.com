@@ -15,7 +15,7 @@ import { normalizeSendRequest } from "./validation";
 /**
  * Configuration required to interact with Twilio.
  */
-interface TwilioConfig {
+export interface TwilioConfig {
     accountSid: string;
     authToken: string;
     phoneNumber: string;
@@ -27,9 +27,9 @@ interface TwilioConfig {
  * @throws If any required value is missing
  */
 export function getTwilioConfig(): TwilioConfig {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const phoneNumber = process.env.TWILIO_PHONE_NUMBER;
+    const accountSid = readEnvValue("TWILIO_ACCOUNT_SID");
+    const authToken = readEnvValue("TWILIO_AUTH_TOKEN");
+    const phoneNumber = readEnvValue("TWILIO_PHONE_NUMBER");
 
     if (!accountSid || !authToken || !phoneNumber) {
         throw new Error(
@@ -52,6 +52,14 @@ export function getTwilioClient(): Twilio {
     }
 
     return cachedClient;
+}
+
+/**
+ * Reset the cached Twilio client. Intended solely for tests so each suite can
+ * assert against fresh mocks without leaking state between cases.
+ */
+export function resetTwilioClientForTesting(): void {
+    cachedClient = null;
 }
 
 /**
@@ -184,6 +192,22 @@ function base64ToUint8Array(base64: string): Uint8Array {
     }
 
     return output;
+}
+
+/**
+ * Retrieve an environment binding from either Node-style `process.env` or the
+ * Workers `env` object so tests and production share the same code path.
+ */
+function readEnvValue(key: TwilioEnvKey): string | undefined {
+    if (typeof process !== "undefined" && process.env?.[key]) {
+        return process.env[key];
+    }
+
+    if (typeof env !== "undefined" && env?.[key]) {
+        return env[key];
+    }
+
+    return undefined;
 }
 
 function constantTimeCompare(a: Uint8Array, b: Uint8Array): boolean {
