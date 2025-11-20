@@ -15,6 +15,16 @@ const MAX_MESSAGE_LENGTH = 1600;
 const E164_REGEX = /^\+[1-9]\d{7,14}$/;
 
 /**
+ * Determine whether a string is a valid E.164 phone number.
+ *
+ * @param value - Candidate phone number
+ * @returns True when the value matches E.164 format
+ */
+export function isValidPhoneNumber(value: string): boolean {
+    return E164_REGEX.test(value.trim());
+}
+
+/**
  * Validate an SMS send request body.
  *
  * @param payload - Parsed request body
@@ -35,7 +45,7 @@ export function validateSendRequest(
     }
 
     const sanitizedPhone = payload.phoneNumber.trim();
-    if (!E164_REGEX.test(sanitizedPhone)) {
+    if (!isValidPhoneNumber(sanitizedPhone)) {
         return [
             false,
             "Phone number must be in E.164 format (e.g. +1234567890)",

@@ -3,59 +3,89 @@
 /**
  * Message List Component
  *
- * Displays the hostile SMS history feed with sent/received differentiation.
+ * Renders a chat-style transcript with outbound/inbound styling, optional
+ * contact labels, and a loading state. This component intentionally remains
+ * client-side so it can animate new messages without remounting.
+ *
+ * Type: Client Component (inherits requirement from parent)
  */
 
 import styles from "./MessageList.module.css";
-import { Message } from "../../lib/types";
+import type { Message } from "../../lib/types";
 
 interface MessageListProps {
-    /** Messages to render */
+    /** Messages to render for the active counterpart */
     messages: Message[];
+    /** Indicates whether a history fetch is in flight */
+    isLoading: boolean;
+    /** Friendly name tied to the counterpart (if any) */
+    contactName: string | null;
+    /** Active counterpart phone number */
+    counterpart: string | null;
 }
 
 /**
- * Render the message list.
+ * Render the message list with hostile UX copy.
  */
-export default function MessageList({ messages }: MessageListProps) {
+export default function MessageList({
+    messages,
+    isLoading,
+    contactName,
+    counterpart,
+}: MessageListProps) {
+    if (!counterpart) {
+        return (
+            <div className={styles.emptyState}>
+                <p>select a thread. the void is patient but i am not.</p>
+            </div>
+        );
+    }
+
     if (messages.length === 0) {
         return (
             <div className={styles.emptyState}>
-                <p>no transmissions yet. did you forget to pay twilio again?</p>
+                <p>
+                    {isLoading
+                        ? "scraping the archives..."
+                        : "no transmissions yet. type faster, coward."}
+                </p>
             </div>
         );
     }
 
     return (
-        <div className={styles.list}>
-            {messages.map((message) => (
-                <article
-                    key={message.id}
-                    className={`${styles.card} ${
-                        message.direction === "sent" ? styles.sent : styles.received
-                    }`}
-                >
-                    <header className={styles.cardHeader}>
-                        <span className={styles.direction}>
-                            {message.direction === "sent" ? "outbound" : "inbound"}
-                        </span>
-                        <span className={styles.timestamp}>
-                            {new Date(message.timestamp).toLocaleString()}
-                        </span>
-                    </header>
+        <div className={styles.timeline}>
+            {messages.map((message) => {
+                const isOutbound = message.direction === "sent";
+                const senderLabel = isOutbound
+                    ? "you"
+                    : contactName ?? counterpart ?? message.phoneNumber;
 
-                    <p className={styles.body}>{message.body}</p>
-
-                    <footer className={styles.meta}>
-                        <span>
-                            you ↔ {message.direction === "sent" ? message.phoneNumber : message.counterpart}
-                        </span>
-                        {message.twilioSid && (
-                            <span className={styles.sid}>sid: {message.twilioSid}</span>
-                        )}
-                    </footer>
-                </article>
-            ))}
+                return (
+                    <article
+                        key={message.id}
+                        className={`${styles.message} ${
+                            isOutbound ? styles.outbound : styles.inbound
+                        }`}
+                    >
+                        <header className={styles.messageHeader}>
+                            <span className={styles.sender}>{senderLabel}</span>
+                            <time className={styles.timestamp}>
+                                {new Date(message.timestamp).toLocaleString()}
+                            </time>
+                        </header>
+                        <p className={styles.body}>{message.body}</p>
+                        <footer className={styles.footer}>
+                            <span>{isOutbound ? "launched" : "captured"}</span>
+                            {message.twilioSid && (
+                                <span className={styles.sid}>
+                                    sid: {message.twilioSid}
+                                </span>
+                            )}
+                        </footer>
+                    </article>
+                );
+            })}
         </div>
     );
 }

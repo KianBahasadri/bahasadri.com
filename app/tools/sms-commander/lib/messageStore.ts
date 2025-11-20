@@ -1,106 +1,151 @@
 /**
  * SMS Commander message persistence powered by Cloudflare KV.
  *
- * When the `SMS_MESSAGES` KV binding is available (production + wrangler dev),
- * messages are persisted durably. During local `next dev` sessions without
- * wrangler, the module falls back to the legacy in-memory store.
+ * The new schema stores per-counterpart (phone number) timelines as well as
+ * lightweight thread summaries so the UI can render a chat-style interface
+ * without client-side gymnastics. When the KV binding is missing (e.g., during
+ * `next dev` without Wrangler), an in-memory fallback keeps the utility usable.
+ *
+ * @see ../../PLAN.md - Utility design notes
+ * @see ../../../../docs/AI_AGENT_STANDARDS.md - Repository standards
  */
 
-import type {
-    KVNamespace,
-    KVNamespaceListKey,
-} from "@cloudflare/workers-types";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import type { KVNamespace, KVNamespaceListKey } from "@cloudflare/workers-types";
 
-import { Message } from "./types";
+import { getSmsKvNamespace } from "./kv";
+import type { Message, ThreadSummary } from "./types";
+import { safeTrim } from "./validation";
 
 const MESSAGE_PREFIX = "messages:";
+const THREAD_PREFIX = "thread:";
 const MAX_TIMESTAMP = 9999999999999;
-const DEFAULT_LIMIT = 50;
-const FALLBACK_MAX_MESSAGES = 200;
-
-const fallbackMessages: Message[] = [];
-let loggedKvWarning = false;
+const DEFAULT_LIMIT = 200;
 
 type MessageListOptions = {
+    counterpart: string;
     cursor?: string;
     limit?: number;
 };
 
 export interface MessageListResult {
+    counterpart: string;
     messages: Message[];
     cursor?: string;
     listComplete: boolean;
 }
 
+const fallbackMessagesByCounterpart = new Map<string, Message[]>();
+const fallbackThreads = new Map<string, ThreadSummary>();
+
+function normalizeCounterpart(counterpart: string): string {
+    return safeTrim(counterpart);
+}
+
 function invertTimestamp(timestamp: number): string {
-    const inverted = MAX_TIMESTAMP - Math.min(timestamp, MAX_TIMESTAMP);
+    const clamped = Math.min(timestamp, MAX_TIMESTAMP);
+    const inverted = MAX_TIMESTAMP - clamped;
     return inverted.toString().padStart(16, "0");
 }
 
-function buildKey(timestamp: number, id: string): string {
-    return `${MESSAGE_PREFIX}${invertTimestamp(timestamp)}:${id}`;
+function buildMessageKey(
+    counterpart: string,
+    timestamp: number,
+    id: string
+): string {
+    return `${MESSAGE_PREFIX}${counterpart}:${invertTimestamp(timestamp)}:${id}`;
 }
 
-async function getKvNamespace(): Promise<KVNamespace | null> {
-    try {
-        const { env } = await getCloudflareContext({ async: true });
-        const kv = (env as unknown as CloudflareEnv | undefined)?.SMS_MESSAGES;
-
-        if (!kv) {
-            throw new Error("SMS_MESSAGES binding missing");
-        }
-
-        return kv;
-    } catch (error) {
-        if (!loggedKvWarning) {
-            console.warn(
-                "SMS Commander: SMS_MESSAGES KV binding unavailable. Falling back to in-memory storage.",
-                error instanceof Error ? error.message : error
-            );
-            loggedKvWarning = true;
-        }
-
-        return null;
-    }
+function buildThreadKey(counterpart: string): string {
+    return `${THREAD_PREFIX}${counterpart}`;
 }
 
-function appendFallbackMessage(message: Message): void {
-    fallbackMessages.unshift(message);
+function appendFallbackMessage(record: Message): void {
+    const list = fallbackMessagesByCounterpart.get(record.phoneNumber) ?? [];
+    list.push(record);
+    list.sort((a, b) => a.timestamp - b.timestamp);
+    fallbackMessagesByCounterpart.set(record.phoneNumber, list);
+}
 
-    if (fallbackMessages.length > FALLBACK_MAX_MESSAGES) {
-        fallbackMessages.length = FALLBACK_MAX_MESSAGES;
-    }
+function updateFallbackThread(record: Message): void {
+    const summary = fallbackThreads.get(record.phoneNumber);
+    const updated: ThreadSummary = {
+        counterpart: record.phoneNumber,
+        lastMessagePreview: record.body.slice(0, 280),
+        lastMessageTimestamp: record.timestamp,
+        lastDirection: record.direction,
+        messageCount: (summary?.messageCount ?? 0) + 1,
+    };
+    fallbackThreads.set(record.phoneNumber, updated);
+}
+
+async function updateThreadSummary(
+    kv: KVNamespace,
+    record: Message
+): Promise<void> {
+    const key = buildThreadKey(record.phoneNumber);
+    const existing = (await kv.get(key, "json")) as ThreadSummary | null;
+
+    const summary: ThreadSummary = {
+        counterpart: record.phoneNumber,
+        lastMessagePreview: record.body.slice(0, 280),
+        lastMessageTimestamp: record.timestamp,
+        lastDirection: record.direction,
+        messageCount: (existing?.messageCount ?? 0) + 1,
+    };
+
+    await kv.put(key, JSON.stringify(summary));
 }
 
 export async function appendMessage(message: Message): Promise<Message> {
-    const kv = await getKvNamespace();
+    const normalizedMessage: Message = {
+        ...message,
+        phoneNumber: normalizeCounterpart(message.phoneNumber),
+    };
+
+    const kv = await getSmsKvNamespace();
 
     if (!kv) {
-        appendFallbackMessage(message);
-        return message;
+        appendFallbackMessage(normalizedMessage);
+        updateFallbackThread(normalizedMessage);
+        return normalizedMessage;
     }
 
-    const key = buildKey(message.timestamp, message.id);
-    await kv.put(key, JSON.stringify(message));
+    const messageKey = buildMessageKey(
+        normalizedMessage.phoneNumber,
+        normalizedMessage.timestamp,
+        normalizedMessage.id
+    );
 
-    return message;
+    await Promise.all([
+        kv.put(messageKey, JSON.stringify(normalizedMessage)),
+        updateThreadSummary(kv, normalizedMessage),
+    ]);
+
+    return normalizedMessage;
 }
 
 export async function getMessages(
-    options: MessageListOptions = {}
+    options: MessageListOptions
 ): Promise<MessageListResult> {
-    const kv = await getKvNamespace();
+    const counterpart = normalizeCounterpart(options.counterpart);
+    if (!counterpart) {
+        throw new Error("Counterpart phone number is required to list messages");
+    }
+
+    const kv = await getSmsKvNamespace();
 
     if (!kv) {
+        const fallbackList =
+            fallbackMessagesByCounterpart.get(counterpart) ?? [];
         return {
-            messages: [...fallbackMessages],
+            counterpart,
+            messages: [...fallbackList],
             listComplete: true,
         };
     }
 
     const list = await kv.list({
-        prefix: MESSAGE_PREFIX,
+        prefix: `${MESSAGE_PREFIX}${counterpart}:`,
         limit: options.limit ?? DEFAULT_LIMIT,
         cursor: options.cursor,
     });
@@ -112,11 +157,43 @@ export async function getMessages(
         })
     );
 
+    const normalizedMessages = messages
+        .filter((record): record is Message => record !== null)
+        .sort((a, b) => a.timestamp - b.timestamp);
+
     return {
-        messages: messages.filter(
-            (message): message is Message => message !== null
-        ),
+        counterpart,
+        messages: normalizedMessages,
         cursor: list.list_complete ? undefined : list.cursor,
         listComplete: list.list_complete,
     };
 }
+
+export async function getThreadSummaries(): Promise<ThreadSummary[]> {
+    const kv = await getSmsKvNamespace();
+
+    if (!kv) {
+        return [...fallbackThreads.values()].sort(
+            (a, b) => b.lastMessageTimestamp - a.lastMessageTimestamp
+        );
+    }
+
+    const list = await kv.list({
+        prefix: THREAD_PREFIX,
+        limit: 1000,
+    });
+
+    const threads = await Promise.all(
+        list.keys.map(async (entry) => {
+            const summary = (await kv.get(entry.name, "json")) as
+                | ThreadSummary
+                | null;
+            return summary;
+        })
+    );
+
+    return threads
+        .filter((summary): summary is ThreadSummary => summary !== null)
+        .sort((a, b) => b.lastMessageTimestamp - a.lastMessageTimestamp);
+}
+

@@ -50,7 +50,7 @@ describe("getTwilioConfig", () => {
         const restore = blankEnvVariable("TWILIO_AUTH_TOKEN");
         const { getTwilioConfig } = await import("../twilio");
 
-        expect(() => getTwilioConfig()).toThrow(/not configured/i);
+        expect(() => getTwilioConfig()).toThrow(/twilio creds/i);
         restore();
     });
 });
@@ -184,31 +184,8 @@ async function generateTwilioSignature(
         dataToSign += key + value;
     }
 
-    const encoder = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-        "raw",
-        encoder.encode(secret),
-        { name: "HMAC", hash: "SHA-1" },
-        false,
-        ["sign"]
-    );
-
-    const signatureBuffer = await crypto.subtle.sign(
-        "HMAC",
-        key,
-        encoder.encode(dataToSign)
-    );
-    const signatureBytes = new Uint8Array(signatureBuffer);
-
-    if (typeof Buffer !== "undefined") {
-        return Buffer.from(signatureBytes).toString("base64");
-    }
-
-    let binary = "";
-    signatureBytes.forEach((byte) => {
-        binary += String.fromCharCode(byte);
-    });
-    return btoa(binary);
+    const { createHmac } = await import("crypto");
+    return createHmac("sha1", secret).update(dataToSign).digest("base64");
 }
 
 function getDefaultTwilioConfig(): TwilioConfig {
