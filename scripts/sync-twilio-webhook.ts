@@ -78,6 +78,7 @@ async function syncTwilioWebhook(): Promise<void> {
     console.log("🔍 Checking Twilio webhook configuration…");
     console.log(`   Phone number: ${phoneNumber}`);
     console.log(`   Expected URL: ${expectedWebhookUrl}`);
+    console.log(`   Normalized expected URL: ${normalizedExpectedWebhookUrl}`);
 
     const records = await client.incomingPhoneNumbers.list({
         phoneNumber,
@@ -94,6 +95,20 @@ async function syncTwilioWebhook(): Promise<void> {
     const normalizedCurrentUrl = normalizeUrlIfValid(record.smsUrl);
     const matches = normalizedCurrentUrl === normalizedExpectedWebhookUrl;
 
+    console.log(
+        `   Found phone SID: ${record.sid} (friendly name: ${
+            record.friendlyName ?? "N/A"
+        })`
+    );
+    console.log(
+        `   Current SMS URL: ${
+            record.smsUrl ?? "<not configured>"
+        } (normalized: ${normalizedCurrentUrl ?? "invalid"})`
+    );
+    console.log(
+        `   Current SMS method: ${record.smsMethod ?? "<Twilio default>"}`
+    );
+
     if (matches) {
         console.log("✅ Twilio is already forwarding to the correct webhook.");
         return;
@@ -102,13 +117,27 @@ async function syncTwilioWebhook(): Promise<void> {
     console.log(
         `⚠️  Twilio webhook mismatch detected. Updating ${record.sid}…`
     );
+    console.log("   Applying update payload:");
+    console.log(`     smsUrl -> ${expectedWebhookUrl}`, "| smsMethod -> POST");
 
-    await client.incomingPhoneNumbers(record.sid).update({
+    const updatedRecord = await client.incomingPhoneNumbers(record.sid).update({
         smsUrl: expectedWebhookUrl,
         smsMethod: "POST",
     });
 
     console.log("✅ Twilio webhook updated successfully.");
+    console.log(
+        `   Updated SMS URL: ${
+            updatedRecord.smsUrl ?? "<not configured>"
+        } (normalized: ${
+            normalizeUrlIfValid(updatedRecord.smsUrl) ?? "invalid"
+        })`
+    );
+    console.log(
+        `   Updated SMS method: ${
+            updatedRecord.smsMethod ?? "<Twilio default>"
+        }`
+    );
 }
 
 syncTwilioWebhook().catch((error) => {
