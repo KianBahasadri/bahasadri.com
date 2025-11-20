@@ -63,11 +63,11 @@
 3. Imports the same Twilio client module but bypasses mocks.
 4. Documented as manual-only; not executed by CI.
 
-### CI Considerations
+### Manual Pre-Deploy Checklist
 
--   Update pipeline (GitHub Actions or other) to run:  
+-   Before running `pnpm deploy`, execute:  
     `pnpm lint && pnpm tsc --noEmit && pnpm test && pnpm preview` (preview already workers-compatible).
--   Cache `.vitest` directory for faster runs.
+-   Cache the `.vitest` directory locally if you need faster re-runs during development; there is no shared CI cache.
 
 ### Implementation Order
 
@@ -77,13 +77,13 @@
 4. Write tests for `validation.ts` (pure logic, simplest entry point).
 5. Add Twilio module tests with SDK-level mocks and dependency injection.
 6. Create optional smoke script + README snippet describing manual usage.
-7. Wire CI to run `pnpm test`.
+7. Bake `pnpm test` into the manual release checklist.
 
 ### Acceptance Criteria
 
--   `pnpm test` passes locally and inside CI without hitting external networks.
+-   `pnpm test` passes locally (Workers pool) without hitting external networks.
 -   Tests fail loudly if Twilio fetch isn’t mocked.
 -   Documentation explicitly references the Cloudflare testing guidance link.
--   Optional smoke script documented but excluded from automated pipelines.
+-   Optional smoke script documented but excluded from any automation.
 
 _Last updated: 2025-11-20_

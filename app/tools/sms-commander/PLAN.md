@@ -219,10 +219,9 @@ Required secrets (use Wrangler secrets):
 
 #### 3. Deployment Workflow
 
--   Production pipeline currently calls `opennextjs-cloudflare deploy`
--   Wrap the deploy command with `pnpm sync:twilio-webhook &&` so the Twilio number auto-aligns before the Cloudflare upload
--   If CI/CD cannot be edited, run `pnpm sync:twilio-webhook` manually right before invoking the deploy command
--   Wrangler technically supports custom build hooks via `[build]` in `wrangler.toml`, but the Cloudflare docs ([link](https://developers.cloudflare.com/workers/wrangler/configuration/#build)) note that this hook replaces the worker build step. Because OpenNext already manages the build pipeline, using the hook would conflict with OpenNext’s build process—explicitly calling the sync script is safer
+-   Production releases run manually via `pnpm deploy` (no CI pipeline).
+-   Always run `pnpm sync:twilio-webhook` immediately before `pnpm deploy` so the Twilio number auto-aligns before the Cloudflare upload.
+-   Wrangler technically supports custom build hooks via `[build]` in `wrangler.toml`, but the Cloudflare docs ([link](https://developers.cloudflare.com/workers/wrangler/configuration/#build)) note that this hook replaces the worker build step. Because OpenNext already manages the build pipeline, using the hook would conflict with OpenNext’s build process—explicitly calling the sync script is safer.
 
 #### 4. Cloudflare KV Setup
 

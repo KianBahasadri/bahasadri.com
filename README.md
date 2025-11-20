@@ -156,19 +156,11 @@ Edit `next.config.ts` to configure:
 
 ## 🚢 Deployment
 
-### Automatic Deployment
-
-The project is configured for automatic deployment to Cloudflare Workers. See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for details.
-
-### Manual Deployment
+All deployments are triggered manually from the CLI. Run the following command after finishing verification steps in [DEPLOYMENT.md](./docs/DEPLOYMENT.md):
 
 ```bash
 pnpm deploy
 ```
-
-### CI/CD
-
-Configure your CI/CD pipeline to run `pnpm deploy` on push to main branch.
 
 ## 📖 Next.js Features Supported
 

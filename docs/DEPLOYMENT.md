@@ -4,7 +4,7 @@ This document describes the deployment process for Bahasadri.com to Cloudflare W
 
 ## Overview
 
-The application is automatically deployed to Cloudflare Workers using the OpenNext Cloudflare adapter. This enables Next.js features to work seamlessly on Cloudflare's edge network.
+Deployments are executed manually from the CLI using the OpenNext Cloudflare adapter. There is no active CI/CD automation—every release is triggered intentionally by running the deploy command locally. This still enables Next.js features to work seamlessly on Cloudflare's edge network.
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ The application is automatically deployed to Cloudflare Workers using the OpenNe
     - Installed via `pnpm install` (as devDependency)
     - Authenticated with Cloudflare
 
-3. **Cloudflare API Token** (for CI/CD)
+3. **Cloudflare API Token** (optional, only if automation returns later)
     - Create at [Cloudflare Dashboard](https://dash.cloudflare.com/profile/api-tokens)
     - Needs: Account, Zone, and Worker permissions
 
@@ -193,58 +193,11 @@ const secret = process.env.SECRET_NAME;
     ]
     ```
 
-## CI/CD Integration
+## Deployment Policy
 
-### GitHub Actions
-
-Create `.github/workflows/deploy.yml`:
-
-```yaml
-name: Deploy to Cloudflare
-
-on:
-    push:
-        branches:
-            - main
-
-jobs:
-    deploy:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-
-            - uses: pnpm/action-setup@v2
-              with:
-                  version: 10
-
-            - uses: actions/setup-node@v4
-              with:
-                  node-version: "24"
-                  cache: "pnpm"
-
-            - run: pnpm install
-
-            - run: pnpm deploy
-              env:
-                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-```
-
-### Environment Secrets
-
-Add to GitHub Secrets:
-
--   `CLOUDFLARE_API_TOKEN` - API token with Worker permissions
--   `CLOUDFLARE_ACCOUNT_ID` - Your Cloudflare account ID
-
-### Other CI/CD Platforms
-
-Similar setup for:
-
--   GitLab CI
--   CircleCI
--   Jenkins
--   Any platform that supports Node.js
+-   All production deployments run manually via `pnpm deploy`.
+-   Only trusted operators with Cloudflare access may trigger releases.
+-   If automation ever returns, document the entire workflow here before enabling it.
 
 ## Preview Deployments
 
