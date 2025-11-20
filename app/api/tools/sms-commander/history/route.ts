@@ -1,11 +1,10 @@
 /**
  * SMS Commander - Message History API Route
  *
- * Provides a lightweight JSON endpoint for retrieving the current in-memory
- * message history so the client UI can refresh without re-rendering the entire
- * page. This route is read-only and returns messages in reverse chronological
- * order. No authentication is implemented because the utility is intended for
- * personal use; add protection before exposing publicly.
+ * Provides a lightweight JSON endpoint for retrieving the per-counterpart
+ * message history used by the chat UI. Clients must supply a `counterpart`
+ * query param (E.164). No authentication is implemented because the utility is
+ * intended for personal use; add protection before exposing publicly.
  */
 
 import { NextResponse } from "next/server";
@@ -20,17 +19,34 @@ export async function GET(
     request: Request
 ): Promise<NextResponse<MessageHistoryResponse>> {
     const url = new URL(request.url);
+    const counterpart = url.searchParams.get("counterpart");
     const cursor = url.searchParams.get("cursor") ?? undefined;
 
+    if (!counterpart) {
+        return NextResponse.json(
+            {
+                counterpart: "",
+                messages: [],
+                cursor: undefined,
+                listComplete: true,
+                error: "Provide a counterpart query param in E.164 format.",
+            },
+            { status: 400 }
+        );
+    }
+
     const {
+        counterpart: normalizedCounterpart,
         messages,
         cursor: nextCursor,
         listComplete,
     } = await getMessages({
+        counterpart,
         cursor,
     });
 
     return NextResponse.json({
+        counterpart: normalizedCounterpart,
         messages,
         cursor: nextCursor,
         listComplete,

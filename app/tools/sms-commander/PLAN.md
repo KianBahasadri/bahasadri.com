@@ -36,6 +36,8 @@ Perfect for sending messages to your cousin on WhatsApp, intercepting texts from
     -   List view with timestamps
     -   Filter by sent/received
     -   Clear visual distinction between sent/received
+-   **Threaded Chat UI**: Sidebar that lists counterparts (phone numbers or saved contacts) with last-message previews and timestamps so the interface feels like a proper messaging client.
+-   **Contact Aliases**: Lightweight profile layer that lets you assign a name to each counterpart so the chat UI isn't just raw phone numbers.
 
 #### Phase 2: Enhanced Features (Future)
 
@@ -93,14 +95,27 @@ Perfect for sending messages to your cousin on WhatsApp, intercepting texts from
 
 -   **Structure**:
     -   `page.tsx` - Server Component (initial render)
-    -   `components/SMSInterface.tsx` - Client Component (forms, state)
-    -   `components/MessageList.tsx` - Client Component (message display)
+    -   `components/SMSInterface.tsx` - Client Component (threads, chat layout, polling, forms)
+    -   `components/MessageList.tsx` - Client Component (chat transcript display)
 -   **Rationale**:
     -   Server Components for SEO and initial load
     -   Client Components only where interactivity is needed
     -   Follows Next.js best practices
 
 #### 5. Twilio SDK vs Raw Fetch
+-   **Thread Index + Contacts**: Introduced a KV-backed thread summary index (per counterpart) and a contacts store so the UI can list and label conversations without downloading the entire message history on every render.
+#### 6. Contact Alias Storage
+
+**Decision**: Store aliases in the same KV namespace using dedicated prefixes (`contacts:*` + `contacts-by-number:*` index) so each phone number can map to a single `Contact` record without adding another binding.
+
+-   **Rationale**:
+    -   Avoids introducing a second KV binding when the message namespace already exists
+    -   Lets the chat UI enrich thread summaries with names server-side before hydrating on the client
+    -   Strict E.164 validation keeps contact data aligned with Twilio payloads
+-   **Implementation**:
+    -   Contact CRUD helpers live in `lib/contactsStore.ts`
+    -   `/api/tools/sms-commander/contacts` exposes list + create, `/contacts/[id]` handles PATCH updates
+    -   Thread list route enriches summaries with contact metadata for the sidebar
 
 **Decision**: Use the official Twilio SDK (compatibility verified with Cloudflare Workers)
 
