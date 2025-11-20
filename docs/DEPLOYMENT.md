@@ -209,6 +209,11 @@ pnpm preview
 
 Runs the application in Cloudflare Workers runtime locally for testing.
 
+**Known warnings (last verified 2025-11-20):**
+
+-   During the `opennextjs-cloudflare preview` phase, esbuild may emit duplicate-member warnings for `getElementsByTagName` / `getElementsByTagNameNS` inside `.open-next/server-functions/default/handler.mjs`. These are generated inside OpenNext’s DOM shim, not our source. Upgrade `@opennextjs/cloudflare`/Wrangler if upstream patches them; otherwise they are safe to ignore unless the preview build fails.
+-   Wrangler keeps the preview server running indefinitely. When integrating with automated scripts, wrap the command (e.g., `timeout 45 pnpm preview`) or stop it manually with `Ctrl+C` once the local server is verified.
+
 ### Staging Environment
 
 Create a separate worker for staging:
@@ -397,4 +402,4 @@ Cloudflare automatically caches:
 
 ---
 
-**Last Updated**: 2025-01-27
+**Last Updated**: 2025-11-20
