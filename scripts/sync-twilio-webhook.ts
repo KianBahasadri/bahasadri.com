@@ -118,7 +118,7 @@ async function syncTwilioWebhook(): Promise<void> {
         `⚠️  Twilio webhook mismatch detected. Updating ${record.sid}…`
     );
     console.log("   Applying update payload:");
-    console.log(`     smsUrl -> ${expectedWebhookUrl}`, "| smsMethod -> POST");
+    console.log(`     smsUrl -> ${expectedWebhookUrl} | smsMethod -> POST`);
 
     const updatedRecord = await client.incomingPhoneNumbers(record.sid).update({
         smsUrl: expectedWebhookUrl,
