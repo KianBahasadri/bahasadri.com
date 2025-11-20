@@ -33,7 +33,7 @@ export function getTwilioConfig(): TwilioConfig {
 
     if (!accountSid || !authToken || !phoneNumber) {
         throw new Error(
-            "Twilio credentials are not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER."
+            "Where are the Twilio creds, dumbass? Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER or this breaks. I can't believe I have to explain this."
         );
     }
 
