@@ -10,6 +10,8 @@
  * @see ./docs/DEVELOPMENT.md - Tooling and workflow documentation
  */
 
+import type { KVNamespace } from "@cloudflare/workers-types";
+
 declare global {
     /**
      * Identifier for the Twilio-specific bindings we care about during tests.
@@ -26,6 +28,8 @@ declare global {
         TWILIO_AUTH_TOKEN: string;
         /** Default Twilio phone number for outbound messages */
         TWILIO_PHONE_NUMBER: string;
+        /** Optional KV namespace used for storing SMS logs */
+        SMS_MESSAGES?: KVNamespace;
     }
 
     var env: CloudflareEnv;

@@ -14,11 +14,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Message, SendSMSRequest } from "../types";
 import type { TwilioConfig } from "../twilio";
 
-const appendMessageMock = vi.fn((message: Message) => message);
+const appendMessageMock = vi.fn(
+    async (message: Message): Promise<Message> => message
+);
 const twilioMessagesCreateMock = vi.fn();
 
 vi.mock("../messageStore", () => ({
-    appendMessage: (message: Message) => appendMessageMock(message),
+    appendMessage: appendMessageMock,
 }));
 
 vi.mock("twilio", () => ({
@@ -101,7 +103,7 @@ describe("storeIncomingMessage", () => {
     it("persists incoming payloads with sane defaults", async () => {
         const { storeIncomingMessage } = await import("../twilio");
 
-        const record = storeIncomingMessage({
+        const record = await storeIncomingMessage({
             MessageSid: "SM456",
             From: "+15557771234",
             To: "+15558884567",

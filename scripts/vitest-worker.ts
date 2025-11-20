@@ -9,7 +9,7 @@
  * @see ../docs/DEVELOPMENT.md
  */
 
-export default {
+const vitestWorker = {
     /**
      * Default fetch handler required by Wrangler.
      */
@@ -17,4 +17,6 @@ export default {
         return new Response("vitest-worker-ok", { status: 204 });
     },
 };
+
+export default vitestWorker;
 

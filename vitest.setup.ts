@@ -59,11 +59,13 @@ afterAll(() => {
  * Twilio credentials during tests.
  */
 function seedEnvBindings(): void {
-    if (typeof env === "undefined") {
-        env = { ...DEFAULT_ENV } as CloudflareEnv;
+    const globalEnv = (globalThis.env ?? null) as CloudflareEnv | null;
+
+    if (!globalEnv) {
+        globalThis.env = { ...DEFAULT_ENV } as CloudflareEnv;
     } else {
         for (const key of TWILIO_ENV_KEYS) {
-            env[key] ??= DEFAULT_ENV[key];
+            globalEnv[key] ??= DEFAULT_ENV[key];
         }
     }
 

@@ -56,14 +56,12 @@ async function main(): Promise<void> {
         message: body,
     });
 
-    // eslint-disable-next-line no-console -- intentional CLI output
     console.log(
         `SMS dispatched to ${message.phoneNumber} with SID ${message.twilioSid ?? message.id}`
     );
 }
 
 main().catch((error) => {
-    // eslint-disable-next-line no-console -- intentional CLI output
     console.error("Failed to send smoke-test SMS:", error);
     process.exit(1);
 });

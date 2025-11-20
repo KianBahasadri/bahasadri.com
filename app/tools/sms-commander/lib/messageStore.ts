@@ -6,6 +6,10 @@
  * wrangler, the module falls back to the legacy in-memory store.
  */
 
+import type {
+    KVNamespace,
+    KVNamespaceListKey,
+} from "@cloudflare/workers-types";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 import { Message } from "./types";
@@ -102,7 +106,7 @@ export async function getMessages(
     });
 
     const messages = await Promise.all(
-        list.keys.map(async (entry) => {
+        list.keys.map(async (entry: KVNamespaceListKey<unknown>) => {
             const result = await kv.get(entry.name, "json");
             return result as Message | null;
         })
