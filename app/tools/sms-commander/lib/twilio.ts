@@ -198,7 +198,7 @@ function base64ToUint8Array(base64: string): Uint8Array {
  * Retrieve an environment binding from either Node-style `process.env` or the
  * Workers `env` object so tests and production share the same code path.
  */
-function readEnvValue(key: TwilioEnvKey): string | undefined {
+export function readEnvValue(key: TwilioEnvKey): string | undefined {
     if (typeof process !== "undefined" && process.env?.[key]) {
         return process.env[key];
     }

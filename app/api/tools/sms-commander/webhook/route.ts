@@ -10,6 +10,7 @@
 import { NextResponse } from "next/server";
 
 import {
+    readEnvValue,
     storeIncomingMessage,
     validateTwilioSignature,
 } from "../../../../tools/sms-commander/lib/twilio";
@@ -23,7 +24,7 @@ import {
 export async function POST(request: Request): Promise<Response> {
     const formData = await request.formData();
 
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const authToken = readEnvValue("TWILIO_AUTH_TOKEN");
     if (!authToken) {
         return NextResponse.json(
             { error: "Twilio auth token is not configured" },
