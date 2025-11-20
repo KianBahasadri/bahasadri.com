@@ -1,7 +1,7 @@
 /**
- * Home Page Styles
+ * Home Page Styles - Utility Dashboard
  * 
- * Component-scoped CSS Module for the home page.
+ * Component-scoped CSS Module for the utility dashboard home page.
  * CSS Modules provide scoped styling, preventing style conflicts
  * between components.
  * 
@@ -20,12 +20,13 @@
   justify-content: flex-start;
   
   /* Spacing */
-  min-height: 100vh;
-  padding: 2rem 1rem;
+  min-height: calc(100vh - 80px); /* Account for navigation height */
+  padding: 3rem 1rem;
   
   /* Max width for readability */
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
 }
 
 /* Hero Section */
@@ -39,17 +40,18 @@
   /* Spacing */
   margin-bottom: 4rem;
   padding: 2rem 0;
+  width: 100%;
 }
 
 /* Main Title */
 .title {
   /* Typography */
-  font-size: clamp(2rem, 5vw, 4rem);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
   font-weight: 700;
   line-height: 1.2;
   
   /* Spacing */
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   
   /* Color */
   color: var(--text-primary);
@@ -71,51 +73,79 @@
   line-height: 1.6;
   
   /* Spacing */
-  margin-bottom: 3rem;
-  max-width: 600px;
+  max-width: 700px;
   
   /* Color */
   color: var(--text-secondary);
 }
 
-/* Features Grid */
-.features {
+/* Utilities Section */
+.utilitiesSection {
+  /* Layout */
+  width: 100%;
+  
+  /* Spacing */
+  margin-top: 2rem;
+}
+
+/* Section Title */
+.sectionTitle {
+  /* Typography */
+  font-size: 2rem;
+  font-weight: 600;
+  
+  /* Spacing */
+  margin-bottom: 2rem;
+  
+  /* Color */
+  color: var(--text-primary);
+}
+
+/* Utilities Grid */
+.utilitiesGrid {
   /* Layout */
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 2rem;
   
   /* Spacing */
   width: 100%;
-  margin-top: 2rem;
 }
 
-/* Feature Card */
-.card {
+/* Empty State */
+.emptyState {
   /* Layout */
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   
   /* Spacing */
-  padding: 2rem;
+  padding: 4rem 2rem;
+  margin: 2rem 0;
   
   /* Styling */
   background: var(--card-bg);
   border-radius: 12px;
-  border: 1px solid var(--card-border);
+  border: 1px dashed var(--border-primary);
+}
+
+/* Empty Icon */
+.emptyIcon {
+  /* Typography */
+  font-size: 4rem;
+  line-height: 1;
   
-  /* Transitions */
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  /* Spacing */
+  margin-bottom: 1.5rem;
+  
+  /* Display */
+  opacity: 0.5;
 }
 
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px var(--card-hover-shadow);
-  border-color: var(--border-secondary);
-}
-
-/* Card Title */
-.cardTitle {
+/* Empty Title */
+.emptyTitle {
   /* Typography */
   font-size: 1.5rem;
   font-weight: 600;
@@ -127,121 +157,42 @@
   color: var(--text-primary);
 }
 
-/* Card Description */
-.cardDescription {
+/* Empty Description */
+.emptyDescription {
   /* Typography */
   font-size: 1rem;
   line-height: 1.6;
   
-  /* Color */
-  color: var(--text-secondary);
-}
-
-/* Section */
-.section {
-  /* Layout */
-  width: 100%;
-  
   /* Spacing */
-  margin-bottom: 3rem;
-  padding: 2rem 0;
-}
-
-/* Section Title */
-.sectionTitle {
-  /* Typography */
-  font-size: 2rem;
-  font-weight: 600;
-  
-  /* Spacing */
-  margin-bottom: 1.5rem;
-  
-  /* Color */
-  color: var(--text-primary);
-}
-
-/* Paragraph */
-.paragraph {
-  /* Typography */
-  font-size: 1.125rem;
-  line-height: 1.8;
-  
-  /* Spacing */
-  margin-bottom: 1rem;
+  max-width: 500px;
   
   /* Color */
   color: var(--text-secondary);
-}
-
-/* List */
-.list {
-  /* Layout */
-  list-style-position: inside;
-  
-  /* Spacing */
-  padding-left: 1.5rem;
-  
-  /* Typography */
-  font-size: 1.125rem;
-  line-height: 2;
-  
-  /* Color */
-  color: var(--text-secondary);
-}
-
-.list li {
-  /* Spacing */
-  margin-bottom: 0.5rem;
-}
-
-/* Code Block */
-.codeBlock {
-  /* Layout */
-  width: 100%;
-  
-  /* Spacing */
-  padding: 1.5rem;
-  margin-top: 1rem;
-  
-  /* Styling */
-  background: var(--code-bg);
-  border-radius: 8px;
-  border: 1px solid var(--border-primary);
-  overflow-x: auto;
-}
-
-/* Code */
-.code {
-  /* Typography */
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.875rem;
-  line-height: 1.8;
-  
-  /* Color */
-  color: var(--code-text);
-  
-  /* Display */
-  display: block;
-  white-space: pre;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
   .main {
-    padding: 1rem;
+    padding: 2rem 1rem;
+    min-height: calc(100vh - 70px);
   }
   
   .hero {
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
+    padding: 1rem 0;
   }
   
-  .features {
+  .utilitiesGrid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
   
-  .card {
-    padding: 1.5rem;
+  .emptyState {
+    padding: 3rem 1.5rem;
+  }
+  
+  .emptyIcon {
+    font-size: 3rem;
   }
 }
 

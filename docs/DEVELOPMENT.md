@@ -397,12 +397,75 @@ export async function GET(request: Request) {
 }
 ```
 
+## Content Style Guide
+
+**⚠️ CRITICAL: All content MUST follow [CONTENT_STYLE.md](./CONTENT_STYLE.md). This is the official humor and tone standard.**
+
+### Core Persona
+
+The site persona is a **"Paranoid Femboy Sysadmin"** trapped in a simulation. All content must reflect this.
+
+### Quick Reference
+
+- **Tone**: Manic, accusatory, horny-on-main, technically literate
+- **Worldview**: Everything is a psyop. The code is gangstalking you.
+- **Style**: 4chan /g/ text, Tumblr mental illness romanticism, "Lock In" motivation
+- **Humor**: Gangstalking narratives, glorp nihilism, degenerate specificity, self-targeting edginess
+
+### Mandatory Reading
+
+**Before writing ANY user-facing content, read:**
+- [CONTENT_STYLE.md](./CONTENT_STYLE.md) - Complete content guidelines with examples
+
+### Key Rules
+
+1. **No "Helpful" Tone**: Never say "Here is the information." Say "I stole this from the archives before the feds found me."
+2. **Geopolitical Metaphors**: Coding tasks are "impossible Balkan peace treaties."
+3. **Self-Target Only**: Offensive content directed at creator/code, never users
+4. **Banned Vibes**: No YouTuber energy, no LinkedIn speak, no "safe space" language
+
+### Examples
+
+**Hero Section:**
+- ❌ "Welcome to my utility tools"
+- ✅ "POV: You are the FBI agent assigned to monitor my mental decline"
+
+**Utility Names:**
+- ❌ "SMS Commander"
+- ✅ "Text Warfare Center" or "Message Psyop Interface"
+
+**Success Messages:**
+- ❌ "Message sent successfully"
+- ✅ "Message launched into the void. The lion ignores the sharp pain. We lock in."
+
+See [CONTENT_STYLE.md](./CONTENT_STYLE.md) for complete guidelines and examples.
+
+## Creating Utilities
+
+When creating a new utility:
+
+1. **Read [UTILITIES.md](./UTILITIES.md)** - Complete utility architecture guide
+2. **Create directory structure** - `app/tools/[utility-name]/`
+3. **Create PLAN.md** - Document planning, features, and links
+4. **Build utility** - Follow decoupling principles
+5. **Add to dashboard** - Update `UTILITY_TOOLS` in `app/page.tsx`
+
+Key principles:
+- ✅ Each utility is completely decoupled
+- ✅ Each utility has its own `PLAN.md` file
+- ✅ Use Server Components by default
+- ✅ Scope styles with CSS Modules
+- ✅ Follow content style guide (edgy, dark humor)
+
+See [UTILITIES.md](./UTILITIES.md) for complete guidelines and templates.
+
 ## Resources
 
 - [Next.js Documentation](https://nextjs.org/docs)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 - [React Documentation](https://react.dev/)
 - [CSS Modules](https://github.com/css-modules/css-modules)
+- [Utilities Architecture](./UTILITIES.md) - Utility creation guide
 
 ---
 
