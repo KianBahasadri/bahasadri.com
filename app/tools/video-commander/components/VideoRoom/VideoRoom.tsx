@@ -82,7 +82,10 @@ const mapParticipantsFromMeeting = (
     const localParticipant: Participant = {
         id: meeting.self.id || "local",
         name: meeting.self.name || "You",
-        stream: createMediaStream(meeting.self.videoTrack, meeting.self.audioTrack),
+        stream: createMediaStream(
+            meeting.self.videoTrack,
+            meeting.self.audioTrack
+        ),
         videoEnabled: Boolean(meeting.self.videoEnabled),
         audioEnabled: Boolean(meeting.self.audioEnabled),
         isLocal: true,
@@ -94,7 +97,10 @@ const mapParticipantsFromMeeting = (
         .map((participant) => ({
             id: participant.id,
             name: participant.name || "Participant",
-            stream: createMediaStream(participant.videoTrack, participant.audioTrack),
+            stream: createMediaStream(
+                participant.videoTrack,
+                participant.audioTrack
+            ),
             videoEnabled: Boolean(participant.videoEnabled),
             audioEnabled: Boolean(participant.audioEnabled),
             isLocal: false,
@@ -136,9 +142,8 @@ export default function VideoRoom() {
     const detachRemoteParticipantListeners = useCallback(
         (participantId?: string) => {
             if (participantId) {
-                const cleanup = remoteParticipantListenersRef.current.get(
-                    participantId
-                );
+                const cleanup =
+                    remoteParticipantListenersRef.current.get(participantId);
                 if (cleanup) {
                     cleanup();
                     remoteParticipantListenersRef.current.delete(participantId);
@@ -146,7 +151,9 @@ export default function VideoRoom() {
                 return;
             }
 
-            remoteParticipantListenersRef.current.forEach((cleanup) => cleanup());
+            remoteParticipantListenersRef.current.forEach((cleanup) =>
+                cleanup()
+            );
             remoteParticipantListenersRef.current.clear();
         },
         []
@@ -174,8 +181,14 @@ export default function VideoRoom() {
             detachRemoteParticipantListeners(participant.id);
 
             const cleanup = () => {
-                participant.removeListener("videoUpdate", updateParticipantsFromMeeting);
-                participant.removeListener("audioUpdate", updateParticipantsFromMeeting);
+                participant.removeListener(
+                    "videoUpdate",
+                    updateParticipantsFromMeeting
+                );
+                participant.removeListener(
+                    "audioUpdate",
+                    updateParticipantsFromMeeting
+                );
                 participant.removeListener(
                     "screenShareUpdate",
                     updateParticipantsFromMeeting
@@ -203,7 +216,10 @@ export default function VideoRoom() {
             try {
                 await meeting.leave();
             } catch (leaveError) {
-                console.error("Failed to leave RealtimeKit meeting:", leaveError);
+                console.error(
+                    "Failed to leave RealtimeKit meeting:",
+                    leaveError
+                );
             }
         }
 
@@ -233,7 +249,10 @@ export default function VideoRoom() {
                 "participantJoined",
                 handleParticipantJoined
             );
-            meeting.participants.joined.on("participantLeft", handleParticipantLeft);
+            meeting.participants.joined.on(
+                "participantLeft",
+                handleParticipantLeft
+            );
             meeting.participants.joined.on(
                 "participantsUpdate",
                 handleParticipantsUpdate
@@ -259,8 +278,14 @@ export default function VideoRoom() {
                     "participantsUpdate",
                     handleParticipantsUpdate
                 );
-                meeting.self.removeListener("videoUpdate", updateParticipantsFromMeeting);
-                meeting.self.removeListener("audioUpdate", updateParticipantsFromMeeting);
+                meeting.self.removeListener(
+                    "videoUpdate",
+                    updateParticipantsFromMeeting
+                );
+                meeting.self.removeListener(
+                    "audioUpdate",
+                    updateParticipantsFromMeeting
+                );
                 detachRemoteParticipantListeners();
             };
 
@@ -288,7 +313,8 @@ export default function VideoRoom() {
             if (!response.ok) {
                 const errorData = (await response.json()) as { error?: string };
                 throw new Error(
-                    errorData.error || `HTTP ${response.status} getting global room`
+                    errorData.error ||
+                        `HTTP ${response.status} getting global room`
                 );
             }
 
@@ -296,7 +322,9 @@ export default function VideoRoom() {
             return data.room_id;
         } catch (err) {
             const errorMsg =
-                err instanceof Error ? err.message : "Failed to fetch global room";
+                err instanceof Error
+                    ? err.message
+                    : "Failed to fetch global room";
             throw new Error(`Global room fetch error: ${errorMsg}`);
         }
     }, []);
@@ -336,15 +364,30 @@ export default function VideoRoom() {
                         error?: string;
                     };
                     throw new Error(
-                        errorData.error || `HTTP ${response.status} generating token`
+                        errorData.error ||
+                            `HTTP ${response.status} generating token`
                     );
                 }
 
-            const data = (await response.json()) as { auth_token?: string; token?: string };
-            return data.auth_token ?? data.token ?? "";
+                const data = (await response.json()) as {
+                    auth_token?: string;
+                    token?: string;
+                };
+                const authToken = data.auth_token ?? data.token;
+
+                if (!authToken) {
+                    throw new Error(
+                        "API response missing both auth_token and token fields. " +
+                            `Received response: ${JSON.stringify(data)}`
+                    );
+                }
+
+                return authToken;
             } catch (err) {
                 const errorMsg =
-                    err instanceof Error ? err.message : "Failed to generate token";
+                    err instanceof Error
+                        ? err.message
+                        : "Failed to generate token";
                 throw new Error(`Token generation error: ${errorMsg}`);
             }
         },
@@ -378,7 +421,9 @@ export default function VideoRoom() {
                 throw new Error("RealtimeKit did not return an auth token.");
             }
 
-            const { default: RealtimeKit } = await import("@cloudflare/realtimekit");
+            const { default: RealtimeKit } = await import(
+                "@cloudflare/realtimekit"
+            );
             const meeting = await RealtimeKit.init({
                 authToken: token,
                 defaults: {
@@ -534,7 +579,9 @@ export default function VideoRoom() {
             {roomState === "connected" && (
                 <div className={styles.videoSection}>
                     <div className={styles.roomInfo}>
-                        <p className={styles.roomId}>Connected to Global Room</p>
+                        <p className={styles.roomId}>
+                            Connected to Global Room
+                        </p>
                         <p className={styles.roomStatus}>
                             {participants.length} participant
                             {participants.length !== 1 ? "s" : ""} connected
