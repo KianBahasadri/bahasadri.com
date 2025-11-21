@@ -8,6 +8,16 @@
  * @see ../../../docs/DEVELOPMENT.md
  */
 
+/**
+ * Default maximum file size for uploads (100MB).
+ *
+ * This limit is set to 100MB to avoid issues with the Workers runtime,
+ * which may have trouble handling larger payloads. This is a prototype
+ * constraint and may be adjusted in the future as platform capabilities
+ * or requirements change.
+ *
+ * See also: UploadZone.tsx, line 121 ("Keep it under 100MB so the Workers runtime doesn't scream")
+ */
 const DEFAULT_MAX_BYTES = 1024 * 1024 * 100; // 100MB prototype limit
 
 export interface FileValidationOptions {

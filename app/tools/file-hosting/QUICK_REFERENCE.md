@@ -34,11 +34,11 @@ Add these sections:
 
 ```toml
 [[r2_buckets]]
-binding = "R2_BUCKET"
+binding = "file_hosting_prod"
 bucket_name = "file-hosting-prod"
 
 [[r2_buckets]]
-binding = "R2_BUCKET"
+binding = "file_hosting_prod"
 bucket_name = "file-hosting-preview"
 preview = true
 
