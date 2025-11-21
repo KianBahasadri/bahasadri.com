@@ -2,8 +2,8 @@
  * Twilio helper utilities for SMS Commander.
  *
  * Provides helpers for sending SMS messages via Twilio's REST API and validating
- * webhook signatures. This module now relies on Twilio's official SDK after
- * verifying compatibility with the Cloudflare Workers runtime.
+ * webhook signatures. Uses Twilio's official SDK, which is compatible with the
+ * Cloudflare Workers runtime.
  */
 
 import twilio, { type Twilio } from "twilio";
@@ -66,7 +66,7 @@ export function resetTwilioClientForTesting(): void {
  * Send an SMS message via Twilio REST API.
  *
  * @param payload - Request payload containing target number and message
- * @returns Message record stored in memory
+ * @returns Message record stored in KV
  */
 export async function sendSmsViaTwilio(
     payload: SendSMSRequest

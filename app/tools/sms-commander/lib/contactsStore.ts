@@ -49,7 +49,10 @@ function assertValidPayload(payload: ContactCreatePayload): void {
     }
 }
 
-async function putContactRecord(kv: KVNamespace, contact: Contact): Promise<void> {
+async function putContactRecord(
+    kv: KVNamespace,
+    contact: Contact
+): Promise<void> {
     await Promise.all([
         kv.put(contactKey(contact.id), JSON.stringify(contact)),
         kv.put(contactIndexKey(contact.phoneNumber), contact.id),
@@ -87,7 +90,10 @@ export async function getContactByPhoneNumber(
         return null;
     }
 
-    const record = (await kv.get(contactKey(contactId), "json")) as Contact | null;
+    const record = (await kv.get(
+        contactKey(contactId),
+        "json"
+    )) as Contact | null;
     return record;
 }
 
@@ -105,7 +111,6 @@ export async function createContact(
         displayName: sanitizeDisplayName(payload.displayName),
         createdAt: now,
         updatedAt: now,
-        notes: payload.notes ? safeTrim(payload.notes).slice(0, 500) : undefined,
     };
 
     const existingId = await kv.get(contactIndexKey(sanitizedPhone));
@@ -126,7 +131,10 @@ export async function updateContact(
 ): Promise<ContactMutationResult> {
     const kv = await getSmsKvNamespace();
 
-    const record = (await kv.get(contactKey(contactId), "json")) as Contact | null;
+    const record = (await kv.get(
+        contactKey(contactId),
+        "json"
+    )) as Contact | null;
     if (!record) {
         return { success: false, error: "Contact not found." };
     }
@@ -136,12 +144,9 @@ export async function updateContact(
         displayName: updates.displayName
             ? sanitizeDisplayName(updates.displayName)
             : record.displayName,
-        notes: updates.notes ? safeTrim(updates.notes).slice(0, 500) : record.notes,
         updatedAt: Date.now(),
     };
 
     await kv.put(contactKey(contactId), JSON.stringify(updated));
     return { success: true, contact: updated };
 }
-
-

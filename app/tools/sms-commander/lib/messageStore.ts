@@ -1,9 +1,9 @@
 /**
  * SMS Commander message persistence powered by Cloudflare KV.
  *
- * The new schema stores per-counterpart (phone number) timelines as well as
- * lightweight thread summaries so the UI can render a chat-style interface
- * without client-side gymnastics. Requires the SMS_MESSAGES KV binding to be
+ * Stores per-counterpart (phone number) timelines as well as lightweight
+ * thread summaries so the UI can render a chat-style interface without
+ * client-side gymnastics. Requires the SMS_MESSAGES KV binding to be
  * configured, ensuring development and production use the same code path.
  *
  * @see ../../PLAN.md - Utility design notes
@@ -19,9 +19,8 @@ import { getSmsKvNamespace } from "./kv";
 import type { Message, ThreadSummary } from "./types";
 import { safeTrim } from "./validation";
 
-const MESSAGE_PREFIX = "messages:";
+const MESSAGE_PREFIX = "msg:";
 const THREAD_PREFIX = "thread:";
-const GLOBAL_MESSAGE_PREFIX = "global-message:";
 const MAX_TIMESTAMP = 9999999999999;
 const DEFAULT_LIMIT = 200;
 const MESSAGE_SINCE_LIMIT = 1000;
@@ -64,7 +63,7 @@ function buildMessageKey(
  * retrieved by listing the index prefix.
  */
 function buildGlobalMessageKey(timestamp: number, id: string): string {
-    return `${GLOBAL_MESSAGE_PREFIX}${invertTimestamp(timestamp)}:${id}`;
+    return `${MESSAGE_PREFIX}global:${invertTimestamp(timestamp)}:${id}`;
 }
 
 function buildThreadKey(counterpart: string): string {
@@ -156,57 +155,28 @@ export async function getMessages(
 export async function getMessagesSince(since: number): Promise<Message[]> {
     const kv = await getSmsKvNamespace();
 
-    const loadMessages = async (
-        keys: KVNamespaceListKey<unknown>[]
-    ): Promise<Message[]> => {
-        const results = await Promise.all(
-            keys.map(async (entry) => {
-                const record = await kv.get(entry.name, "json");
-                return record as Message | null;
-            })
-        );
+    const list = await kv.list({
+        prefix: `${MESSAGE_PREFIX}global:`,
+        limit: MESSAGE_SINCE_LIMIT,
+    });
 
-        return results.filter((msg): msg is Message => msg !== null);
-    };
-
-    const [globalTimeline, legacyIndex] = await Promise.all([
-        kv.list({
-            prefix: GLOBAL_MESSAGE_PREFIX,
-            limit: MESSAGE_SINCE_LIMIT,
-        }),
-        kv.list({
-            prefix: MESSAGE_PREFIX,
-            limit: MESSAGE_SINCE_LIMIT,
-        }),
-    ]);
-
-    const [globalMessages, legacyMessages] = await Promise.all([
-        loadMessages(globalTimeline.keys),
-        loadMessages(legacyIndex.keys),
-    ]);
-
-    const messageMap = new Map<string, Message>();
-
-    for (const message of [...globalMessages, ...legacyMessages]) {
-        if (message.timestamp <= since) {
-            continue;
-        }
-
-        const existing = messageMap.get(message.id);
-        if (!existing || message.timestamp > existing.timestamp) {
-            messageMap.set(message.id, message);
-        }
-    }
-
-    const sorted = [...messageMap.values()].sort(
-        (a, b) => a.timestamp - b.timestamp
+    const results = await Promise.all(
+        list.keys.map(async (entry) => {
+            const record = await kv.get(entry.name, "json");
+            return record as Message | null;
+        })
     );
 
-    if (sorted.length > MESSAGE_SINCE_LIMIT) {
-        return sorted.slice(sorted.length - MESSAGE_SINCE_LIMIT);
+    const messages = results
+        .filter((msg): msg is Message => msg !== null)
+        .filter((msg) => msg.timestamp > since)
+        .sort((a, b) => a.timestamp - b.timestamp);
+
+    if (messages.length > MESSAGE_SINCE_LIMIT) {
+        return messages.slice(messages.length - MESSAGE_SINCE_LIMIT);
     }
 
-    return sorted;
+    return messages;
 }
 
 export async function getThreadSummaries(): Promise<ThreadSummary[]> {
