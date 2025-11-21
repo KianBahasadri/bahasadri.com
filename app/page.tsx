@@ -59,6 +59,13 @@ const UTILITY_TOOLS: UtilityTool[] = [
         href: "/tools/video-commander",
         icon: "📹",
     },
+    {
+        title: "File Arsenal",
+        description:
+            "Upload files, watch them get compressed automatically, stalk your users via WHOIS data, and pretend you're a content delivery network.",
+        href: "/tools/file-hosting",
+        icon: "💾",
+    },
 ];
 
 /**
