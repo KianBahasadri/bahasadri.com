@@ -5,6 +5,8 @@
  * (when credentials are configured), stores the message in memory, and returns
  * a simple TwiML response. This keeps the utility aware of both outbound and
  * inbound messages for the local dashboard.
+ *
+ * @see ../../../../docs/AI_AGENT_STANDARDS.md - Repository standards
  */
 
 import { NextResponse } from "next/server";

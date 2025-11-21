@@ -37,13 +37,23 @@ type RealtimeKitMeetingInstance = Awaited<
 >;
 
 const generateParticipantId = (): string => {
-    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-        return crypto.randomUUID();
+    // Use globalThis.crypto for better type inference in browser environments
+    let cryptoObj: Crypto | undefined;
+    if (typeof globalThis !== "undefined" && "crypto" in globalThis) {
+        cryptoObj = globalThis.crypto as Crypto;
+    } else if (typeof crypto !== "undefined") {
+        cryptoObj = crypto as Crypto;
+    }
+
+    if (cryptoObj && "randomUUID" in cryptoObj) {
+        return cryptoObj.randomUUID();
     }
 
     const buffer = new Uint8Array(16);
-    if (typeof crypto !== "undefined" && "getRandomValues" in crypto) {
-        crypto.getRandomValues(buffer);
+    if (cryptoObj) {
+        (
+            cryptoObj as { getRandomValues: (buffer: Uint8Array) => void }
+        ).getRandomValues(buffer);
     } else {
         for (let i = 0; i < buffer.length; i += 1) {
             buffer[i] = Math.floor(Math.random() * 256);
