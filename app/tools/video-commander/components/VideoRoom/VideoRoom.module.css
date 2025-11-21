@@ -100,6 +100,11 @@
     color: var(--color-text-secondary, rgba(255, 255, 255, 0.8));
 }
 
+.roomStatus {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.6));
+}
+
 .copyButton {
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
@@ -126,9 +131,38 @@
     border-radius: 0.5rem;
 }
 
+.errorTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #ef4444;
+    margin: 0;
+    text-align: center;
+}
+
 .errorText {
     color: #ef4444;
     text-align: center;
+}
+
+.retryButton {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.25rem;
+    background: var(--color-primary, #3b82f6);
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.retryButton:hover:not(:disabled) {
+    background: var(--color-primary-hover, #2563eb);
+}
+
+.retryButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 @media (max-width: 768px) {
