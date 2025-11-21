@@ -2,15 +2,25 @@
  * Script to create the global room and update the constant
  *
  * Usage: ts-node scripts/create-global-room.ts
- * Requires: CLOUDFLARE_REALTIME_API_TOKEN environment variable
+ * Requires: CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_REALTIME_APP_ID, and CLOUDFLARE_REALTIME_API_TOKEN environment variables
  */
 
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 
-const ACCOUNT_ID = "3d463c39c94a3084cea36fc6ffde8931";
-const APP_ID = "ce2b8163-4fa1-472a-8ec3-6bdb226ff873";
+const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
+const APP_ID = process.env.CLOUDFLARE_REALTIME_APP_ID;
 const API_TOKEN = process.env.CLOUDFLARE_REALTIME_API_TOKEN;
+
+if (!ACCOUNT_ID) {
+    console.error("Error: CLOUDFLARE_ACCOUNT_ID environment variable is required");
+    process.exit(1);
+}
+
+if (!APP_ID) {
+    console.error("Error: CLOUDFLARE_REALTIME_APP_ID environment variable is required");
+    process.exit(1);
+}
 
 if (!API_TOKEN) {
     console.error("Error: CLOUDFLARE_REALTIME_API_TOKEN environment variable is required");

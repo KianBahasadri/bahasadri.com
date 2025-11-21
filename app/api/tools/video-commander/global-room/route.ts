@@ -17,33 +17,34 @@
 import { NextResponse } from "next/server";
 
 /**
- * Global room ID for Video Commander
+ * Gets the global room ID from environment variable
  *
- * This is the single room that all users connect to.
- * Create a room via RealtimeKit API and update this constant with the room ID.
- *
- * To create a room:
- * POST https://api.cloudflare.com/client/v4/accounts/{account_id}/realtime/kit/{app_id}/meetings
- * Body: { "title": "Global Video Commander Room" }
- * Response: { "success": true, "data": { "id": "..." } }
- */
-const GLOBAL_ROOM_ID = "bbbc5f0e-5acc-47e9-86cb-b7bef293269b";
-
-/**
- * Gets the global room ID
+ * Falls back to hardcoded value for development if env var is not set.
+ * In production, CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID must be set.
  *
  * @returns Room ID
- * @throws {Error} If room ID is not set (still placeholder)
+ * @throws {Error} If room ID is not configured
  */
 function getGlobalRoomId(): string {
-    if (GLOBAL_ROOM_ID === "REPLACE_WITH_ACTUAL_ROOM_ID") {
-        throw new Error(
-            "Global room ID not configured. " +
-                "Create a room via RealtimeKit API and update GLOBAL_ROOM_ID constant in this file."
-        );
+    // Try environment variable first (production)
+    const envRoomId = process.env.CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID;
+    if (envRoomId) {
+        return envRoomId;
     }
 
-    return GLOBAL_ROOM_ID;
+    // Fallback to hardcoded value for development
+    // TODO: Remove this fallback once all environments use env vars
+    const DEV_ROOM_ID = "bbbc5f0e-5acc-47e9-86cb-b7bef293269b";
+    if (process.env.NODE_ENV === "development") {
+        return DEV_ROOM_ID;
+    }
+
+    // Production requires environment variable
+    throw new Error(
+        "Global room ID not configured. " +
+            "Set CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID environment variable. " +
+            "Create a room via RealtimeKit API if needed."
+    );
 }
 
 /**
