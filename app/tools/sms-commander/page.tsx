@@ -14,6 +14,7 @@ import SMSInterface from "./components/SMSInterface/SMSInterface";
 import styles from "./page.module.css";
 import { getMessages, getThreadSummaries } from "./lib/messageStore";
 import { listContacts } from "./lib/contactsStore";
+import { createWebsocketAuthToken } from "./lib/websocketAuth";
 
 /** Ensure the page is rendered dynamically to reflect latest in-memory state. */
 export const dynamic = "force-dynamic";
@@ -49,26 +50,17 @@ export default async function SMSCommanderPage() {
           ).messages
         : [];
 
+    const wsAuth = await createWebsocketAuthToken();
+
     return (
         <main className={styles.main}>
-            <section className={styles.hero}>
-                <h1 className={styles.title}>SMS Commander</h1>
-                <p className={styles.tagline}>
-                    Built on zero sleep, suspicious amounts of White Monster,
-                    and Cloudflare KV duct tape. Pipe texts straight to the
-                    surveillance stack, mock the feds, and rest easy knowing the
-                    logs survive redeploys now.
-                </p>
-            </section>
-
-            <section className={styles.contentCard}>
-                <SMSInterface
-                    initialThreads={enrichedThreads}
-                    initialMessages={initialMessages}
-                    initialContacts={contacts}
-                    initialCounterpart={initialCounterpart ?? null}
-                />
-            </section>
+            <SMSInterface
+                initialThreads={enrichedThreads}
+                initialMessages={initialMessages}
+                initialContacts={contacts}
+                initialCounterpart={initialCounterpart ?? null}
+                websocketToken={wsAuth.token}
+            />
         </main>
     );
 }

@@ -14,6 +14,11 @@ import {
     storeIncomingMessage,
     validateTwilioSignature,
 } from "../../../../tools/sms-commander/lib/twilio";
+import {
+    broadcastMessage,
+    broadcastThreads,
+} from "../../../../tools/sms-commander/lib/websocket-manager";
+import { getThreadSummaries } from "../../../../tools/sms-commander/lib/messageStore";
 
 /**
  * POST handler for the Twilio webhook endpoint.
@@ -47,7 +52,18 @@ export async function POST(request: Request): Promise<Response> {
         }
     }
 
-    await storeIncomingMessage(payload);
+    const message = await storeIncomingMessage(payload);
+
+    // Broadcast message update via WebSocket
+    broadcastMessage(message, message.phoneNumber);
+
+    // Broadcast thread list update
+    try {
+        const threads = await getThreadSummaries();
+        broadcastThreads(threads);
+    } catch {
+        // Ignore thread update errors
+    }
 
     const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`;
 

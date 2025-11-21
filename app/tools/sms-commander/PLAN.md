@@ -82,28 +82,41 @@ Perfect for sending messages to your cousin on WhatsApp, intercepting texts from
 **Decision**: Use Next.js Route Handlers in utility-specific directory
 
 -   **Structure**:
-    -   `/api/tools/sms-commander/send` - POST endpoint for sending SMS
-    -   `/api/tools/sms-commander/webhook` - POST endpoint for receiving SMS
+    -   `/api/tools/sms-commander/send` - POST endpoint for sending SMS (broadcasts via WebSocket)
+    -   `/api/tools/sms-commander/webhook` - POST endpoint for receiving SMS (broadcasts via WebSocket)
+    -   `/api/tools/sms-commander/ws` - GET endpoint for WebSocket upgrades (real-time updates)
+    -   `/api/tools/sms-commander/threads` - GET endpoint for thread list
+    -   `/api/tools/sms-commander/history` - GET endpoint for message history
+    -   `/api/tools/sms-commander/contacts` - GET/POST endpoints for contact management
 -   **Rationale**:
     -   Keeps API routes decoupled with the utility
     -   Follows Next.js App Router patterns
     -   Easy to find and maintain
+    -   WebSocket route enables real-time updates without polling
 
 #### 4. UI Architecture
 
 **Decision**: Client Component for interactivity, Server Component for initial render
 
 -   **Structure**:
-    -   `page.tsx` - Server Component (initial render)
-    -   `components/SMSInterface.tsx` - Client Component (threads, chat layout, polling, forms)
-    -   `components/MessageList.tsx` - Client Component (chat transcript display)
+    -   `page.tsx` - Server Component (initial render, full-screen layout)
+    -   `components/SMSInterface/SMSInterface.tsx` - Client Component (threads, chat layout, WebSocket, forms)
+    -   `components/MessageList/MessageList.tsx` - Client Component (chat transcript display with modern bubbles)
 -   **Rationale**:
     -   Server Components for SEO and initial load
     -   Client Components only where interactivity is needed
     -   Follows Next.js best practices
+-   **Current Implementation**:
+    -   Full-screen chat interface (no hero section, takes up entire viewport)
+    -   Modern chat bubble styling (iMessage/WhatsApp style)
+    -   WebSocket-based real-time updates (replaces polling)
+    -   Auto-scroll to latest messages
+    -   Chat-style input with inline send button
 
 #### 5. Twilio SDK vs Raw Fetch
+
 -   **Thread Index + Contacts**: Introduced a KV-backed thread summary index (per counterpart) and a contacts store so the UI can list and label conversations without downloading the entire message history on every render.
+
 #### 6. Contact Alias Storage
 
 **Decision**: Store aliases in the same KV namespace using dedicated prefixes (`contacts:*` + `contacts-by-number:*` index) so each phone number can map to a single `Contact` record without adding another binding.
@@ -231,6 +244,7 @@ Required secrets (use Wrangler secrets):
 -   `TWILIO_AUTH_TOKEN` - Twilio authentication token
 -   `TWILIO_PHONE_NUMBER` - Your Twilio phone number (E.164 format)
 -   `TWILIO_WEBHOOK_URL` - Expected webhook URL for automated Twilio forwarding checks
+-   `SMS_COMMANDER_WS_SECRET` - Optional HMAC secret for WebSocket auth tokens (falls back to `TWILIO_AUTH_TOKEN`)
 
 #### 3. Deployment Workflow
 
@@ -411,11 +425,13 @@ interface TwilioWebhookPayload {
     - Survive deployments
     - Add message retention policy
 
-2. **Real-time Updates**
+2. **Real-time Updates** ✅ **IMPLEMENTED**
 
-    - Use Server-Sent Events or WebSockets
-    - Show incoming messages immediately
-    - No page refresh needed
+    - ✅ WebSocket-based real-time updates (replaces polling)
+    - ✅ Instant message delivery when sent/received
+    - ✅ Automatic thread list updates
+    - ✅ Connection management with auto-reconnect
+    - ✅ No page refresh needed
 
 3. **Message Templates**
 
@@ -453,6 +469,67 @@ interface TwilioWebhookPayload {
 -   Created utility plan
 -   Defined architecture and features
 -   Documented technical approach
+
+### 2025-01-27 - UI Redesign & WebSocket Implementation
+
+#### UI Redesign
+
+-   **Full-screen chat interface**: Removed hero section and content card wrapper, chat now takes up entire viewport
+-   **Modern chat bubbles**: Redesigned message display with iMessage/WhatsApp-style bubbles
+-   Sent messages: Right-aligned with gradient background
+-   Received messages: Left-aligned with subtle background
+-   Improved timestamp formatting (relative time display)
+-   Better visual hierarchy and spacing
+-   **Chat-style input**: Transformed composer from form-based to modern chat input
+-   Single-line textarea with inline send button
+-   Auto-resizing based on content
+-   Enter to send, Shift+Enter for newline
+-   Removed form-like labels and styling
+-   **Improved layout**: Full-height chat view with proper flex layout
+-   Fixed header and footer
+-   Better scrolling behavior
+-   Better visual separation between header, messages, and input
+-   **Sidebar enhancements**: Improved thread list styling
+-   Better active thread indicators with gradient accent
+-   Enhanced hover states
+-   Cleaner typography and spacing
+-   **Auto-scroll**: Message list automatically scrolls to bottom on new messages and thread changes
+-   **Mobile responsive**: All improvements work well on mobile devices
+
+#### WebSocket Real-time Updates
+
+-   **Replaced polling mechanism**: Removed 1-second polling interval
+-   **WebSocket connection manager** (`lib/websocket-manager.ts`):
+-   Manages WebSocket connections in memory
+-   Broadcasts messages to all connected clients
+-   Handles connection lifecycle and cleanup
+-   Sends periodic pings to keep connections alive
+-   Enforces connection caps per instance and drops hung sockets after heartbeat failures
+-   **WebSocket route handler** (`/api/tools/sms-commander/ws/route.ts`):
+-   Handles WebSocket upgrade requests
+-   Uses Cloudflare Workers native WebSocket support
+-   Accepts connections and registers them with the manager
+-   Requires short-lived auth tokens so only the rendered page can connect
+-   **Updated send route**: Broadcasts new sent messages via WebSocket
+-   **Updated webhook route**: Broadcasts incoming messages via WebSocket
+-   **Client WebSocket integration**:
+-   Establishes WebSocket connection on mount
+-   Handles real-time message updates
+-   Handles thread list updates
+-   Auto-reconnects on disconnect with exponential backoff
+-   Responds to ping/pong for connection health
+
+#### Configuration Changes
+
+-   **KV namespace**: Dev/preview now uses production KV namespace
+-   Updated `wrangler.toml` to set `preview_id` to match production `id`
+-   Both messages and contacts use the same KV namespace
+-   Ensures dev and prod work with the same data
+
+#### Removed Features
+
+-   Removed "Transmission launched" status message after sending
+-   Removed footer from all pages (site-wide change)
 
 ---
 
