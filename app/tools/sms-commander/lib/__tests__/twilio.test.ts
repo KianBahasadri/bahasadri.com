@@ -152,9 +152,10 @@ describe("validateTwilioSignature", () => {
         const formData = new FormData();
         formData.set("Body", "tampered payload");
 
+        // Use valid base64 that's definitely wrong (empty signature)
         const request = new Request(url, {
             method: "POST",
-            headers: { "x-twilio-signature": "totally-fake" },
+            headers: { "x-twilio-signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAA" },
         });
 
         const defaults = getDefaultTwilioConfig();

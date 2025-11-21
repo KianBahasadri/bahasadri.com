@@ -59,22 +59,6 @@ export interface SendSMSResponse {
 }
 
 /**
- * Structure returned by the history API route.
- */
-export interface MessageHistoryResponse {
-    /** Counterpart phone number these messages belong to */
-    counterpart: string;
-    /** Collection of tracked messages */
-    messages: Message[];
-    /** Cursor for pagination (if more results exist) */
-    cursor?: string;
-    /** Indicates whether KV returned all messages in current batch */
-    listComplete: boolean;
-    /** Optional error description when request fails */
-    error?: string;
-}
-
-/**
  * Represents a lightweight chat thread summary scoped to a single counterpart.
  */
 export interface ThreadSummary {
