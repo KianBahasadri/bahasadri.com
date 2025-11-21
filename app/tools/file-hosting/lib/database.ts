@@ -58,26 +58,15 @@ function mapFileRow(row: Record<string, unknown>): FileMetadata {
         id: String(row.id),
         name: String(row.name),
         originalSize: Number(row.original_size),
-        compressedSize:
-            row.compressed_size === null
-                ? null
-                : Number(row.compressed_size ?? 0),
+        compressedSize: row.compressed_size == null ? null : Number(row.compressed_size),
         mimeType: String(row.mime_type),
         uploadTime: String(row.upload_time),
-        compressionStatus:
-            row.compression_status as FileMetadata["compressionStatus"],
+        compressionStatus: row.compression_status as FileMetadata["compressionStatus"],
         originalUrl: String(row.original_url),
-        compressedUrl:
-            row.compressed_url === null
-                ? null
-                : String(row.compressed_url ?? ""),
-        compressionRatio:
-            row.compression_ratio === null
-                ? null
-                : Number(row.compression_ratio ?? 0),
+        compressedUrl: row.compressed_url == null ? null : String(row.compressed_url),
+        compressionRatio: row.compression_ratio == null ? null : Number(row.compression_ratio),
         accessCount: Number(row.access_count ?? 0),
-        lastAccessed:
-            row.last_accessed === null ? null : String(row.last_accessed ?? ""),
+        lastAccessed: row.last_accessed == null ? null : String(row.last_accessed),
         deleted: Boolean(row.deleted),
     };
 }
@@ -88,22 +77,20 @@ function mapAccessLogRow(row: Record<string, unknown>): AccessLogEntry {
         fileId: String(row.file_id),
         ipAddress: String(row.ip_address),
         timestamp: String(row.timestamp),
-        userAgent: row.user_agent === null ? null : (row.user_agent as string),
-        referrer: row.referrer === null ? null : (row.referrer as string),
-        country: row.country === null ? null : (row.country as string),
-        organization:
-            row.organization === null ? null : (row.organization as string),
-        asn: row.asn === null ? null : (row.asn as string),
+        userAgent: row.user_agent == null ? null : String(row.user_agent),
+        referrer: row.referrer == null ? null : String(row.referrer),
+        country: row.country == null ? null : String(row.country),
+        organization: row.organization == null ? null : String(row.organization),
+        asn: row.asn == null ? null : String(row.asn),
     };
 }
 
 function mapWhoisRow(row: Record<string, unknown>): WhoisRecord {
     return {
         ipAddress: String(row.ip_address),
-        country: row.country === null ? null : (row.country as string),
-        organization:
-            row.organization === null ? null : (row.organization as string),
-        asn: row.asn === null ? null : (row.asn as string),
+        country: row.country == null ? null : String(row.country),
+        organization: row.organization == null ? null : String(row.organization),
+        asn: row.asn == null ? null : String(row.asn),
         cachedAt: String(row.cached_at),
         expiresAt: String(row.expires_at),
     };
