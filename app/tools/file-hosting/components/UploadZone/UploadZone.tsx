@@ -10,100 +10,76 @@
  * @see ../../../../docs/COMPONENTS.md
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./UploadZone.module.css";
 
 interface UploadZoneProps {
     allowedMimeTypes?: readonly string[];
 }
 
-async function uploadFilePayload(file: File) {
-    const body = new FormData();
-    body.append("file", file);
-    const response = await fetch("/api/tools/file-hosting/upload", {
-        method: "POST",
-        body,
-    });
-
-    if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error ?? "Upload failed");
-    }
-}
-
 export default function UploadZone({ allowedMimeTypes }: UploadZoneProps) {
     const inputRef = useRef<HTMLInputElement | null>(null);
-    const [status, setStatus] = useState<"idle" | "uploading" | "error" | "done">(
-        "idle"
-    );
+    const [status, setStatus] = useState<
+        "idle" | "uploading" | "error" | "done"
+    >("idle");
     const [message, setMessage] = useState<string>("");
+    const router = useRouter();
 
-    const handleFileUpload = useCallback(
-        async (file: File) => {
-            if (
-                allowedMimeTypes &&
-                allowedMimeTypes.length > 0 &&
-                !allowedMimeTypes.includes(file.type)
-            ) {
-                throw new Error(`Unsupported file type: ${file.type || "unknown"}`);
-            }
-            await uploadFilePayload(file);
-        },
-        [allowedMimeTypes]
-    );
+    const handleUpload = async (file: File | undefined) => {
+        if (!file) {
+            setStatus("error");
+            setMessage("Pick a file, agent.");
+            return;
+        }
 
-    const setUploading = useCallback(() => {
+        if (
+            allowedMimeTypes &&
+            allowedMimeTypes.length > 0 &&
+            !allowedMimeTypes.includes(file.type)
+        ) {
+            setStatus("error");
+            setMessage(`Unsupported file type: ${file.type || "unknown"}`);
+            return;
+        }
+
         setStatus("uploading");
         setMessage("Uploading to the arsenal...");
-    }, []);
 
-    const handleSuccess = useCallback(() => {
-        setStatus("done");
-        setMessage("Uploaded. Refreshing list...");
-        setTimeout(() => window.location.reload(), 500);
-    }, []);
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            const response = await fetch("/api/tools/file-hosting/upload", {
+                method: "POST",
+                body: formData,
+            });
 
-    const handleError = useCallback((error: unknown) => {
-        setStatus("error");
-        setMessage(error instanceof Error ? error.message : "Upload exploded.");
-    }, []);
-
-    const submit = useCallback(
-        async (file: File | undefined) => {
-            if (!file) {
-                setStatus("error");
-                setMessage("Pick a file, agent.");
-                return;
+            if (!response.ok) {
+                const payload = await response.json().catch(() => ({}));
+                throw new Error(payload.error ?? "Upload failed");
             }
 
-            setUploading();
+            setStatus("done");
+            setMessage("Uploaded. Refreshing list...");
+            router.refresh();
+        } catch (error) {
+            setStatus("error");
+            setMessage(
+                error instanceof Error ? error.message : "Upload exploded."
+            );
+        }
+    };
 
-            try {
-                await handleFileUpload(file);
-                handleSuccess();
-            } catch (error) {
-                handleError(error);
-            }
-        },
-        [handleFileUpload, handleSuccess, handleError, setUploading]
-    );
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const file = inputRef.current?.files?.[0];
+        handleUpload(file);
+    };
 
-    const handleSubmit = useCallback(
-        (event: React.FormEvent<HTMLFormElement>) => {
-            event.preventDefault();
-            const file = inputRef.current?.files?.[0];
-            submit(file);
-        },
-        [submit]
-    );
-
-    const handleChange = useCallback(
-        (event: React.ChangeEvent<HTMLInputElement>) => {
-            const file = event.target.files?.[0];
-            submit(file);
-        },
-        [submit]
-    );
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        handleUpload(file);
+    };
 
     return (
         <form className={styles.form} onSubmit={handleSubmit}>

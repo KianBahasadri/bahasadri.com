@@ -9,7 +9,11 @@
  * @see ../../../docs/DEVELOPMENT.md
  */
 
-import type { R2Bucket, R2ObjectBody, R2PutOptions } from "@cloudflare/workers-types";
+import type {
+    R2Bucket,
+    R2ObjectBody,
+    R2PutOptions,
+} from "@cloudflare/workers-types";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 let cachedBucket: R2Bucket | null = null;
@@ -25,10 +29,11 @@ async function resolveBucket(): Promise<R2Bucket | null> {
         const typedEnv = env as
             | { file_hosting_prod?: R2Bucket; R2_BUCKET?: R2Bucket }
             | undefined;
-        const bucket = typedEnv?.file_hosting_prod ?? typedEnv?.R2_BUCKET ?? null;
+        const bucket =
+            typedEnv?.file_hosting_prod ?? typedEnv?.R2_BUCKET ?? null;
 
         if (!bucket) {
-            throw new Error("R2_BUCKET binding missing");
+            throw new Error("R2 bucket binding missing (expected file_hosting_prod or R2_BUCKET)");
         }
 
         cachedBucket = bucket;
@@ -56,10 +61,6 @@ export async function putObject(
 ): Promise<void> {
     const bucket = await resolveBucket();
     if (!bucket) {
-        return;
-    }
-
-    if (!bucket) {
         throw new Error("R2 bucket binding is missing.");
     }
 
@@ -69,9 +70,7 @@ export async function putObject(
 /**
  * Fetch an object from R2.
  */
-export async function getObject(
-    key: string
-): Promise<R2ObjectBody | null> {
+export async function getObject(key: string): Promise<R2ObjectBody | null> {
     const bucket = await resolveBucket();
     if (!bucket) {
         return null;
@@ -105,4 +104,3 @@ export function buildR2Key(fileId: string, fileName: string): string {
 export function buildDownloadUrl(fileId: string): string {
     return `/api/tools/file-hosting/download/${fileId}`;
 }
-
