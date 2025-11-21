@@ -51,9 +51,9 @@ const generateParticipantId = (): string => {
 
     const buffer = new Uint8Array(16);
     if (cryptoObj) {
-        (cryptoObj as { getRandomValues: (buffer: Uint8Array) => void }).getRandomValues(
-            buffer
-        );
+        (
+            cryptoObj as { getRandomValues: (buffer: Uint8Array) => void }
+        ).getRandomValues(buffer);
     } else {
         for (let i = 0; i < buffer.length; i += 1) {
             buffer[i] = Math.floor(Math.random() * 256);
