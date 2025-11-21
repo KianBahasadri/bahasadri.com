@@ -2,8 +2,8 @@
  * SMS Commander contact storage powered by Cloudflare KV.
  *
  * Stores lightweight contact profiles (alias + phone number) so chats can
- * display human-friendly names. Like the message store, this module gracefully
- * falls back to in-memory storage when the KV binding is unavailable.
+ * display human-friendly names. Requires the SMS_MESSAGES KV binding to be
+ * configured, ensuring development and production use the same code path.
  *
  * @see ../../PLAN.md - Utility planning details
  * @see ../../../../docs/AI_AGENT_STANDARDS.md - Repository standards
@@ -22,9 +22,6 @@ import { isValidPhoneNumber } from "./validation";
 
 const CONTACT_PREFIX = "contacts:";
 const CONTACT_INDEX_PREFIX = "contacts-by-number:";
-
-const fallbackContacts = new Map<string, Contact>();
-const fallbackNumberIndex = new Map<string, string>();
 
 function contactKey(contactId: string): string {
     return `${CONTACT_PREFIX}${contactId}`;
@@ -59,19 +56,8 @@ async function putContactRecord(kv: KVNamespace, contact: Contact): Promise<void
     ]);
 }
 
-function putFallbackContact(contact: Contact): void {
-    fallbackContacts.set(contact.id, contact);
-    fallbackNumberIndex.set(contact.phoneNumber, contact.id);
-}
-
 export async function listContacts(): Promise<Contact[]> {
     const kv = await getSmsKvNamespace();
-
-    if (!kv) {
-        return Array.from(fallbackContacts.values()).sort((a, b) =>
-            a.displayName.localeCompare(b.displayName)
-        );
-    }
 
     const list = await kv.list({
         prefix: CONTACT_PREFIX,
@@ -95,11 +81,6 @@ export async function getContactByPhoneNumber(
 ): Promise<Contact | null> {
     const sanitized = safeTrim(phoneNumber);
     const kv = await getSmsKvNamespace();
-
-    if (!kv) {
-        const id = fallbackNumberIndex.get(sanitized);
-        return id ? fallbackContacts.get(id) ?? null : null;
-    }
 
     const contactId = await kv.get(contactIndexKey(sanitized));
     if (!contactId) {
@@ -127,18 +108,6 @@ export async function createContact(
         notes: payload.notes ? safeTrim(payload.notes).slice(0, 500) : undefined,
     };
 
-    if (!kv) {
-        if (fallbackNumberIndex.has(sanitizedPhone)) {
-            return {
-                success: false,
-                error: "Alias already exists for that number. Pick another pet name.",
-            };
-        }
-
-        putFallbackContact(contact);
-        return { success: true, contact };
-    }
-
     const existingId = await kv.get(contactIndexKey(sanitizedPhone));
     if (existingId) {
         return {
@@ -156,26 +125,6 @@ export async function updateContact(
     updates: Partial<ContactCreatePayload>
 ): Promise<ContactMutationResult> {
     const kv = await getSmsKvNamespace();
-
-    if (!kv) {
-        const existing = fallbackContacts.get(contactId);
-        if (!existing) {
-            return { success: false, error: "Contact not found." };
-        }
-
-        const updated: Contact = {
-            ...existing,
-            displayName: updates.displayName
-                ? sanitizeDisplayName(updates.displayName)
-                : existing.displayName,
-            notes: updates.notes
-                ? safeTrim(updates.notes).slice(0, 500)
-                : existing.notes,
-            updatedAt: Date.now(),
-        };
-        fallbackContacts.set(contactId, updated);
-        return { success: true, contact: updated };
-    }
 
     const record = (await kv.get(contactKey(contactId), "json")) as Contact | null;
     if (!record) {

@@ -3,8 +3,8 @@
  *
  * The new schema stores per-counterpart (phone number) timelines as well as
  * lightweight thread summaries so the UI can render a chat-style interface
- * without client-side gymnastics. When the KV binding is missing (e.g., during
- * `next dev` without Wrangler), an in-memory fallback keeps the utility usable.
+ * without client-side gymnastics. Requires the SMS_MESSAGES KV binding to be
+ * configured, ensuring development and production use the same code path.
  *
  * @see ../../PLAN.md - Utility design notes
  * @see ../../../../docs/AI_AGENT_STANDARDS.md - Repository standards
@@ -39,9 +39,6 @@ export interface MessageListResult {
     listComplete: boolean;
 }
 
-const fallbackMessagesByCounterpart = new Map<string, Message[]>();
-const fallbackThreads = new Map<string, ThreadSummary>();
-
 function normalizeCounterpart(counterpart: string): string {
     return safeTrim(counterpart);
 }
@@ -74,25 +71,6 @@ function buildThreadKey(counterpart: string): string {
     return `${THREAD_PREFIX}${counterpart}`;
 }
 
-function appendFallbackMessage(record: Message): void {
-    const list = fallbackMessagesByCounterpart.get(record.phoneNumber) ?? [];
-    list.push(record);
-    list.sort((a, b) => a.timestamp - b.timestamp);
-    fallbackMessagesByCounterpart.set(record.phoneNumber, list);
-}
-
-function updateFallbackThread(record: Message): void {
-    const summary = fallbackThreads.get(record.phoneNumber);
-    const updated: ThreadSummary = {
-        counterpart: record.phoneNumber,
-        lastMessagePreview: record.body.slice(0, 280),
-        lastMessageTimestamp: record.timestamp,
-        lastDirection: record.direction,
-        messageCount: (summary?.messageCount ?? 0) + 1,
-    };
-    fallbackThreads.set(record.phoneNumber, updated);
-}
-
 async function updateThreadSummary(
     kv: KVNamespace,
     record: Message
@@ -118,12 +96,6 @@ export async function appendMessage(message: Message): Promise<Message> {
     };
 
     const kv = await getSmsKvNamespace();
-
-    if (!kv) {
-        appendFallbackMessage(normalizedMessage);
-        updateFallbackThread(normalizedMessage);
-        return normalizedMessage;
-    }
 
     const messageKey = buildMessageKey(
         normalizedMessage.phoneNumber,
@@ -156,16 +128,6 @@ export async function getMessages(
 
     const kv = await getSmsKvNamespace();
 
-    if (!kv) {
-        const fallbackList =
-            fallbackMessagesByCounterpart.get(counterpart) ?? [];
-        return {
-            counterpart,
-            messages: [...fallbackList],
-            listComplete: true,
-        };
-    }
-
     const list = await kv.list({
         prefix: `${MESSAGE_PREFIX}${counterpart}:`,
         limit: options.limit ?? DEFAULT_LIMIT,
@@ -193,17 +155,6 @@ export async function getMessages(
 
 export async function getMessagesSince(since: number): Promise<Message[]> {
     const kv = await getSmsKvNamespace();
-
-    if (!kv) {
-        // Fallback: filter all messages from all counterparts
-        const allMessages: Message[] = [];
-        for (const messages of fallbackMessagesByCounterpart.values()) {
-            allMessages.push(...messages);
-        }
-        return allMessages
-            .filter((msg) => msg.timestamp > since)
-            .sort((a, b) => a.timestamp - b.timestamp);
-    }
 
     const loadMessages = async (
         keys: KVNamespaceListKey<unknown>[]
@@ -260,12 +211,6 @@ export async function getMessagesSince(since: number): Promise<Message[]> {
 
 export async function getThreadSummaries(): Promise<ThreadSummary[]> {
     const kv = await getSmsKvNamespace();
-
-    if (!kv) {
-        return [...fallbackThreads.values()].sort(
-            (a, b) => b.lastMessageTimestamp - a.lastMessageTimestamp
-        );
-    }
 
     const list = await kv.list({
         prefix: THREAD_PREFIX,

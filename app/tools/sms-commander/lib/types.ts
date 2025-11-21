@@ -32,8 +32,6 @@ export interface Message {
     status?: "success" | "failed" | "pending";
     /** Optional error message if delivery failed */
     errorMessage?: string;
-    /** Optional Twilio SID associated with the message */
-    twilioSid?: string;
     /** Optional resolved contact identifier */
     contactId?: string;
 }
@@ -110,7 +108,6 @@ export interface Contact {
     id: string;
     phoneNumber: string;
     displayName: string;
-    notes?: string;
     createdAt: number;
     updatedAt: number;
 }
@@ -122,7 +119,6 @@ export interface ContactListResponse {
 export interface ContactCreatePayload {
     phoneNumber: string;
     displayName: string;
-    notes?: string;
 }
 
 export interface ContactMutationResult {

@@ -39,7 +39,6 @@ import type {
     Contact,
     ContactMutationResult,
     Message,
-    MessageHistoryResponse,
     SendSMSResponse,
     ThreadListResponse,
     ThreadSummary,
@@ -89,16 +88,18 @@ export default function SMSInterface({
     const refreshThreadsInFlight = useRef(false);
     const refreshMessagesInFlight = useRef(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    
+
     // Polling state with hard cap (no backoff - stays at 2s interval)
-    const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+        null
+    );
     const pollingAttemptsRef = useRef(0);
     const lastPolledRef = useRef(Date.now());
     const pollingStoppedRef = useRef(false);
-    
+
     const MAX_POLLING_ATTEMPTS = 1000; // Hard stop at 1000 attempts (~33 hours at 2s intervals)
     const POLL_INTERVAL = 2000; // Steady 2 second interval
-    
+
     const activeCounterpartRef = useRef<string | null>(initialCounterpart);
 
     const activeMessages = useMemo(() => {
@@ -188,33 +189,44 @@ export default function SMSInterface({
 
             try {
                 const response = await fetch(
-                    `/api/tools/sms-commander/history?counterpart=${encodeURIComponent(
-                        counterpart
-                    )}`,
+                    `/api/tools/sms-commander/messages-since?since=0`,
                     {
                         cache: "no-store",
                     }
                 );
 
                 if (!response.ok) {
-                    throw new Error("History endpoint coughed up blood.");
+                    throw new Error("Failed to fetch messages.");
                 }
 
-                const payload =
-                    (await response.json()) as MessageHistoryResponse;
-                if (payload.error) {
-                    throw new Error(payload.error);
+                const payload = (await response.json()) as {
+                    success: boolean;
+                    messages: Message[];
+                    error?: string;
+                };
+                if (!payload.success || payload.error) {
+                    throw new Error(
+                        payload.error ?? "Failed to fetch messages."
+                    );
                 }
-                setMessageCache((current) => ({
-                    ...current,
-                    [counterpart]: payload.messages,
-                }));
+
+                setMessageCache((current) => {
+                    const messagesByCounterpart: Record<string, Message[]> = {};
+                    for (const message of payload.messages) {
+                        const key = message.phoneNumber;
+                        if (!messagesByCounterpart[key]) {
+                            messagesByCounterpart[key] = [];
+                        }
+                        messagesByCounterpart[key].push(message);
+                    }
+                    return { ...current, ...messagesByCounterpart };
+                });
             } catch (error) {
                 if (!silent) {
                     setErrorMessage(
                         error instanceof Error
                             ? error.message
-                            : "Failed to fetch history."
+                            : "Failed to fetch messages."
                     );
                 }
             } finally {
@@ -236,13 +248,10 @@ export default function SMSInterface({
 
         const schedulePoll = () => {
             if (isUnmounted) return;
-            
+
             // Stop polling if we've hit the cap
             if (pollingAttemptsRef.current >= MAX_POLLING_ATTEMPTS) {
                 pollingStoppedRef.current = true;
-                console.log(
-                    `[SMS] Polling stopped after ${pollingAttemptsRef.current} attempts (~${Math.round(pollingAttemptsRef.current * POLL_INTERVAL / 1000 / 3600)} hours). Refresh page to resume.`
-                );
                 return;
             }
 
@@ -286,12 +295,16 @@ export default function SMSInterface({
                     setMessageCache((current) => {
                         const updated = { ...current };
                         for (const newMessage of payload.messages!) {
-                            const counterpart = newMessage.counterpart;
-                            const existing = updated[counterpart] ?? [];
+                            // Use phoneNumber (the external person's number) as the cache key,
+                            // not counterpart (which is the Twilio number for received messages)
+                            const cacheKey = newMessage.phoneNumber;
+                            const existing = updated[cacheKey] ?? [];
                             if (
-                                !existing.some((msg) => msg.id === newMessage.id)
+                                !existing.some(
+                                    (msg) => msg.id === newMessage.id
+                                )
                             ) {
-                                updated[counterpart] = [...existing, newMessage];
+                                updated[cacheKey] = [...existing, newMessage];
                             }
                         }
                         return updated;

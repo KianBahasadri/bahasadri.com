@@ -12,33 +12,18 @@
 import type { KVNamespace } from "@cloudflare/workers-types";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-let loggedMissingBinding = false;
-
 /**
- * Resolve the `SMS_MESSAGES` KV binding. Returns `null` when the binding is not
- * available (e.g., during `next dev` without Wrangler), allowing callers to
- * gracefully fall back to in-memory storage.
+ * Resolve the `SMS_MESSAGES` KV binding. Throws an error if the binding is not
+ * available, ensuring development and production use the same code path.
  */
-export async function getSmsKvNamespace(): Promise<KVNamespace | null> {
-    try {
-        const { env } = await getCloudflareContext({ async: true });
-        const kv = (env as { SMS_MESSAGES?: KVNamespace } | undefined)
-            ?.SMS_MESSAGES;
+export async function getSmsKvNamespace(): Promise<KVNamespace> {
+    const { env } = await getCloudflareContext({ async: true });
+    const kv = (env as { SMS_MESSAGES?: KVNamespace } | undefined)
+        ?.SMS_MESSAGES;
 
-        if (!kv) {
-            throw new Error("SMS_MESSAGES binding missing");
-        }
-
-        return kv;
-    } catch (error) {
-        if (!loggedMissingBinding) {
-            console.warn(
-                "SMS Commander: SMS_MESSAGES KV binding unavailable. Falling back to in-memory storage.",
-                error instanceof Error ? error.message : error
-            );
-            loggedMissingBinding = true;
-        }
-
-        return null;
+    if (!kv) {
+        throw new Error("SMS Commander: SMS_MESSAGES KV binding unavailable. This application requires the SMS_MESSAGES KV binding to be configured.");
     }
+
+    return kv;
 }
