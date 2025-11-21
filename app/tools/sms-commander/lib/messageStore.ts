@@ -169,6 +169,38 @@ export async function getMessages(
     };
 }
 
+export async function getMessagesSince(since: number): Promise<Message[]> {
+    const kv = await getSmsKvNamespace();
+
+    if (!kv) {
+        // Fallback: filter all messages from all counterparts
+        const allMessages: Message[] = [];
+        for (const messages of fallbackMessagesByCounterpart.values()) {
+            allMessages.push(...messages);
+        }
+        return allMessages
+            .filter((msg) => msg.timestamp > since)
+            .sort((a, b) => a.timestamp - b.timestamp);
+    }
+
+    // Query all message keys and filter by timestamp
+    const list = await kv.list({
+        prefix: MESSAGE_PREFIX,
+        limit: 10000, // Adjust if needed
+    });
+
+    const messages = await Promise.all(
+        list.keys.map(async (entry) => {
+            const result = await kv.get(entry.name, "json");
+            return result as Message | null;
+        })
+    );
+
+    return messages
+        .filter((msg): msg is Message => msg !== null && msg.timestamp > since)
+        .sort((a, b) => a.timestamp - b.timestamp);
+}
+
 export async function getThreadSummaries(): Promise<ThreadSummary[]> {
     const kv = await getSmsKvNamespace();
 

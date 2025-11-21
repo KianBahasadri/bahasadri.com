@@ -158,9 +158,7 @@ async function resolveSigningSecret(): Promise<string | null> {
         return cachedSecret;
     }
 
-    const commanderSecret =
-        process.env.SMS_COMMANDER_WS_SECRET ??
-        (typeof env !== "undefined" ? env.SMS_COMMANDER_WS_SECRET : undefined);
+    const commanderSecret = readEnvValue("SMS_COMMANDER_WS_SECRET");
 
     if (commanderSecret) {
         cachedSecret = commanderSecret;
@@ -267,17 +265,7 @@ async function sign(payload: string, secret: string): Promise<string> {
         return base64UrlEncode(new Uint8Array(signature));
     }
 
-    try {
-        const nodeCrypto = await import("crypto");
-        const signature = nodeCrypto
-            .createHmac("sha256", secret)
-            .update(payload)
-            .digest();
-        return base64UrlEncode(new Uint8Array(signature));
-    } catch (e) {
-        console.error("Crypto unavailable for signing", e);
-        throw new Error("Crypto unavailable");
-    }
+    throw new Error("Web Crypto API not available");
 }
 
 /**

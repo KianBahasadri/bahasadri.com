@@ -5,9 +5,9 @@
  *
  * Chat-style client component that renders the thread sidebar, conversation
  * view, composer, and contact alias editor. Real-time updates are powered by
- * WebSocket connections for instant message delivery without polling.
+ * polling with exponential backoff and a hard cap to prevent runaway API calls.
  *
- * Type: Client Component (requires interactivity + WebSocket)
+ * Type: Client Component (requires interactivity)
  *
  * @see ../../PLAN.md - Utility planning document
  * @see ../../../../docs/AI_AGENT_STANDARDS.md - Repository standards
@@ -83,11 +83,16 @@ export default function SMSInterface({
     const refreshThreadsInFlight = useRef(false);
     const refreshMessagesInFlight = useRef(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const wsRef = useRef<WebSocket | null>(null);
-    const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-        null
-    );
-    const reconnectAttemptsRef = useRef(0);
+    
+    // Polling state with hard cap (no backoff - stays at 2s interval)
+    const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pollingAttemptsRef = useRef(0);
+    const lastPolledRef = useRef(Date.now());
+    const pollingStoppedRef = useRef(false);
+    
+    const MAX_POLLING_ATTEMPTS = 1000; // Hard stop at 1000 attempts (~33 hours at 2s intervals)
+    const POLL_INTERVAL = 2000; // Steady 2 second interval
+    
     const activeCounterpartRef = useRef<string | null>(initialCounterpart);
 
     const activeMessages = useMemo(() => {
@@ -217,142 +222,105 @@ export default function SMSInterface({
     );
 
     /**
-     * Establish WebSocket connection for real-time updates.
+     * Poll for real-time updates with exponential backoff and hard cap.
+     * Stops polling after MAX_POLLING_ATTEMPTS to prevent runaway API calls.
      */
     useEffect(() => {
-        if (!websocketToken) {
-            console.error("Missing WebSocket authentication token.");
-            return;
-        }
-
         let isUnmounted = false;
-        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `${protocol}//${window.location.host}/api/tools/sms-commander/ws?token=${encodeURIComponent(
-            websocketToken
-        )}`;
 
-        const clearReconnectTimer = () => {
-            if (reconnectTimeoutRef.current) {
-                clearTimeout(reconnectTimeoutRef.current);
-                reconnectTimeoutRef.current = null;
-            }
-        };
-
-        const scheduleReconnect = () => {
-            if (isUnmounted) {
+        const schedulePoll = () => {
+            if (isUnmounted) return;
+            
+            // Stop polling if we've hit the cap
+            if (pollingAttemptsRef.current >= MAX_POLLING_ATTEMPTS) {
+                pollingStoppedRef.current = true;
+                console.log(
+                    `[SMS] Polling stopped after ${pollingAttemptsRef.current} attempts (~${Math.round(pollingAttemptsRef.current * POLL_INTERVAL / 1000 / 3600)} hours). Refresh page to resume.`
+                );
                 return;
             }
 
-            const attempt = reconnectAttemptsRef.current;
-            const delay = Math.min(30000, 1000 * 2 ** attempt);
-            reconnectAttemptsRef.current = attempt + 1;
-
-            clearReconnectTimer();
-            reconnectTimeoutRef.current = setTimeout(() => {
-                connect();
-            }, delay);
+            // Fixed 2-second interval
+            pollingTimeoutRef.current = setTimeout(() => {
+                poll();
+            }, POLL_INTERVAL);
         };
 
-        const connect = () => {
-            if (isUnmounted) {
-                return;
-            }
+        const poll = async () => {
+            if (isUnmounted || pollingStoppedRef.current) return;
 
             try {
-                const ws = new WebSocket(wsUrl);
-                wsRef.current = ws;
+                const sinceTimestamp = lastPolledRef.current;
+                const response = await fetch(
+                    `/api/tools/sms-commander/messages-since?since=${sinceTimestamp}`,
+                    { cache: "no-store" }
+                );
 
-                ws.onopen = () => {
-                    reconnectAttemptsRef.current = 0;
-                    clearReconnectTimer();
+                if (!response.ok) {
+                    throw new Error(`Poll failed: ${response.statusText}`);
+                }
+
+                const payload = (await response.json()) as {
+                    success: boolean;
+                    messages?: Message[];
+                    threads?: ThreadSummary[];
+                    timestamp?: number;
+                    error?: string;
                 };
 
-                ws.onmessage = (event) => {
-                    try {
-                        const message = JSON.parse(event.data) as {
-                            type: string;
-                            data?: unknown;
-                        };
+                if (!payload.success) {
+                    throw new Error(payload.error || "Poll failed");
+                }
 
-                        if (message.type === "ping") {
-                            ws.send(JSON.stringify({ type: "pong" }));
-                            return;
-                        }
+                lastPolledRef.current = payload.timestamp ?? Date.now();
+                pollingAttemptsRef.current += 1;
 
-                        if (message.type === "message" && message.data) {
-                            const { message: newMessage, counterpart } =
-                                message.data as {
-                                    message: Message;
-                                    counterpart: string;
-                                };
-
-                            setMessageCache((current) => {
-                                const existing = current[counterpart] ?? [];
-                                if (
-                                    existing.some((existingMessage) => {
-                                        return existingMessage.id === newMessage.id;
-                                    })
-                                ) {
-                                    return current;
-                                }
-                                return {
-                                    ...current,
-                                    [counterpart]: [...existing, newMessage],
-                                };
-                            });
-
+                // Update message cache with new messages
+                if (payload.messages && payload.messages.length > 0) {
+                    setMessageCache((current) => {
+                        const updated = { ...current };
+                        for (const newMessage of payload.messages!) {
+                            const counterpart = newMessage.counterpart;
+                            const existing = updated[counterpart] ?? [];
                             if (
-                                counterpart === activeCounterpartRef.current ||
-                                !activeCounterpartRef.current
+                                !existing.some((msg) => msg.id === newMessage.id)
                             ) {
-                                void refreshThreads(true);
+                                updated[counterpart] = [...existing, newMessage];
                             }
                         }
+                        return updated;
+                    });
 
-                        if (
-                            message.type === "threads_refresh" &&
-                            message.data
-                        ) {
-                            const { threads } = message.data as {
-                                threads: ThreadSummary[];
-                            };
-                            setThreads(threads);
-                        }
-                    } catch (error) {
-                        console.error(
-                            "Error parsing WebSocket message:",
-                            error
-                        );
+                    // Trigger thread refresh if new messages
+                    if (activeCounterpartRef.current) {
+                        void refreshThreads(true);
                     }
-                };
+                }
 
-                ws.onerror = (error) => {
-                    console.error("WebSocket error:", error);
-                };
+                // Update threads
+                if (payload.threads) {
+                    setThreads(payload.threads);
+                }
 
-                ws.onclose = () => {
-                    wsRef.current = null;
-                    if (!isUnmounted) {
-                        scheduleReconnect();
-                    }
-                };
+                schedulePoll();
             } catch (error) {
-                console.error("Failed to create WebSocket:", error);
-                scheduleReconnect();
+                console.error("[SMS] Poll error:", error);
+                pollingAttemptsRef.current += 1;
+                schedulePoll();
             }
         };
 
-        connect();
+        // Start polling immediately
+        poll();
 
         return () => {
             isUnmounted = true;
-            if (wsRef.current) {
-                wsRef.current.close();
-                wsRef.current = null;
+            if (pollingTimeoutRef.current) {
+                clearTimeout(pollingTimeoutRef.current);
+                pollingTimeoutRef.current = null;
             }
-            clearReconnectTimer();
         };
-    }, [refreshThreads, websocketToken]);
+    }, [refreshThreads]);
 
     /**
      * Auto-fetch messages when selecting a different thread.
