@@ -52,6 +52,13 @@ const UTILITY_TOOLS: UtilityTool[] = [
         href: "/tools/sms-commander",
         icon: "📡",
     },
+    {
+        title: "Video Commander",
+        description:
+            "Pipe video through Cloudflare's edge network, watch the Feds squirm, and blame WebRTC when it breaks.",
+        href: "/tools/video-commander",
+        icon: "📹",
+    },
 ];
 
 /**
