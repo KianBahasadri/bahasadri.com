@@ -2,8 +2,8 @@
  * Twilio helper utilities for SMS Commander.
  *
  * Provides helpers for sending SMS messages via Twilio's REST API and validating
- * webhook signatures. This module now relies on Twilio's official SDK after
- * verifying compatibility with the Cloudflare Workers runtime.
+ * webhook signatures. Uses Twilio's official SDK, which is compatible with the
+ * Cloudflare Workers runtime.
  */
 
 import twilio, { type Twilio } from "twilio";
@@ -11,6 +11,14 @@ import twilio, { type Twilio } from "twilio";
 import { Message, SendSMSRequest } from "./types";
 import { appendMessage } from "./messageStore";
 import { normalizeSendRequest } from "./validation";
+
+/**
+ * Valid Twilio environment variable keys.
+ */
+export type TwilioEnvKey =
+    | "TWILIO_ACCOUNT_SID"
+    | "TWILIO_AUTH_TOKEN"
+    | "TWILIO_PHONE_NUMBER";
 
 /**
  * Configuration required to interact with Twilio.
@@ -66,7 +74,7 @@ export function resetTwilioClientForTesting(): void {
  * Send an SMS message via Twilio REST API.
  *
  * @param payload - Request payload containing target number and message
- * @returns Message record stored in memory
+ * @returns Message record stored in KV
  */
 export async function sendSmsViaTwilio(
     payload: SendSMSRequest
@@ -88,7 +96,6 @@ export async function sendSmsViaTwilio(
         body: twilioResponse.body ?? normalized.message,
         timestamp: twilioResponse.dateCreated?.getTime?.() ?? Date.now(),
         status: twilioResponse.status === "failed" ? "failed" : "success",
-        twilioSid: twilioResponse.sid,
     };
 
     return appendMessage(messageRecord);
@@ -111,7 +118,6 @@ export async function storeIncomingMessage(
         body: payload.Body ?? "",
         timestamp: Date.now(),
         status: "success",
-        twilioSid: payload.MessageSid,
     };
 
     return appendMessage(record);
@@ -157,34 +163,23 @@ async function generateHmacSha1(
     secret: string,
     data: string
 ): Promise<Uint8Array> {
-    if (globalThis.crypto?.subtle) {
-        const encoder = new TextEncoder();
-        const key = await crypto.subtle.importKey(
-            "raw",
-            encoder.encode(secret),
-            { name: "HMAC", hash: "SHA-1" },
-            false,
-            ["sign"]
-        );
-        const signature = await crypto.subtle.sign(
-            "HMAC",
-            key,
-            encoder.encode(data)
-        );
-        return new Uint8Array(signature);
-    }
-
-    const nodeCrypto = await import("crypto");
-    return new Uint8Array(
-        nodeCrypto.createHmac("sha1", secret).update(data).digest()
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(secret),
+        { name: "HMAC", hash: "SHA-1" },
+        false,
+        ["sign"]
     );
+    const signature = await crypto.subtle.sign(
+        "HMAC",
+        key,
+        encoder.encode(data)
+    );
+    return new Uint8Array(signature);
 }
 
 function base64ToUint8Array(base64: string): Uint8Array {
-    if (typeof Buffer !== "undefined") {
-        return new Uint8Array(Buffer.from(base64, "base64"));
-    }
-
     const binary = atob(base64);
     const output = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i += 1) {
@@ -195,14 +190,10 @@ function base64ToUint8Array(base64: string): Uint8Array {
 }
 
 /**
- * Retrieve an environment binding from either Node-style `process.env` or the
- * Workers `env` object so tests and production share the same code path.
+ * Retrieve an environment binding from the Workers `env` object.
+ * This ensures development and production use the same code path.
  */
 export function readEnvValue(key: TwilioEnvKey): string | undefined {
-    if (typeof process !== "undefined" && process.env?.[key]) {
-        return process.env[key];
-    }
-
     if (typeof env !== "undefined" && env?.[key]) {
         return env[key];
     }

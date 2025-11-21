@@ -1,10 +1,10 @@
 /**
  * SMS Commander message persistence powered by Cloudflare KV.
  *
- * The new schema stores per-counterpart (phone number) timelines as well as
- * lightweight thread summaries so the UI can render a chat-style interface
- * without client-side gymnastics. When the KV binding is missing (e.g., during
- * `next dev` without Wrangler), an in-memory fallback keeps the utility usable.
+ * Stores per-counterpart (phone number) timelines as well as lightweight
+ * thread summaries so the UI can render a chat-style interface without
+ * client-side gymnastics. Requires the SMS_MESSAGES KV binding to be
+ * configured, ensuring development and production use the same code path.
  *
  * @see ../../PLAN.md - Utility design notes
  * @see ../../../../docs/AI_AGENT_STANDARDS.md - Repository standards
@@ -13,15 +13,14 @@
 import type {
     KVNamespace,
     KVNamespaceListKey,
+    KVNamespaceListResult,
 } from "@cloudflare/workers-types";
 
 import { getSmsKvNamespace } from "./kv";
 import type { Message, ThreadSummary } from "./types";
-import { safeTrim } from "./validation";
 
-const MESSAGE_PREFIX = "messages:";
+const MESSAGE_PREFIX = "msg:";
 const THREAD_PREFIX = "thread:";
-const GLOBAL_MESSAGE_PREFIX = "global-message:";
 const MAX_TIMESTAMP = 9999999999999;
 const DEFAULT_LIMIT = 200;
 const MESSAGE_SINCE_LIMIT = 1000;
@@ -39,11 +38,8 @@ export interface MessageListResult {
     listComplete: boolean;
 }
 
-const fallbackMessagesByCounterpart = new Map<string, Message[]>();
-const fallbackThreads = new Map<string, ThreadSummary>();
-
 function normalizeCounterpart(counterpart: string): string {
-    return safeTrim(counterpart);
+    return counterpart.trim();
 }
 
 function invertTimestamp(timestamp: number): string {
@@ -67,30 +63,11 @@ function buildMessageKey(
  * retrieved by listing the index prefix.
  */
 function buildGlobalMessageKey(timestamp: number, id: string): string {
-    return `${GLOBAL_MESSAGE_PREFIX}${invertTimestamp(timestamp)}:${id}`;
+    return `${MESSAGE_PREFIX}global:${invertTimestamp(timestamp)}:${id}`;
 }
 
 function buildThreadKey(counterpart: string): string {
     return `${THREAD_PREFIX}${counterpart}`;
-}
-
-function appendFallbackMessage(record: Message): void {
-    const list = fallbackMessagesByCounterpart.get(record.phoneNumber) ?? [];
-    list.push(record);
-    list.sort((a, b) => a.timestamp - b.timestamp);
-    fallbackMessagesByCounterpart.set(record.phoneNumber, list);
-}
-
-function updateFallbackThread(record: Message): void {
-    const summary = fallbackThreads.get(record.phoneNumber);
-    const updated: ThreadSummary = {
-        counterpart: record.phoneNumber,
-        lastMessagePreview: record.body.slice(0, 280),
-        lastMessageTimestamp: record.timestamp,
-        lastDirection: record.direction,
-        messageCount: (summary?.messageCount ?? 0) + 1,
-    };
-    fallbackThreads.set(record.phoneNumber, updated);
 }
 
 async function updateThreadSummary(
@@ -118,12 +95,6 @@ export async function appendMessage(message: Message): Promise<Message> {
     };
 
     const kv = await getSmsKvNamespace();
-
-    if (!kv) {
-        appendFallbackMessage(normalizedMessage);
-        updateFallbackThread(normalizedMessage);
-        return normalizedMessage;
-    }
 
     const messageKey = buildMessageKey(
         normalizedMessage.phoneNumber,
@@ -156,16 +127,6 @@ export async function getMessages(
 
     const kv = await getSmsKvNamespace();
 
-    if (!kv) {
-        const fallbackList =
-            fallbackMessagesByCounterpart.get(counterpart) ?? [];
-        return {
-            counterpart,
-            messages: [...fallbackList],
-            listComplete: true,
-        };
-    }
-
     const list = await kv.list({
         prefix: `${MESSAGE_PREFIX}${counterpart}:`,
         limit: options.limit ?? DEFAULT_LIMIT,
@@ -191,81 +152,58 @@ export async function getMessages(
     };
 }
 
+/**
+ * Retrieve all messages newer than the given timestamp from the global index.
+ * Uses cursor-based pagination to handle any number of messages efficiently,
+ * stopping early when messages older than or equal to 'since' are encountered.
+ * This optimizes for polling scenarios where 'since' is recent, typically
+ * requiring only a small number of KV operations.
+ *
+ * @param since - Unix timestamp (ms) to filter messages after
+ * @returns Array of messages sorted ascending by timestamp
+ */
 export async function getMessagesSince(since: number): Promise<Message[]> {
     const kv = await getSmsKvNamespace();
+    const PAGE_LIMIT = 200; // Balanced page size for efficiency
+    let cursor: string | undefined = undefined;
+    const allMessages: Message[] = [];
 
-    if (!kv) {
-        // Fallback: filter all messages from all counterparts
-        const allMessages: Message[] = [];
-        for (const messages of fallbackMessagesByCounterpart.values()) {
-            allMessages.push(...messages);
-        }
-        return allMessages
-            .filter((msg) => msg.timestamp > since)
-            .sort((a, b) => a.timestamp - b.timestamp);
-    }
+    do {
+        const list: KVNamespaceListResult<unknown> = await kv.list({
+            prefix: `${MESSAGE_PREFIX}global:`,
+            limit: PAGE_LIMIT,
+            cursor,
+        });
 
-    const loadMessages = async (
-        keys: KVNamespaceListKey<unknown>[]
-    ): Promise<Message[]> => {
-        const results = await Promise.all(
-            keys.map(async (entry) => {
+        const pageMessages = await Promise.all(
+            list.keys.map(async (entry: KVNamespaceListKey<unknown>) => {
                 const record = await kv.get(entry.name, "json");
                 return record as Message | null;
             })
         );
 
-        return results.filter((msg): msg is Message => msg !== null);
-    };
-
-    const [globalTimeline, legacyIndex] = await Promise.all([
-        kv.list({
-            prefix: GLOBAL_MESSAGE_PREFIX,
-            limit: MESSAGE_SINCE_LIMIT,
-        }),
-        kv.list({
-            prefix: MESSAGE_PREFIX,
-            limit: MESSAGE_SINCE_LIMIT,
-        }),
-    ]);
-
-    const [globalMessages, legacyMessages] = await Promise.all([
-        loadMessages(globalTimeline.keys),
-        loadMessages(legacyIndex.keys),
-    ]);
-
-    const messageMap = new Map<string, Message>();
-
-    for (const message of [...globalMessages, ...legacyMessages]) {
-        if (message.timestamp <= since) {
-            continue;
+        let hasOlder = false;
+        for (const msg of pageMessages) {
+            if (msg && msg.timestamp > since) {
+                allMessages.push(msg);
+            } else if (msg) {
+                hasOlder = true;
+                break; // Stop processing this page
+            }
         }
 
-        const existing = messageMap.get(message.id);
-        if (!existing || message.timestamp > existing.timestamp) {
-            messageMap.set(message.id, message);
+        cursor = list.list_complete ? undefined : list.cursor;
+        if (hasOlder || list.list_complete) {
+            break;
         }
-    }
+    } while (cursor);
 
-    const sorted = [...messageMap.values()].sort(
-        (a, b) => a.timestamp - b.timestamp
-    );
-
-    if (sorted.length > MESSAGE_SINCE_LIMIT) {
-        return sorted.slice(sorted.length - MESSAGE_SINCE_LIMIT);
-    }
-
-    return sorted;
+    // Sort ascending by timestamp to match expected order
+    return allMessages.sort((a, b) => a.timestamp - b.timestamp);
 }
 
 export async function getThreadSummaries(): Promise<ThreadSummary[]> {
     const kv = await getSmsKvNamespace();
-
-    if (!kv) {
-        return [...fallbackThreads.values()].sort(
-            (a, b) => b.lastMessageTimestamp - a.lastMessageTimestamp
-        );
-    }
 
     const list = await kv.list({
         prefix: THREAD_PREFIX,

@@ -14,7 +14,6 @@ import { describe, expect, it } from "vitest";
 import type { SendSMSRequest } from "../types";
 import {
     normalizeSendRequest,
-    safeTrim,
     validateSendRequest,
 } from "../validation";
 
@@ -73,12 +72,6 @@ describe("normalizeSendRequest", () => {
             phoneNumber: "+15550001111",
             message: "hello there",
         });
-    });
-});
-
-describe("safeTrim", () => {
-    it("returns a trimmed string", () => {
-        expect(safeTrim("  psyop ")).toBe("psyop");
     });
 });
 

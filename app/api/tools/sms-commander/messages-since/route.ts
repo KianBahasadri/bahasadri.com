@@ -22,18 +22,10 @@ import {
  * @param request - Incoming HTTP request
  * @returns JSON payload with new messages and threads
  */
-console.log("[POLL MODULE] messages-since module loaded");
-
 export async function GET(request: Request): Promise<NextResponse> {
-    console.log("[POLL] Request received:", request.url);
-
     try {
-        console.log("[POLL] Attempting to parse query params");
         const url = new URL(request.url);
         const sinceParam = url.searchParams.get("since");
-        const includeAllParam = url.searchParams.get("includeAll");
-
-        console.log("[POLL] Parsed since param:", sinceParam);
 
         if (!sinceParam) {
             return NextResponse.json(
@@ -53,31 +45,8 @@ export async function GET(request: Request): Promise<NextResponse> {
             );
         }
 
-        const includeAll = includeAllParam === "true";
-        const isFullFetch = includeAll || since <= 0;
-
-        console.log("[POLL] Calling getMessagesSince with:", since);
         const messages = await getMessagesSince(since);
-        console.log("[POLL] Messages fetched:", messages.length);
-
-        if (isFullFetch && messages.length > 0) {
-            const sanitized = messages.map((message) => ({
-                id: message.id,
-                direction: message.direction,
-                timestamp: message.timestamp,
-                status: message.status,
-                bodyLength: message.body.length,
-            }));
-            console.log(
-                "[POLL] Full fetch sanitized payload:",
-                { since, includeAll, count: messages.length },
-                sanitized
-            );
-        }
-
-        console.log("[POLL] Fetching thread summaries");
         const threads = await getThreadSummaries();
-        console.log("[POLL] Threads fetched:", threads.length);
 
         return NextResponse.json(
             {

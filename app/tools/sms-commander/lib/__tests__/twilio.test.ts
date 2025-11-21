@@ -91,7 +91,6 @@ describe("sendSmsViaTwilio", () => {
                 counterpart: "+15559998888",
                 body: "Message from Twilio",
                 status: "success",
-                twilioSid: "SM123",
             })
         );
 
@@ -114,12 +113,10 @@ describe("storeIncomingMessage", () => {
             expect.objectContaining({
                 direction: "received",
                 phoneNumber: "+15557771234",
-                twilioSid: "SM456",
             })
         );
         expect(record.direction).toBe("received");
         expect(record.status).toBe("success");
-        expect(record.twilioSid).toBe("SM456");
     });
 });
 
@@ -155,9 +152,10 @@ describe("validateTwilioSignature", () => {
         const formData = new FormData();
         formData.set("Body", "tampered payload");
 
+        // Use valid base64 that's definitely wrong (empty signature)
         const request = new Request(url, {
             method: "POST",
-            headers: { "x-twilio-signature": "totally-fake" },
+            headers: { "x-twilio-signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAA" },
         });
 
         const defaults = getDefaultTwilioConfig();

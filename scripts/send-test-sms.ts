@@ -57,7 +57,7 @@ async function main(): Promise<void> {
     });
 
     console.log(
-        `SMS dispatched to ${message.phoneNumber} with SID ${message.twilioSid ?? message.id}`
+        `SMS dispatched to ${message.phoneNumber} with SID ${message.id}`
     );
 }
 

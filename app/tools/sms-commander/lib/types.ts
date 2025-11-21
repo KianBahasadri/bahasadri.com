@@ -32,8 +32,6 @@ export interface Message {
     status?: "success" | "failed" | "pending";
     /** Optional error message if delivery failed */
     errorMessage?: string;
-    /** Optional Twilio SID associated with the message */
-    twilioSid?: string;
     /** Optional resolved contact identifier */
     contactId?: string;
 }
@@ -57,22 +55,6 @@ export interface SendSMSResponse {
     /** Message record that was stored (if any) */
     message?: Message;
     /** Error description when success is false */
-    error?: string;
-}
-
-/**
- * Structure returned by the history API route.
- */
-export interface MessageHistoryResponse {
-    /** Counterpart phone number these messages belong to */
-    counterpart: string;
-    /** Collection of tracked messages */
-    messages: Message[];
-    /** Cursor for pagination (if more results exist) */
-    cursor?: string;
-    /** Indicates whether KV returned all messages in current batch */
-    listComplete: boolean;
-    /** Optional error description when request fails */
     error?: string;
 }
 
@@ -110,7 +92,6 @@ export interface Contact {
     id: string;
     phoneNumber: string;
     displayName: string;
-    notes?: string;
     createdAt: number;
     updatedAt: number;
 }
@@ -122,7 +103,6 @@ export interface ContactListResponse {
 export interface ContactCreatePayload {
     phoneNumber: string;
     displayName: string;
-    notes?: string;
 }
 
 export interface ContactMutationResult {

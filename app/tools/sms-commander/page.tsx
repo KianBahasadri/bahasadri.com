@@ -15,7 +15,7 @@ import styles from "./page.module.css";
 import { getMessages, getThreadSummaries } from "./lib/messageStore";
 import { listContacts } from "./lib/contactsStore";
 
-/** Ensure the page is rendered dynamically to reflect latest in-memory state. */
+/** Ensure the page is rendered dynamically to reflect latest KV-backed state. */
 export const dynamic = "force-dynamic";
 
 /**
