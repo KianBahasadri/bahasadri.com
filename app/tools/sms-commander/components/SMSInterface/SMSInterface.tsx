@@ -188,8 +188,9 @@ export default function SMSInterface({
             refreshMessagesInFlight.current = true;
 
             try {
+                const encodedCounterpart = encodeURIComponent(counterpart);
                 const response = await fetch(
-                    `/api/tools/sms-commander/messages-since?since=0`,
+                    `/api/tools/sms-commander/messages?counterpart=${encodedCounterpart}`,
                     {
                         cache: "no-store",
                     }
@@ -210,17 +211,10 @@ export default function SMSInterface({
                     );
                 }
 
-                setMessageCache((current) => {
-                    const messagesByCounterpart: Record<string, Message[]> = {};
-                    for (const message of payload.messages) {
-                        const key = message.phoneNumber;
-                        if (!messagesByCounterpart[key]) {
-                            messagesByCounterpart[key] = [];
-                        }
-                        messagesByCounterpart[key].push(message);
-                    }
-                    return { ...current, ...messagesByCounterpart };
-                });
+                setMessageCache((current) => ({
+                    ...current,
+                    [counterpart]: payload.messages,
+                }));
             } catch (error) {
                 if (!silent) {
                     setErrorMessage(

@@ -13,6 +13,7 @@
 import type {
     KVNamespace,
     KVNamespaceListKey,
+    KVNamespaceListResult,
 } from "@cloudflare/workers-types";
 
 import { getSmsKvNamespace } from "./kv";
@@ -152,31 +153,54 @@ export async function getMessages(
     };
 }
 
+/**
+ * Retrieve all messages newer than the given timestamp from the global index.
+ * Uses cursor-based pagination to handle any number of messages efficiently,
+ * stopping early when messages older than or equal to 'since' are encountered.
+ * This optimizes for polling scenarios where 'since' is recent, typically
+ * requiring only a small number of KV operations.
+ *
+ * @param since - Unix timestamp (ms) to filter messages after
+ * @returns Array of messages sorted ascending by timestamp
+ */
 export async function getMessagesSince(since: number): Promise<Message[]> {
     const kv = await getSmsKvNamespace();
+    const PAGE_LIMIT = 200; // Balanced page size for efficiency
+    let cursor: string | undefined = undefined;
+    const allMessages: Message[] = [];
 
-    const list = await kv.list({
-        prefix: `${MESSAGE_PREFIX}global:`,
-        limit: MESSAGE_SINCE_LIMIT,
-    });
+    do {
+        const list: KVNamespaceListResult<unknown> = await kv.list({
+            prefix: `${MESSAGE_PREFIX}global:`,
+            limit: PAGE_LIMIT,
+            cursor,
+        });
 
-    const results = await Promise.all(
-        list.keys.map(async (entry) => {
-            const record = await kv.get(entry.name, "json");
-            return record as Message | null;
-        })
-    );
+        const pageMessages = await Promise.all(
+            list.keys.map(async (entry: KVNamespaceListKey<unknown>) => {
+                const record = await kv.get(entry.name, "json");
+                return record as Message | null;
+            })
+        );
 
-    const messages = results
-        .filter((msg): msg is Message => msg !== null)
-        .filter((msg) => msg.timestamp > since)
-        .sort((a, b) => a.timestamp - b.timestamp);
+        let hasOlder = false;
+        for (const msg of pageMessages) {
+            if (msg && msg.timestamp > since) {
+                allMessages.push(msg);
+            } else if (msg) {
+                hasOlder = true;
+                break; // Stop processing this page
+            }
+        }
 
-    if (messages.length > MESSAGE_SINCE_LIMIT) {
-        return messages.slice(messages.length - MESSAGE_SINCE_LIMIT);
-    }
+        cursor = list.list_complete ? undefined : list.cursor;
+        if (hasOlder || list.list_complete) {
+            break;
+        }
+    } while (cursor);
 
-    return messages;
+    // Sort ascending by timestamp to match expected order
+    return allMessages.sort((a, b) => a.timestamp - b.timestamp);
 }
 
 export async function getThreadSummaries(): Promise<ThreadSummary[]> {
