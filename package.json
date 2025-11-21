@@ -11,6 +11,7 @@
         "test": "vitest run --config vitest.config.ts",
         "test:watch": "vitest watch --config vitest.config.ts",
         "sms:smoke": "ts-node --transpile-only scripts/send-test-sms.ts",
+        "sms:clear": "./scripts/clear-sms-kv.sh",
         "sync:cloudflare-secrets": "ts-node --transpile-only scripts/sync-cloudflare-secrets.ts",
         "sync:twilio-webhook": "ts-node --transpile-only scripts/sync-twilio-webhook.ts",
         "deploy": "pnpm sync:cloudflare-secrets && pnpm sync:twilio-webhook && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
