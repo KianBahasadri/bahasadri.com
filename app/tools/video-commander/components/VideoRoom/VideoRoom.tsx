@@ -122,7 +122,6 @@ const mapParticipantsFromMeeting = (
  */
 export default function VideoRoom() {
     const [roomState, setRoomState] = useState<RoomState>("idle");
-    const [roomId, setRoomId] = useState<string>("");
     const [participants, setParticipants] = useState<Participant[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [participantId] = useState<string>(() => generateParticipantId());
@@ -224,7 +223,6 @@ export default function VideoRoom() {
         }
 
         setParticipants([]);
-        setRoomId("");
         setIsAudioEnabled(false);
         setIsVideoEnabled(false);
     }, [detachRemoteParticipantListeners]);
@@ -410,7 +408,6 @@ export default function VideoRoom() {
 
         try {
             const globalRoomId = await fetchGlobalRoomId();
-            setRoomId(globalRoomId);
 
             const token = await generateToken(
                 globalRoomId,
