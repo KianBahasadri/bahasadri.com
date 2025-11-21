@@ -10,7 +10,10 @@
  * @see ../../../../docs/AI_AGENT_STANDARDS.md - Repository standards
  */
 
-import type { KVNamespace, KVNamespaceListKey } from "@cloudflare/workers-types";
+import type {
+    KVNamespace,
+    KVNamespaceListKey,
+} from "@cloudflare/workers-types";
 
 import { getSmsKvNamespace } from "./kv";
 import type { Message, ThreadSummary } from "./types";
@@ -18,8 +21,10 @@ import { safeTrim } from "./validation";
 
 const MESSAGE_PREFIX = "messages:";
 const THREAD_PREFIX = "thread:";
+const GLOBAL_MESSAGE_PREFIX = "global-message:";
 const MAX_TIMESTAMP = 9999999999999;
 const DEFAULT_LIMIT = 200;
+const MESSAGE_SINCE_LIMIT = 1000;
 
 type MessageListOptions = {
     counterpart: string;
@@ -52,7 +57,17 @@ function buildMessageKey(
     timestamp: number,
     id: string
 ): string {
-    return `${MESSAGE_PREFIX}${counterpart}:${invertTimestamp(timestamp)}:${id}`;
+    return `${MESSAGE_PREFIX}${counterpart}:${invertTimestamp(
+        timestamp
+    )}:${id}`;
+}
+
+/**
+ * Build a global timeline key for the message so the newest entries can be
+ * retrieved by listing the index prefix.
+ */
+function buildGlobalMessageKey(timestamp: number, id: string): string {
+    return `${GLOBAL_MESSAGE_PREFIX}${invertTimestamp(timestamp)}:${id}`;
 }
 
 function buildThreadKey(counterpart: string): string {
@@ -115,9 +130,14 @@ export async function appendMessage(message: Message): Promise<Message> {
         normalizedMessage.timestamp,
         normalizedMessage.id
     );
+    const globalMessageKey = buildGlobalMessageKey(
+        normalizedMessage.timestamp,
+        normalizedMessage.id
+    );
 
     await Promise.all([
         kv.put(messageKey, JSON.stringify(normalizedMessage)),
+        kv.put(globalMessageKey, JSON.stringify(normalizedMessage)),
         updateThreadSummary(kv, normalizedMessage),
     ]);
 
@@ -129,7 +149,9 @@ export async function getMessages(
 ): Promise<MessageListResult> {
     const counterpart = normalizeCounterpart(options.counterpart);
     if (!counterpart) {
-        throw new Error("Counterpart phone number is required to list messages");
+        throw new Error(
+            "Counterpart phone number is required to list messages"
+        );
     }
 
     const kv = await getSmsKvNamespace();
@@ -183,22 +205,57 @@ export async function getMessagesSince(since: number): Promise<Message[]> {
             .sort((a, b) => a.timestamp - b.timestamp);
     }
 
-    // Query all message keys and filter by timestamp
-    const list = await kv.list({
-        prefix: MESSAGE_PREFIX,
-        limit: 10000, // Adjust if needed
-    });
+    const loadMessages = async (
+        keys: KVNamespaceListKey<unknown>[]
+    ): Promise<Message[]> => {
+        const results = await Promise.all(
+            keys.map(async (entry) => {
+                const record = await kv.get(entry.name, "json");
+                return record as Message | null;
+            })
+        );
 
-    const messages = await Promise.all(
-        list.keys.map(async (entry) => {
-            const result = await kv.get(entry.name, "json");
-            return result as Message | null;
-        })
+        return results.filter((msg): msg is Message => msg !== null);
+    };
+
+    const [globalTimeline, legacyIndex] = await Promise.all([
+        kv.list({
+            prefix: GLOBAL_MESSAGE_PREFIX,
+            limit: MESSAGE_SINCE_LIMIT,
+        }),
+        kv.list({
+            prefix: MESSAGE_PREFIX,
+            limit: MESSAGE_SINCE_LIMIT,
+        }),
+    ]);
+
+    const [globalMessages, legacyMessages] = await Promise.all([
+        loadMessages(globalTimeline.keys),
+        loadMessages(legacyIndex.keys),
+    ]);
+
+    const messageMap = new Map<string, Message>();
+
+    for (const message of [...globalMessages, ...legacyMessages]) {
+        if (message.timestamp <= since) {
+            continue;
+        }
+
+        const existing = messageMap.get(message.id);
+        if (!existing || message.timestamp > existing.timestamp) {
+            messageMap.set(message.id, message);
+        }
+    }
+
+    const sorted = [...messageMap.values()].sort(
+        (a, b) => a.timestamp - b.timestamp
     );
 
-    return messages
-        .filter((msg): msg is Message => msg !== null && msg.timestamp > since)
-        .sort((a, b) => a.timestamp - b.timestamp);
+    if (sorted.length > MESSAGE_SINCE_LIMIT) {
+        return sorted.slice(sorted.length - MESSAGE_SINCE_LIMIT);
+    }
+
+    return sorted;
 }
 
 export async function getThreadSummaries(): Promise<ThreadSummary[]> {
@@ -217,9 +274,10 @@ export async function getThreadSummaries(): Promise<ThreadSummary[]> {
 
     const threads = await Promise.all(
         list.keys.map(async (entry) => {
-            const summary = (await kv.get(entry.name, "json")) as
-                | ThreadSummary
-                | null;
+            const summary = (await kv.get(
+                entry.name,
+                "json"
+            )) as ThreadSummary | null;
             return summary;
         })
     );
@@ -228,4 +286,3 @@ export async function getThreadSummaries(): Promise<ThreadSummary[]> {
         .filter((summary): summary is ThreadSummary => summary !== null)
         .sort((a, b) => b.lastMessageTimestamp - a.lastMessageTimestamp);
 }
-

@@ -5,6 +5,8 @@
  * payload, sends the SMS via Twilio's REST API, and stores the resulting
  * message in the in-memory store. Responses follow a simple JSON contract so
  * the client UI can consume them easily.
+ *
+ * @see ../../../../docs/AI_AGENT_STANDARDS.md - Repository standards
  */
 
 import { NextResponse } from "next/server";
@@ -18,11 +20,6 @@ import {
     normalizeSendRequest,
     validateSendRequest,
 } from "../../../../tools/sms-commander/lib/validation";
-import {
-    broadcastMessage,
-    broadcastThreads,
-} from "../../../../tools/sms-commander/lib/websocket-manager";
-import { getThreadSummaries } from "../../../../tools/sms-commander/lib/messageStore";
 
 /**
  * POST handler for sending SMS messages.
@@ -54,18 +51,6 @@ export async function POST(
 
     try {
         const message = await sendSmsViaTwilio(normalizeSendRequest(body));
-
-        // Broadcast message update via WebSocket
-        broadcastMessage(message, message.phoneNumber);
-
-        // Broadcast thread list update
-        try {
-            const threads = await getThreadSummaries();
-            broadcastThreads(threads);
-        } catch {
-            // Ignore thread update errors
-        }
-
         return NextResponse.json({ success: true, message }, { status: 200 });
     } catch (error) {
         const errorMessage =

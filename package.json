@@ -17,25 +17,25 @@
         "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
     },
     "dependencies": {
-        "next": "^16.0.3",
-        "react": "^19.2.0",
-        "react-dom": "^19.2.0",
+        "next": "^15.0.1",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
         "twilio": "^5.10.6"
     },
     "devDependencies": {
-        "@cloudflare/vitest-pool-workers": "^0.5.13",
-        "@cloudflare/workers-types": "^4.20251120.0",
-        "@opennextjs/cloudflare": "^1.12.0",
+        "@cloudflare/vitest-pool-workers": "^0.10.10",
+        "@cloudflare/workers-types": "^4.20251121.0",
+        "@opennextjs/cloudflare": "^1.13.1",
         "@types/node": "^24.10.1",
         "@types/react": "^19.2.6",
         "@types/react-dom": "^19.2.3",
         "dotenv": "^17.2.3",
-        "eslint": "^9.39.1",
-        "eslint-config-next": "^16.0.3",
-        "miniflare": "^3.20250312.0",
+        "eslint": "^9.11.1",
+        "eslint-config-next": "^15.0.1",
+        "miniflare": "^4.20251118.1",
         "ts-node": "^10.9.2",
         "typescript": "^5.9.3",
-        "vitest": "^2.1.8",
-        "wrangler": "^4.47.0"
+        "vitest": "^4.0.12",
+        "wrangler": "^4.50.0"
     }
 }

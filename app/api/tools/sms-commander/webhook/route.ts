@@ -5,6 +5,8 @@
  * (when credentials are configured), stores the message in memory, and returns
  * a simple TwiML response. This keeps the utility aware of both outbound and
  * inbound messages for the local dashboard.
+ *
+ * @see ../../../../docs/AI_AGENT_STANDARDS.md - Repository standards
  */
 
 import { NextResponse } from "next/server";
@@ -14,11 +16,6 @@ import {
     storeIncomingMessage,
     validateTwilioSignature,
 } from "../../../../tools/sms-commander/lib/twilio";
-import {
-    broadcastMessage,
-    broadcastThreads,
-} from "../../../../tools/sms-commander/lib/websocket-manager";
-import { getThreadSummaries } from "../../../../tools/sms-commander/lib/messageStore";
 
 /**
  * POST handler for the Twilio webhook endpoint.
@@ -52,18 +49,7 @@ export async function POST(request: Request): Promise<Response> {
         }
     }
 
-    const message = await storeIncomingMessage(payload);
-
-    // Broadcast message update via WebSocket
-    broadcastMessage(message, message.phoneNumber);
-
-    // Broadcast thread list update
-    try {
-        const threads = await getThreadSummaries();
-        broadcastThreads(threads);
-    } catch {
-        // Ignore thread update errors
-    }
+    await storeIncomingMessage(payload);
 
     const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`;
 

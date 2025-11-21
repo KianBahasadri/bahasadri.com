@@ -5,9 +5,18 @@
  *
  * Chat-style client component that renders the thread sidebar, conversation
  * view, composer, and contact alias editor. Real-time updates are powered by
- * polling with exponential backoff and a hard cap to prevent runaway API calls.
+ * polling with a hard cap to prevent runaway API calls (max 1000 attempts to
+ * prevent overnight costs).
  *
- * Type: Client Component (requires interactivity)
+ * Key features:
+ * - Polling-based real-time updates (2-second interval)
+ * - Hard cap at 1000 polling attempts (~33 hours) for cost control
+ * - Message deduplication to prevent duplicates from polling
+ * - Automatic thread refresh on new messages
+ * - Contact alias management
+ * - Send SMS functionality
+ *
+ * Type: Client Component (requires interactivity and state management)
  *
  * @see ../../PLAN.md - Utility planning document
  * @see ../../../../docs/AI_AGENT_STANDARDS.md - Repository standards
@@ -45,8 +54,6 @@ interface SMSInterfaceProps {
     initialContacts: Contact[];
     /** Counterpart selected on first render (if any threads exist) */
     initialCounterpart: string | null;
-    /** Short-lived token used to authorize WebSocket connections */
-    websocketToken: string;
 }
 
 type MessageCache = Record<string, Message[]>;
@@ -59,7 +66,6 @@ export default function SMSInterface({
     initialMessages,
     initialContacts,
     initialCounterpart,
-    websocketToken,
 }: SMSInterfaceProps) {
     const [threads, setThreads] = useState<ThreadSummary[]>(initialThreads);
     const [contacts, setContacts] = useState<Contact[]>(initialContacts);

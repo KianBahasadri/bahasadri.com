@@ -82,17 +82,17 @@ Perfect for sending messages to your cousin on WhatsApp, intercepting texts from
 **Decision**: Use Next.js Route Handlers in utility-specific directory
 
 -   **Structure**:
-    -   `/api/tools/sms-commander/send` - POST endpoint for sending SMS (broadcasts via WebSocket)
-    -   `/api/tools/sms-commander/webhook` - POST endpoint for receiving SMS (broadcasts via WebSocket)
-    -   `/api/tools/sms-commander/ws` - GET endpoint for WebSocket upgrades (real-time updates)
+    -   `/api/tools/sms-commander/send` - POST endpoint for sending SMS
+    -   `/api/tools/sms-commander/webhook` - POST endpoint for receiving SMS
     -   `/api/tools/sms-commander/threads` - GET endpoint for thread list
     -   `/api/tools/sms-commander/history` - GET endpoint for message history
+    -   `/api/tools/sms-commander/messages-since` - GET endpoint for polling (returns messages since timestamp)
     -   `/api/tools/sms-commander/contacts` - GET/POST endpoints for contact management
 -   **Rationale**:
     -   Keeps API routes decoupled with the utility
     -   Follows Next.js App Router patterns
     -   Easy to find and maintain
-    -   WebSocket route enables real-time updates without polling
+    -   Polling-based updates via `/messages-since` endpoint (simpler than WebSocket)
 
 #### 4. UI Architecture
 
@@ -100,7 +100,7 @@ Perfect for sending messages to your cousin on WhatsApp, intercepting texts from
 
 -   **Structure**:
     -   `page.tsx` - Server Component (initial render, full-screen layout)
-    -   `components/SMSInterface/SMSInterface.tsx` - Client Component (threads, chat layout, WebSocket, forms)
+    -   `components/SMSInterface/SMSInterface.tsx` - Client Component (threads, chat layout, polling, forms)
     -   `components/MessageList/MessageList.tsx` - Client Component (chat transcript display with modern bubbles)
 -   **Rationale**:
     -   Server Components for SEO and initial load
@@ -109,7 +109,8 @@ Perfect for sending messages to your cousin on WhatsApp, intercepting texts from
 -   **Current Implementation**:
     -   Full-screen chat interface (no hero section, takes up entire viewport)
     -   Modern chat bubble styling (iMessage/WhatsApp style)
-    -   WebSocket-based real-time updates (replaces polling)
+    -   Polling-based real-time updates (2-second interval, max 1000 attempts for cost control)
+    -   Message deduplication to prevent duplicate messages from polling
     -   Auto-scroll to latest messages
     -   Chat-style input with inline send button
 
@@ -244,7 +245,6 @@ Required secrets (use Wrangler secrets):
 -   `TWILIO_AUTH_TOKEN` - Twilio authentication token
 -   `TWILIO_PHONE_NUMBER` - Your Twilio phone number (E.164 format)
 -   `TWILIO_WEBHOOK_URL` - Expected webhook URL for automated Twilio forwarding checks
--   `SMS_COMMANDER_WS_SECRET` - Optional HMAC secret for WebSocket auth tokens (falls back to `TWILIO_AUTH_TOKEN`)
 
 #### 3. Deployment Workflow
 
@@ -496,28 +496,23 @@ interface TwilioWebhookPayload {
 -   **Auto-scroll**: Message list automatically scrolls to bottom on new messages and thread changes
 -   **Mobile responsive**: All improvements work well on mobile devices
 
-#### WebSocket Real-time Updates
+#### Polling-Based Real-time Updates
 
--   **Replaced polling mechanism**: Removed 1-second polling interval
--   **WebSocket connection manager** (`lib/websocket-manager.ts`):
--   Manages WebSocket connections in memory
--   Broadcasts messages to all connected clients
--   Handles connection lifecycle and cleanup
--   Sends periodic pings to keep connections alive
--   Enforces connection caps per instance and drops hung sockets after heartbeat failures
--   **WebSocket route handler** (`/api/tools/sms-commander/ws/route.ts`):
--   Handles WebSocket upgrade requests
--   Uses Cloudflare Workers native WebSocket support
--   Accepts connections and registers them with the manager
--   Requires short-lived auth tokens so only the rendered page can connect
--   **Updated send route**: Broadcasts new sent messages via WebSocket
--   **Updated webhook route**: Broadcasts incoming messages via WebSocket
--   **Client WebSocket integration**:
--   Establishes WebSocket connection on mount
--   Handles real-time message updates
--   Handles thread list updates
--   Auto-reconnects on disconnect with exponential backoff
--   Responds to ping/pong for connection health
+-   **Polling mechanism** (`/api/tools/sms-commander/messages-since`):
+-   Client polls every 2 seconds for new messages and thread updates
+-   Returns messages and threads that changed since the last poll timestamp
+-   Hard cap at 1000 polling attempts (~33 hours) to prevent runaway API costs
+-   **Client polling integration**:
+-   Establishes polling loop on component mount
+-   Handles real-time message updates via `messages-since` endpoint
+-   Handles thread list updates from polling responses
+-   Automatically deduplicates messages (checks if message ID already exists)
+-   Tracks polling attempts and stops after max cap to prevent overnight costs
+-   **Advantages**:
+-   Simpler than WebSocket connection management
+-   Works reliably across all Cloudflare Workers instances
+-   No heartbeat/timeout complexity
+-   Cost-controlled with hard polling cap
 
 #### Configuration Changes
 
@@ -530,6 +525,23 @@ interface TwilioWebhookPayload {
 
 -   Removed "Transmission launched" status message after sending
 -   Removed footer from all pages (site-wide change)
+
+---
+
+### 2025-01-27 - WebSocket Removal & Polling Consolidation
+
+#### Transition from WebSocket to Polling
+
+-   **Removed WebSocket infrastructure**: Eliminated complex connection management
+-   Removed `lib/websocket-manager.ts` (connection management)
+-   Removed `lib/websocketAuth.ts` (authentication tokens)
+-   Removed `/api/tools/sms-commander/ws` endpoint
+-   Removed related test files
+-   **Simplified architecture**: Client now exclusively uses polling
+-   All real-time updates go through `/api/tools/sms-commander/messages-since`
+-   No heartbeat/timeout complexity
+-   Cost-controlled with hard polling cap (1000 attempts)
+-   **Why?**: WebSocket had security/scalability concerns; polling is simpler, more reliable across multiple Workers instances, and sufficient for this use case
 
 ---
 
