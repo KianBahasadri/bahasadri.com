@@ -1,8 +1,8 @@
 /**
  * Video Commander Global Room API Route
  *
- * Returns the global room ID, creating it if it doesn't exist.
- * This ensures there's always exactly one room that everyone connects to.
+ * Returns the hard-coded global room ID.
+ * This is the single room that all users connect to.
  *
  * Endpoint: GET /api/tools/video-commander/global-room
  * Returns: { room_id: string }
@@ -15,100 +15,41 @@
  */
 
 import { NextResponse } from "next/server";
-import type {
-    RealtimeKitConfig,
-    RealtimeKitMeetingResponse,
-} from "../../../../tools/video-commander/lib/types";
 
 /**
- * Gets RealtimeKit configuration from environment variables
+ * Global room ID for Video Commander
  *
- * @returns RealtimeKit configuration
- * @throws {Error} If required environment variables are missing
+ * This is the single room that all users connect to.
+ * Create a room via RealtimeKit API and update this constant with the room ID.
+ *
+ * To create a room:
+ * POST https://api.cloudflare.com/client/v4/accounts/{account_id}/realtime/kit/{app_id}/meetings
+ * Body: { "title": "Global Video Commander Room" }
+ * Response: { "success": true, "data": { "id": "..." } }
  */
-function getRealtimeKitConfig(): RealtimeKitConfig {
-    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-    const appId = process.env.CLOUDFLARE_REALTIME_APP_ID;
-    const apiToken = process.env.CLOUDFLARE_REALTIME_API_TOKEN;
-
-    if (!accountId || !appId || !apiToken) {
-        throw new Error(
-            "Missing RealtimeKit configuration. Set CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_REALTIME_APP_ID, and CLOUDFLARE_REALTIME_API_TOKEN."
-        );
-    }
-
-    return { accountId, appId, apiToken };
-}
+const GLOBAL_ROOM_ID = "bbbc5f0e-5acc-47e9-86cb-b7bef293269b";
 
 /**
- * Gets or creates the global room
+ * Gets the global room ID
  *
- * @param config - RealtimeKit configuration
- * @returns Promise resolving to meeting ID
- * @throws {Error} If the API request fails
+ * @returns Room ID
+ * @throws {Error} If room ID is not set (still placeholder)
  */
-async function getOrCreateGlobalRoom(
-    config: RealtimeKitConfig
-): Promise<string> {
-    // Check if we have a stored global room ID in environment
-    // In production, this would be stored in Cloudflare KV
-    const storedRoomId = process.env.CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID;
-
-    if (storedRoomId) {
-        return storedRoomId;
-    }
-
-    // Create the global room
-    // RealtimeKit API uses /realtime/kit/{app_id}/meetings endpoint
-    const url = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/realtime/kit/${config.appId}/meetings`;
-
-    console.log("Creating global room via RealtimeKit API", {
-        url,
-        accountId: config.accountId,
-        appId: config.appId,
-    });
-
-    const response = await fetch(url, {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${config.apiToken}`,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            title: "Global Video Commander Room",
-        }),
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error("RealtimeKit API error:", {
-            status: response.status,
-            statusText: response.statusText,
-            errorText,
-        });
+function getGlobalRoomId(): string {
+    if (GLOBAL_ROOM_ID === "REPLACE_WITH_ACTUAL_ROOM_ID") {
         throw new Error(
-            `Failed to create global room: ${response.status} ${response.statusText} - ${errorText}`
+            "Global room ID not configured. " +
+                "Create a room via RealtimeKit API and update GLOBAL_ROOM_ID constant in this file."
         );
     }
 
-    const data = (await response.json()) as RealtimeKitMeetingResponse;
-
-    if (!data.success || !data.data?.id) {
-        console.error("Invalid API response structure:", JSON.stringify(data));
-        throw new Error(
-            `Invalid response from RealtimeKit API - expected data.id, got: ${JSON.stringify(
-                data
-            )}`
-        );
-    }
-
-    return data.data.id;
+    return GLOBAL_ROOM_ID;
 }
 
 /**
  * GET handler for getting the global room ID
  *
- * Creates the room on first call, returns cached ID on subsequent calls.
+ * Returns the hard-coded global room ID.
  *
  * @returns NextResponse with room ID or error
  */
@@ -116,9 +57,7 @@ export async function GET(): Promise<
     NextResponse<{ room_id: string } | { error: string }>
 > {
     try {
-        const config = getRealtimeKitConfig();
-        const roomId = await getOrCreateGlobalRoom(config);
-
+        const roomId = getGlobalRoomId();
         return NextResponse.json({ room_id: roomId }, { status: 200 });
     } catch (error) {
         console.error("Failed to get global room:", error);

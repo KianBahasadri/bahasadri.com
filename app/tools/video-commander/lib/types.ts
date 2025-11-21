@@ -46,7 +46,8 @@ export interface RealtimeKitMeetingResponse {
  * Participant token object returned by RealtimeKit API
  */
 export interface RealtimeKitParticipant {
-    auth_token: string;
+    token?: string;
+    auth_token?: string;
     participant_id?: string;
     [key: string]: unknown;
 }
@@ -66,6 +67,7 @@ export interface RealtimeKitTokenResponse {
 export interface GenerateTokenRequest {
     meeting_id: string;
     name?: string;
+    custom_participant_id?: string;
     preset_name?: string;
 }
 

@@ -56,9 +56,14 @@ async function generateParticipantToken(
     config: RealtimeKitConfig,
     meetingId: string,
     participantName?: string,
+    customParticipantId?: string,
     presetName = "group_call_participant"
 ): Promise<string> {
     const url = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/realtime/kit/${config.appId}/meetings/${meetingId}/participants`;
+
+    if (!customParticipantId) {
+        throw new Error("Custom participant ID is required to generate a token");
+    }
 
     const response = await fetch(url, {
         method: "POST",
@@ -69,6 +74,7 @@ async function generateParticipantToken(
         body: JSON.stringify({
             name: participantName || "Participant",
             preset_name: presetName,
+            custom_participant_id: customParticipantId,
         }),
     });
 
@@ -81,14 +87,16 @@ async function generateParticipantToken(
 
     const data = (await response.json()) as RealtimeKitTokenResponse;
 
-    if (!data.success || !data.data?.auth_token) {
+    const authTokenFromApi = data.data?.auth_token ?? data.data?.token;
+
+    if (!data.success || !authTokenFromApi) {
         console.error("Invalid API response structure:", JSON.stringify(data));
         throw new Error(
-            `Invalid response from RealtimeKit API - expected data.auth_token, got: ${JSON.stringify(data)}`
+            `Invalid response from RealtimeKit API - expected auth token, got: ${JSON.stringify(data)}`
         );
     }
 
-    return data.data.auth_token;
+    return authTokenFromApi;
 }
 
 /**
@@ -115,6 +123,7 @@ export async function POST(
             config,
             body.meeting_id,
             body.name,
+            body.custom_participant_id,
             body.preset_name
         );
 
