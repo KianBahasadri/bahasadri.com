@@ -594,134 +594,147 @@ interface WhoisData {
 
 ## Implementation Phases (2-Day Intensive Sprint)
 
-### Phase 1: Foundation & Storage (Hours 1-4)
+### Phase 1: Foundation & Storage
 
 **Goals**: Get uploads and downloads working end-to-end
 
-#### 1a: Database Schema & Setup (1 hour)
-- [ ] Create `schema.sql` with all tables (files, access_logs, whois_cache)
-- [ ] Set up Cloudflare D1 database
-- [ ] Run migrations
-- [ ] Verify tables exist with proper indexes
+#### 1a: Database Schema & Setup
+
+-   [ ] Create `schema.sql` with all tables (files, access_logs, whois_cache)
+-   [ ] Set up Cloudflare D1 database
+-   [ ] Run migrations
+-   [ ] Verify tables exist with proper indexes
 
 **Files to create**: `app/tools/file-hosting/schema.sql`
 
 ---
 
-#### 1b: Type Definitions & Utilities (1 hour)
-- [ ] Create `lib/types.ts` with all TypeScript interfaces
-- [ ] Create `lib/database.ts` with D1 query helpers
-- [ ] Create `lib/r2.ts` with R2 upload/download helpers
-- [ ] Create `lib/validation.ts` for file validation
+#### 1b: Type Definitions & Utilities
+
+-   [ ] Create `lib/types.ts` with all TypeScript interfaces
+-   [ ] Create `lib/database.ts` with D1 query helpers
+-   [ ] Create `lib/r2.ts` with R2 upload/download helpers
+-   [ ] Create `lib/validation.ts` for file validation
 
 **Files to create**:
-- `app/tools/file-hosting/lib/types.ts`
-- `app/tools/file-hosting/lib/database.ts`
-- `app/tools/file-hosting/lib/r2.ts`
-- `app/tools/file-hosting/lib/validation.ts`
+
+-   `app/tools/file-hosting/lib/types.ts`
+-   `app/tools/file-hosting/lib/database.ts`
+-   `app/tools/file-hosting/lib/r2.ts`
+-   `app/tools/file-hosting/lib/validation.ts`
 
 ---
 
-#### 1c: Upload API Route (1 hour)
-- [ ] Create `api/tools/file-hosting/upload/route.ts`
-- [ ] Implement multipart file parsing
-- [ ] Validate files (size, type)
-- [ ] Upload to R2
-- [ ] Store metadata in database
-- [ ] Return file ID and URL
+#### 1c: Upload API Route
+
+-   [ ] Create `api/tools/file-hosting/upload/route.ts`
+-   [ ] Implement multipart file parsing
+-   [ ] Validate files (size, type)
+-   [ ] Upload to R2
+-   [ ] Store metadata in database
+-   [ ] Return file ID and URL
 
 **Files to create**: `app/api/tools/file-hosting/upload/route.ts`
 
 ---
 
-#### 1d: Download Tracking & UI Scaffold (1 hour)
-- [ ] Create `api/tools/file-hosting/download/[fileId]/route.ts`
-- [ ] Log access (IP, timestamp, user agent)
-- [ ] Create `components/UploadZone.tsx` (placeholder)
-- [ ] Create `components/FileList.tsx` (placeholder)
-- [ ] Update `page.tsx` to use real components
+#### 1d: Download Tracking & UI Scaffold
+
+-   [ ] Create `api/tools/file-hosting/download/[fileId]/route.ts`
+-   [ ] Log access (IP, timestamp, user agent)
+-   [ ] Create `components/UploadZone.tsx` (placeholder)
+-   [ ] Create `components/FileList.tsx` (placeholder)
+-   [ ] Update `page.tsx` to use real components
 
 **Files to create**:
-- `app/api/tools/file-hosting/download/[fileId]/route.ts`
-- `app/tools/file-hosting/components/UploadZone.tsx`
-- `app/tools/file-hosting/components/FileList.tsx`
+
+-   `app/api/tools/file-hosting/download/[fileId]/route.ts`
+-   `app/tools/file-hosting/components/UploadZone.tsx`
+-   `app/tools/file-hosting/components/FileList.tsx`
 
 **Phase 1 Deliverable**: ✅ Upload a file → see it in list → download it with access logged
 
 ---
 
-### Phase 2: Compression Pipeline (Hours 5-8)
+### Phase 2: Compression Pipeline
 
 **Goals**: Automatic background compression with Queue processing
 
-#### 2a: Queues & Consumer Setup (1 hour)
-- [ ] Set up Cloudflare Queues (`file-compression`)
-- [ ] Create Queue consumer route handler
-- [ ] Implement basic error handling and retry logic
-- [ ] Test Queue message flow
+#### 2a: Queues & Consumer Setup
+
+-   [ ] Set up Cloudflare Queues (`file-compression`)
+-   [ ] Create Queue consumer route handler
+-   [ ] Implement basic error handling and retry logic
+-   [ ] Test Queue message flow
 
 **Files to create**: `app/api/tools/file-hosting/queues/compression.ts` (consumer handler)
 
 ---
 
-#### 2b: Compression Logic (1.5 hours)
-- [ ] Create `lib/compression.ts` with codec logic
-- [ ] Implement gzip for JSON/text
-- [ ] Implement WebP conversion for images
-- [ ] Handle video optimization (optional)
-- [ ] Track compression ratio and savings
-- [ ] Handle compression failures gracefully
+#### 2b: Compression Logic
+
+-   [ ] Create `lib/compression.ts` with codec logic
+-   [ ] Implement gzip for JSON/text
+-   [ ] Implement WebP conversion for images
+-   [ ] Handle video optimization (optional)
+-   [ ] Track compression ratio and savings
+-   [ ] Handle compression failures gracefully
 
 **Files to create**: `app/tools/file-hosting/lib/compression.ts`
 
 ---
 
-#### 2c: Queue Integration & UI Updates (1.5 hours)
-- [ ] Update upload route to queue compression jobs
-- [ ] Update database with compression_status field
-- [ ] Update FileList to show compression status
-- [ ] Implement file replacement (delete old, update URL)
-- [ ] Add compression progress indicator in UI
+#### 2c: Queue Integration & UI Updates
+
+-   [ ] Update upload route to queue compression jobs
+-   [ ] Update database with compression_status field
+-   [ ] Update FileList to show compression status
+-   [ ] Implement file replacement (delete old, update URL)
+-   [ ] Add compression progress indicator in UI
 
 **Files to update**:
-- `app/api/tools/file-hosting/upload/route.ts`
-- `app/tools/file-hosting/components/FileList.tsx`
+
+-   `app/api/tools/file-hosting/upload/route.ts`
+-   `app/tools/file-hosting/components/FileList.tsx`
 
 **Phase 2 Deliverable**: ✅ Upload file → auto-compresses → URL updates → see compression ratio
 
 ---
 
-### Phase 3: IP Tracking & WHOIS (Hours 9-12)
+### Phase 3: IP Tracking & WHOIS
 
 **Goals**: Full access analytics with geographic data
 
-#### 3a: WHOIS Integration & Caching (1.5 hours)
-- [ ] Create `lib/whois.ts` for WHOIS lookups
-- [ ] Implement IP-API integration
-- [ ] Add aggressive caching (30-day TTL)
-- [ ] Handle rate limiting
-- [ ] Update download route to lookup WHOIS on first access
+#### 3a: WHOIS Integration & Caching
+
+-   [ ] Create `lib/whois.ts` for WHOIS lookups
+-   [ ] Implement IP-API integration
+-   [ ] Add aggressive caching (30-day TTL)
+-   [ ] Handle rate limiting
+-   [ ] Update download route to lookup WHOIS on first access
 
 **Files to create**: `app/tools/file-hosting/lib/whois.ts`
 
 ---
 
-#### 3b: Access Log Enrichment (1 hour)
-- [ ] Update download route to capture full access data
-- [ ] Store IP, user agent, referrer, country, org, ASN
-- [ ] Create `api/tools/file-hosting/access-logs/[fileId]/route.ts`
-- [ ] Implement pagination for access logs
+#### 3b: Access Log Enrichment
+
+-   [ ] Update download route to capture full access data
+-   [ ] Store IP, user agent, referrer, country, org, ASN
+-   [ ] Create `api/tools/file-hosting/access-logs/[fileId]/route.ts`
+-   [ ] Implement pagination for access logs
 
 **Files to create**: `app/api/tools/file-hosting/access-logs/[fileId]/route.ts`
 
 ---
 
-#### 3c: Access Log UI (1.5 hours)
-- [ ] Create `components/AccessLog.tsx` (Client Component)
-- [ ] Display all accesses in sortable table
-- [ ] Show IP, country, org, user agent, timestamp
-- [ ] Add filtering/search by IP or country
-- [ ] Add copy IP button, WHOIS details
+#### 3c: Access Log UI
+
+-   [ ] Create `components/AccessLog.tsx` (Client Component)
+-   [ ] Display all accesses in sortable table
+-   [ ] Show IP, country, org, user agent, timestamp
+-   [ ] Add filtering/search by IP or country
+-   [ ] Add copy IP button, WHOIS details
 
 **Files to create**: `app/tools/file-hosting/components/AccessLog.tsx`
 
@@ -729,112 +742,118 @@ interface WhoisData {
 
 ---
 
-### Phase 4: Analytics Dashboard (Hours 13-18)
+### Phase 4: Analytics Dashboard
 
 **Goals**: Rich analytics with charts and geographic insights
 
-#### 4a: Analytics Aggregation (1.5 hours)
-- [ ] Create `api/tools/file-hosting/analytics/[fileId]/route.ts`
-- [ ] Implement aggregation queries:
-  - Total downloads / unique IPs
-  - Downloads by country
-  - Top accessing organizations
-  - User agent breakdown
-  - Access timeline (hourly/daily)
+#### 4a: Analytics Aggregation
+
+-   [ ] Create `api/tools/file-hosting/analytics/[fileId]/route.ts`
+-   [ ] Implement aggregation queries:
+    -   Total downloads / unique IPs
+    -   Downloads by country
+    -   Top accessing organizations
+    -   User agent breakdown
+    -   Access timeline (hourly/daily)
 
 **Files to create**: `app/api/tools/file-hosting/analytics/[fileId]/route.ts`
 
 ---
 
-#### 4b: Charts & Visualization (2 hours)
-- [ ] Create `components/FileAnalytics.tsx` (Client Component)
-- [ ] Add recharts for visualization
-- [ ] Timeline chart (downloads over time)
-- [ ] Geographic distribution (countries/orgs)
-- [ ] User agent breakdown (pie chart)
-- [ ] Top IPs with WHOIS details
+#### 4b: Charts & Visualization
+
+-   [ ] Create `components/FileAnalytics.tsx` (Client Component)
+-   [ ] Add recharts for visualization
+-   [ ] Timeline chart (downloads over time)
+-   [ ] Geographic distribution (countries/orgs)
+-   [ ] User agent breakdown (pie chart)
+-   [ ] Top IPs with WHOIS details
 
 **Files to create**: `app/tools/file-hosting/components/FileAnalytics.tsx`
 
 ---
 
-#### 4c: Analytics Filtering & Integration (1.5 hours)
-- [ ] Add date range filtering
-- [ ] Update FileList to show quick stats (downloads, last access)
-- [ ] Create file detail view with analytics modal
-- [ ] Implement tab navigation (List → Analytics → Access Log)
+#### 4c: Analytics Filtering & Integration
+
+-   [ ] Add date range filtering
+-   [ ] Update FileList to show quick stats (downloads, last access)
+-   [ ] Create file detail view with analytics modal
+-   [ ] Implement tab navigation (List → Analytics → Access Log)
 
 **Files to update**:
-- `app/tools/file-hosting/components/FileList.tsx`
-- `app/page.tsx` (file detail routing)
+
+-   `app/tools/file-hosting/components/FileList.tsx`
+-   `app/page.tsx` (file detail routing)
 
 **Phase 4 Deliverable**: ✅ Click file → see total downloads, geographic distribution, user breakdown, timeline
 
 ---
 
-### Phase 5: Polish & Production Ready (Hours 19-24)
+### Phase 5: Polish & Production Ready
 
 **Goals**: Performance, edge cases, production deployment
 
-#### 5a: Database Optimization (1 hour)
-- [ ] Add all necessary indexes
-- [ ] Implement query caching for analytics
-- [ ] Test with large datasets (100+ accesses)
-- [ ] Verify pagination performance
+#### 5a: Database Optimization
+
+-   [ ] Add all necessary indexes
+-   [ ] Implement query caching for analytics
+-   [ ] Test with large datasets (100+ accesses)
+-   [ ] Verify pagination performance
 
 **Files to update**: `app/tools/file-hosting/schema.sql`
 
 ---
 
-#### 5b: Error Handling & Validation (1 hour)
-- [ ] Handle large file uploads (multipart, streaming)
-- [ ] Implement file size limits
-- [ ] Add MIME type validation
-- [ ] Handle compression failures
-- [ ] Rate limiting for uploads
-- [ ] Error messages in UI
+#### 5b: Error Handling & Validation
+
+-   [ ] Handle large file uploads (multipart, streaming)
+-   [ ] Implement file size limits
+-   [ ] Add MIME type validation
+-   [ ] Handle compression failures
+-   [ ] Rate limiting for uploads
+-   [ ] Error messages in UI
 
 **Files to update**: Multiple route handlers and components
 
 ---
 
-#### 5c: UI/UX Polish (1 hour)
-- [ ] Loading states for uploads
-- [ ] Progress bars for file uploads
-- [ ] Error notifications
-- [ ] Success feedback
-- [ ] Responsive design verification
-- [ ] Animations and transitions
+#### 5c: UI/UX Polish
+
+-   [ ] Loading states for uploads
+-   [ ] Progress bars for file uploads
+-   [ ] Error notifications
+-   [ ] Success feedback
+-   [ ] Responsive design verification
+-   [ ] Animations and transitions
 
 **Files to create/update**:
-- `app/tools/file-hosting/page.module.css` (enhancements)
-- Component `.module.css` files
+
+-   `app/tools/file-hosting/page.module.css` (enhancements)
+-   Component `.module.css` files
 
 ---
 
-#### 5d: Testing & Deployment (1 hour)
-- [ ] Manual end-to-end test:
-  - Upload file → compress → verify URL → download from different IP → check analytics
-- [ ] Verify linting passes
-- [ ] TypeScript compilation
-- [ ] Test preview build
-- [ ] Ready for production deployment
+#### 5d: Testing & Deployment
+
+-   [ ] Manual end-to-end test:
+    -   Upload file → compress → verify URL → download from different IP → check analytics
+-   [ ] Verify linting passes
+-   [ ] TypeScript compilation
+-   [ ] Test preview build
+-   [ ] Ready for production deployment
 
 **Phase 5 Deliverable**: ✅ Fully functional, production-ready File Arsenal
 
 ---
 
-## Timeline
+## Phase Order
 
 ```
-Day 1:
-Hours 1-4:   Phase 1 (Foundation & Storage)
-Hours 5-8:   Phase 2 (Compression Pipeline)
-
-Day 2:
-Hours 9-12:  Phase 3 (IP Tracking & WHOIS)
-Hours 13-18: Phase 4 (Analytics Dashboard)
-Hours 19-24: Phase 5 (Polish & Production)
+Phase 1: Foundation & Storage
+Phase 2: Compression Pipeline
+Phase 3: IP Tracking & WHOIS
+Phase 4: Analytics Dashboard
+Phase 5: Polish & Production
 ```
 
 ---
