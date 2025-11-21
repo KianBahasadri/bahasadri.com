@@ -19,6 +19,12 @@
     background: rgba(255, 255, 255, 0.05);
 }
 
+.dropzone.dragging {
+    border-color: var(--color-highlight);
+    background: rgba(255, 255, 255, 0.08);
+    border-style: solid;
+}
+
 .input {
     display: none;
 }

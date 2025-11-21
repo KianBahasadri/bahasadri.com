@@ -13,6 +13,7 @@ import {
     insertAccessLog,
 } from "../../../../../tools/file-hosting/lib/database";
 import { getObject } from "../../../../../tools/file-hosting/lib/r2";
+import { buildContentDisposition } from "../../../../../tools/file-hosting/lib/validation";
 import { NextRequest } from "next/server";
 
 function getClientIp(headers: Headers): string {
@@ -56,7 +57,7 @@ export async function GET(
         headers: {
             "Content-Type":
                 object.httpMetadata?.contentType ?? "application/octet-stream",
-            "Content-Disposition": `attachment; filename="${file.name}"`,
+            "Content-Disposition": buildContentDisposition(file.name),
         },
     });
 }

@@ -24,6 +24,7 @@ export default function UploadZone({ allowedMimeTypes }: UploadZoneProps) {
         "idle" | "uploading" | "error" | "done"
     >("idle");
     const [message, setMessage] = useState<string>("");
+    const [isDragging, setIsDragging] = useState(false);
     const router = useRouter();
 
     const handleUpload = async (file: File | undefined) => {
@@ -81,9 +82,35 @@ export default function UploadZone({ allowedMimeTypes }: UploadZoneProps) {
         handleUpload(file);
     };
 
+    const handleDragOver = (event: React.DragEvent<HTMLLabelElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (event: React.DragEvent<HTMLLabelElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setIsDragging(false);
+
+        const file = event.dataTransfer.files?.[0];
+        handleUpload(file);
+    };
+
     return (
         <form className={styles.form} onSubmit={handleSubmit}>
-            <label className={styles.dropzone}>
+            <label
+                className={`${styles.dropzone} ${isDragging ? styles.dragging : ""}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+            >
                 <input
                     ref={inputRef}
                     type="file"
