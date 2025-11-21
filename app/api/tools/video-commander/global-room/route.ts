@@ -19,27 +19,18 @@ import { NextResponse } from "next/server";
 /**
  * Gets the global room ID from environment variable
  *
- * Falls back to hardcoded value for development if env var is not set.
- * In production, CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID must be set.
+ * CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID must be set in all environments.
+ * Configure it in your .env file for local development.
  *
  * @returns Room ID
  * @throws {Error} If room ID is not configured
  */
 function getGlobalRoomId(): string {
-    // Try environment variable first (production)
     const envRoomId = process.env.CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID;
     if (envRoomId) {
         return envRoomId;
     }
 
-    // Fallback to hardcoded value for development
-    // TODO: Remove this fallback once all environments use env vars
-    const DEV_ROOM_ID = "bbbc5f0e-5acc-47e9-86cb-b7bef293269b";
-    if (process.env.NODE_ENV === "development") {
-        return DEV_ROOM_ID;
-    }
-
-    // Production requires environment variable
     throw new Error(
         "Global room ID not configured. " +
             "Set CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID environment variable. " +
