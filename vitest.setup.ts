@@ -25,6 +25,10 @@ const DEFAULT_ENV: Record<TwilioEnvKey, string> = {
     TWILIO_PHONE_NUMBER: "+15555550123",
 };
 
+const OPTIONAL_ENV: Record<string, string> = {
+    SMS_COMMANDER_WS_SECRET: "test-ws-secret",
+};
+
 const originalFetch = globalThis.fetch;
 const GUARDED_ORIGIN = "https://api.twilio.com/";
 
@@ -62,16 +66,25 @@ function seedEnvBindings(): void {
     const globalEnv = (globalThis.env ?? null) as CloudflareEnv | null;
 
     if (!globalEnv) {
-        globalThis.env = { ...DEFAULT_ENV } as CloudflareEnv;
+        globalThis.env = {
+            ...DEFAULT_ENV,
+            ...OPTIONAL_ENV,
+        } as CloudflareEnv;
     } else {
         for (const key of TWILIO_ENV_KEYS) {
             globalEnv[key] ??= DEFAULT_ENV[key];
+        }
+        for (const [optionalKey, value] of Object.entries(OPTIONAL_ENV)) {
+            (globalEnv as unknown as Record<string, string>)[optionalKey] ??= value;
         }
     }
 
     if (typeof process !== "undefined") {
         for (const key of TWILIO_ENV_KEYS) {
             process.env[key] ??= DEFAULT_ENV[key];
+        }
+        for (const [optionalKey, value] of Object.entries(OPTIONAL_ENV)) {
+            process.env[optionalKey] ??= value;
         }
     }
 }

@@ -51,24 +51,12 @@ export default async function SMSCommanderPage() {
 
     return (
         <main className={styles.main}>
-            <section className={styles.hero}>
-                <h1 className={styles.title}>SMS Commander</h1>
-                <p className={styles.tagline}>
-                    Built on zero sleep, suspicious amounts of White Monster,
-                    and Cloudflare KV duct tape. Pipe texts straight to the
-                    surveillance stack, mock the feds, and rest easy knowing the
-                    logs survive redeploys now.
-                </p>
-            </section>
-
-            <section className={styles.contentCard}>
-                <SMSInterface
-                    initialThreads={enrichedThreads}
-                    initialMessages={initialMessages}
-                    initialContacts={contacts}
-                    initialCounterpart={initialCounterpart ?? null}
-                />
-            </section>
+            <SMSInterface
+                initialThreads={enrichedThreads}
+                initialMessages={initialMessages}
+                initialContacts={contacts}
+                initialCounterpart={initialCounterpart ?? null}
+            />
         </main>
     );
 }

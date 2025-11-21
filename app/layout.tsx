@@ -20,7 +20,6 @@
 
 import type { Metadata } from "next";
 import Navigation from "./components/Navigation/Navigation";
-import Footer from "./components/Footer/Footer";
 import "./globals.css";
 
 /**
@@ -85,9 +84,14 @@ export default function RootLayout({
           Main application content
           All pages will be rendered as children of this layout
         */}
-                <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+                <div
+                    style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        minHeight: "100vh",
+                    }}
+                >
                     <main style={{ flex: 1 }}>{children}</main>
-                    <Footer />
                 </div>
             </body>
         </html>

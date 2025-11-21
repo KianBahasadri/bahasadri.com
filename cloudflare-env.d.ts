@@ -30,6 +30,8 @@ declare global {
         TWILIO_PHONE_NUMBER: string;
         /** Optional KV namespace used for storing SMS logs */
         SMS_MESSAGES?: KVNamespace;
+        /** Optional secret for signing SMS Commander WebSocket tokens */
+        SMS_COMMANDER_WS_SECRET?: string;
     }
 
     var env: CloudflareEnv;
