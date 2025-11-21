@@ -58,10 +58,10 @@ delete_by_prefix() {
 }
 
 # Clear per-counterpart messages
-delete_by_prefix "messages:" "per-counterpart message records"
+delete_by_prefix "msg:" "per-counterpart message records"
 
 # Clear global message index
-delete_by_prefix "global-message:" "global message index entries"
+delete_by_prefix "msg:global:" "global message index entries"
 
 # Clear thread summaries
 delete_by_prefix "thread:" "thread summaries"
