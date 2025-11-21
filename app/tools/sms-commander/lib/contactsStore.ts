@@ -17,7 +17,6 @@ import type {
     ContactCreatePayload,
     ContactMutationResult,
 } from "./types";
-import { safeTrim } from "./validation";
 import { isValidPhoneNumber } from "./validation";
 
 const CONTACT_PREFIX = "contacts:";
@@ -32,7 +31,7 @@ function contactIndexKey(phoneNumber: string): string {
 }
 
 function sanitizeDisplayName(displayName: string): string {
-    return safeTrim(displayName).slice(0, 120);
+    return displayName.trim().slice(0, 120);
 }
 
 function assertValidPayload(payload: ContactCreatePayload): void {
@@ -82,7 +81,7 @@ export async function listContacts(): Promise<Contact[]> {
 export async function getContactByPhoneNumber(
     phoneNumber: string
 ): Promise<Contact | null> {
-    const sanitized = safeTrim(phoneNumber);
+    const sanitized = phoneNumber.trim();
     const kv = await getSmsKvNamespace();
 
     const contactId = await kv.get(contactIndexKey(sanitized));
@@ -102,7 +101,7 @@ export async function createContact(
 ): Promise<ContactMutationResult> {
     assertValidPayload(payload);
 
-    const sanitizedPhone = safeTrim(payload.phoneNumber);
+    const sanitizedPhone = payload.phoneNumber.trim();
     const kv = await getSmsKvNamespace();
     const now = Date.now();
     const contact: Contact = {

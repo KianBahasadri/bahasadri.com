@@ -80,12 +80,3 @@ export function normalizeSendRequest(payload: SendSMSRequest): SendSMSRequest {
     };
 }
 
-/**
- * Helper to ensure strings are safe for logging / UI.
- *
- * @param value - Raw string
- * @returns Trimmed string
- */
-export function safeTrim(value: string): string {
-    return value.trim();
-}

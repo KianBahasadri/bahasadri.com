@@ -18,7 +18,6 @@ import type {
 
 import { getSmsKvNamespace } from "./kv";
 import type { Message, ThreadSummary } from "./types";
-import { safeTrim } from "./validation";
 
 const MESSAGE_PREFIX = "msg:";
 const THREAD_PREFIX = "thread:";
@@ -40,7 +39,7 @@ export interface MessageListResult {
 }
 
 function normalizeCounterpart(counterpart: string): string {
-    return safeTrim(counterpart);
+    return counterpart.trim();
 }
 
 function invertTimestamp(timestamp: number): string {

@@ -13,6 +13,14 @@ import { appendMessage } from "./messageStore";
 import { normalizeSendRequest } from "./validation";
 
 /**
+ * Valid Twilio environment variable keys.
+ */
+export type TwilioEnvKey =
+    | "TWILIO_ACCOUNT_SID"
+    | "TWILIO_AUTH_TOKEN"
+    | "TWILIO_PHONE_NUMBER";
+
+/**
  * Configuration required to interact with Twilio.
  */
 export interface TwilioConfig {
