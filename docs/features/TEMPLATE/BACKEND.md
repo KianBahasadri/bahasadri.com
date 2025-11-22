@@ -16,7 +16,7 @@ See `docs/features/[feature-name]/API_CONTRACT.md` for the API contract this bac
 
 ## API Endpoints
 
-### `[METHOD] /api/tools/[feature-name]/[endpoint]`
+### `[METHOD] /api/[feature-name]/[endpoint]`
 
 **Handler**: `[handlerName]()`
 

@@ -16,7 +16,7 @@ See `docs/features/file-hosting/API_CONTRACT.md` for the API contract this backe
 
 ## API Endpoints
 
-### `POST /api/tools/file-hosting/upload`
+### `POST /api/file-hosting/upload`
 
 **Handler**: `uploadFile()`
 
@@ -58,7 +58,7 @@ interface UploadResponse {
 -   400: Missing file or invalid file
 -   500: R2 upload failure or database error
 
-### `GET /api/tools/file-hosting/download/[fileId]`
+### `GET /api/file-hosting/download/[fileId]`
 
 **Handler**: `downloadFile()`
 
@@ -89,7 +89,7 @@ interface UploadResponse {
 -   404: File not found or deleted
 -   500: R2 retrieval failure or database error
 
-### `GET /api/tools/file-hosting/files`
+### `GET /api/file-hosting/files`
 
 **Handler**: `listFiles()`
 
@@ -116,7 +116,7 @@ interface FileListResponse {
 4. Apply pagination
 5. Return files and next cursor
 
-### `GET /api/tools/file-hosting/files/[fileId]`
+### `GET /api/file-hosting/files/[fileId]`
 
 **Handler**: `getFileMetadata()`
 
@@ -140,7 +140,7 @@ interface FileMetadata {
 2. Query D1 for file by ID
 3. Return file metadata or 404
 
-### `GET /api/tools/file-hosting/access-logs/[fileId]`
+### `GET /api/file-hosting/access-logs/[fileId]`
 
 **Handler**: `getAccessLogs()`
 

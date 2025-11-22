@@ -13,7 +13,7 @@ Video conferencing utility using Cloudflare RealtimeKit. Allows users to create 
 
 ## Endpoints
 
-### `GET /api/tools/video-call/global-room`
+### `GET /api/video-call/global-room`
 
 **Description**: Returns the global room ID (single room for all users)
 
@@ -32,7 +32,7 @@ interface GlobalRoomResponse {
 -   `200 OK`: Success
 -   `500 Internal Server Error`: Room ID not configured
 
-### `POST /api/tools/video-call/session`
+### `POST /api/video-call/session`
 
 **Description**: Creates a new video conference meeting session
 
@@ -57,7 +57,7 @@ interface CreateSessionResponse {
 -   `200 OK`: Meeting created successfully
 -   `500 Internal Server Error`: RealtimeKit API error
 
-### `POST /api/tools/video-call/token`
+### `POST /api/video-call/token`
 
 **Description**: Generates participant authentication token for joining a meeting
 
@@ -153,15 +153,15 @@ interface ErrorResponse {
 
 ```bash
 # Get global room ID
-curl -X GET "http://localhost:8787/api/tools/video-call/global-room"
+curl -X GET "http://localhost:8787/api/video-call/global-room"
 
 # Create session
-curl -X POST "http://localhost:8787/api/tools/video-call/session" \
+curl -X POST "http://localhost:8787/api/video-call/session" \
   -H "Content-Type: application/json" \
   -d '{"name": "My Meeting"}'
 
 # Generate token
-curl -X POST "http://localhost:8787/api/tools/video-call/token" \
+curl -X POST "http://localhost:8787/api/video-call/token" \
   -H "Content-Type: application/json" \
   -d '{"meeting_id": "meeting-id-here", "name": "John Doe"}'
 ```

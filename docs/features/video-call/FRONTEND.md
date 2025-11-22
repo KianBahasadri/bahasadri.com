@@ -8,7 +8,7 @@ Frontend implementation for the Video Call utility. Provides video conferencing 
 
 ## Code Location
 
-`frontend/src/pages/tools/video-call/`
+`frontend/src/pages/video-call/`
 
 ## API Contract Reference
 
@@ -16,7 +16,7 @@ See `docs/features/video-call/API_CONTRACT.md` for the API contract this fronten
 
 ## Pages/Routes
 
-### `/tools/video-call`
+### `/video-call`
 
 **Component**: `VideoCall.tsx`
 
@@ -25,7 +25,7 @@ See `docs/features/video-call/API_CONTRACT.md` for the API contract this fronten
 **Route Configuration**:
 
 ```typescript
-<Route path="/tools/video-call" element={<VideoCall />} />
+<Route path="/video-call" element={<VideoCall />} />
 ```
 
 ## Components
@@ -175,7 +175,7 @@ const [localStream, setLocalStream] = useState<MediaStream | null>(null);
 ```typescript
 // Get global room ID
 export const fetchGlobalRoom = async (): Promise<GlobalRoomResponse> => {
-    const response = await fetch("/api/tools/video-call/global-room");
+    const response = await fetch("/api/video-call/global-room");
     if (!response.ok) throw new Error("Failed to fetch global room");
     return response.json();
 };
@@ -184,7 +184,7 @@ export const fetchGlobalRoom = async (): Promise<GlobalRoomResponse> => {
 export const createSession = async (
     name?: string
 ): Promise<CreateSessionResponse> => {
-    const response = await fetch("/api/tools/video-call/session", {
+    const response = await fetch("/api/video-call/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
@@ -205,7 +205,7 @@ export const generateToken = async (
     customParticipantId?: string,
     presetName?: string
 ): Promise<GenerateTokenResponse> => {
-    const response = await fetch("/api/tools/video-call/token", {
+    const response = await fetch("/api/video-call/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

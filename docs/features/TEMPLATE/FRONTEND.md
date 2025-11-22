@@ -8,7 +8,7 @@ Frontend implementation for the [Feature Name] utility. [Brief description of wh
 
 ## Code Location
 
-`frontend/src/pages/tools/[feature-name]/`
+`frontend/src/pages/[feature-name]/`
 
 ## API Contract Reference
 
@@ -16,7 +16,7 @@ See `docs/features/[feature-name]/API_CONTRACT.md` for the API contract this fro
 
 ## Pages/Routes
 
-### `/tools/[feature-name]`
+### `/[feature-name]`
 
 **Component**: `[ComponentName].tsx`
 
@@ -25,7 +25,7 @@ See `docs/features/[feature-name]/API_CONTRACT.md` for the API contract this fro
 **Route Configuration**:
 
 ```typescript
-<Route path="/tools/[feature-name]" element={<[ComponentName] />} />
+<Route path="/[feature-name]" element={<[ComponentName] />} />
 ```
 
 ## Components
@@ -107,7 +107,7 @@ const [[stateName], set[StateName]] = useState<[Type]>([initialValue]);
 ```typescript
 // [Function description]
 export const [functionName] = async ([params]): Promise<[ReturnType]> => {
-    const response = await fetch("/api/tools/[feature-name]/[endpoint]", {
+    const response = await fetch("/api/[feature-name]/[endpoint]", {
         method: "[METHOD]",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify([body]),

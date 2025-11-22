@@ -16,7 +16,7 @@ See `docs/features/sms-messenger/API_CONTRACT.md` for the API contract this back
 
 ## API Endpoints
 
-### `POST /api/tools/sms-messenger/send`
+### `POST /api/sms-messenger/send`
 
 **Handler**: `sendSMS()`
 
@@ -61,7 +61,7 @@ interface SendSMSResponse {
 -   400: Invalid phone number or message
 -   502: Twilio API error
 
-### `GET /api/tools/sms-messenger/messages`
+### `GET /api/sms-messenger/messages`
 
 **Handler**: `getMessages()`
 
@@ -90,7 +90,7 @@ interface MessagesResponse {
 4. Apply pagination
 5. Return messages and cursor
 
-### `GET /api/tools/sms-messenger/messages-since`
+### `GET /api/sms-messenger/messages-since`
 
 **Handler**: `getMessagesSince()`
 
@@ -118,7 +118,7 @@ interface MessagesSinceResponse {
 3. Get thread summaries
 4. Return messages, threads, and current timestamp
 
-### `GET /api/tools/sms-messenger/threads`
+### `GET /api/sms-messenger/threads`
 
 **Handler**: `getThreads()`
 
@@ -140,7 +140,7 @@ interface ThreadListResponse {
 2. Sort by last message timestamp DESC
 3. Return threads
 
-### `GET /api/tools/sms-messenger/contacts`
+### `GET /api/sms-messenger/contacts`
 
 **Handler**: `listContacts()`
 
@@ -161,7 +161,7 @@ interface ContactListResponse {
 1. Query KV for contacts with prefix `contact:`
 2. Return contacts list
 
-### `POST /api/tools/sms-messenger/contacts`
+### `POST /api/sms-messenger/contacts`
 
 **Handler**: `createContact()`
 
@@ -200,7 +200,7 @@ interface ContactMutationResult {
 4. Store in KV with key: `contact:{id}`
 5. Return contact
 
-### `PATCH /api/tools/sms-messenger/contacts/[contactId]`
+### `PATCH /api/sms-messenger/contacts/[contactId]`
 
 **Handler**: `updateContact()`
 
@@ -230,7 +230,7 @@ interface ContactMutationResult {
 5. Store back in KV
 6. Return updated contact
 
-### `POST /api/tools/sms-messenger/webhook`
+### `POST /api/sms-messenger/webhook`
 
 **Handler**: `handleWebhook()`
 

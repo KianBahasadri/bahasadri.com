@@ -8,7 +8,7 @@ Frontend implementation for the SMS Messenger utility. Provides a chat-style int
 
 ## Code Location
 
-`frontend/src/pages/tools/sms-messenger/`
+`frontend/src/pages/sms-messenger/`
 
 ## API Contract Reference
 
@@ -16,7 +16,7 @@ See `docs/features/sms-messenger/API_CONTRACT.md` for the API contract this fron
 
 ## Pages/Routes
 
-### `/tools/sms-messenger`
+### `/sms-messenger`
 
 **Component**: `SMSMessenger.tsx`
 
@@ -25,7 +25,7 @@ See `docs/features/sms-messenger/API_CONTRACT.md` for the API contract this fron
 **Route Configuration**:
 
 ```typescript
-<Route path="/tools/sms-messenger" element={<SMSMessenger />} />
+<Route path="/sms-messenger" element={<SMSMessenger />} />
 ```
 
 ## Components
@@ -165,7 +165,7 @@ export const sendSMS = async (
     phoneNumber: string,
     message: string
 ): Promise<SendSMSResponse> => {
-    const response = await fetch("/api/tools/sms-messenger/send", {
+    const response = await fetch("/api/sms-messenger/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phoneNumber, message }),
@@ -189,7 +189,7 @@ export const fetchMessages = async (
     if (cursor) params.append("cursor", cursor);
     if (limit) params.append("limit", limit.toString());
 
-    const response = await fetch(`/api/tools/sms-messenger/messages?${params}`);
+    const response = await fetch(`/api/sms-messenger/messages?${params}`);
     if (!response.ok) throw new Error("Failed to fetch messages");
     return response.json();
 };
@@ -199,7 +199,7 @@ export const pollMessagesSince = async (
     since: number
 ): Promise<MessagesSinceResponse> => {
     const response = await fetch(
-        `/api/tools/sms-messenger/messages-since?since=${since}`
+        `/api/sms-messenger/messages-since?since=${since}`
     );
     if (!response.ok) throw new Error("Failed to poll messages");
     return response.json();
@@ -207,14 +207,14 @@ export const pollMessagesSince = async (
 
 // Get threads
 export const fetchThreads = async (): Promise<ThreadListResponse> => {
-    const response = await fetch("/api/tools/sms-messenger/threads");
+    const response = await fetch("/api/sms-messenger/threads");
     if (!response.ok) throw new Error("Failed to fetch threads");
     return response.json();
 };
 
 // Get contacts
 export const fetchContacts = async (): Promise<ContactListResponse> => {
-    const response = await fetch("/api/tools/sms-messenger/contacts");
+    const response = await fetch("/api/sms-messenger/contacts");
     if (!response.ok) throw new Error("Failed to fetch contacts");
     return response.json();
 };
@@ -224,7 +224,7 @@ export const createContact = async (
     phoneNumber: string,
     displayName: string
 ): Promise<ContactMutationResult> => {
-    const response = await fetch("/api/tools/sms-messenger/contacts", {
+    const response = await fetch("/api/sms-messenger/contacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phoneNumber, displayName }),

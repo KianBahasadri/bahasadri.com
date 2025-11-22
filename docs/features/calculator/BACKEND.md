@@ -1,88 +1,93 @@
-# [Feature Name] - Backend Design
+# Calculator - Backend Design
 
 **Backend-specific design and implementation requirements. This document is independent of frontend implementation details.**
 
 ## Overview
 
-Backend implementation for the [Feature Name] utility. [Brief description of what the backend handles]
+Backend implementation for the calculator utility. The backend handles expression evaluation for basic arithmetic operations (addition, subtraction, multiplication, division). It validates expressions, performs calculations, and returns results or appropriate error messages.
 
 ## Code Location
 
-`backend/src/routes/[feature-name]/`
+`backend/src/calculator/`
 
 ## API Contract Reference
 
-See `docs/features/[feature-name]/API_CONTRACT.md` for the API contract this backend provides.
+See `docs/features/calculator/API_CONTRACT.md` for the API contract this backend provides.
 
 ## API Endpoints
 
-### `[METHOD] /api/tools/[feature-name]/[endpoint]`
+### `POST /api/calculator/calculate`
 
-**Handler**: `[handlerName]()`
+**Handler**: `handleCalculate()`
 
-**Description**: [What this endpoint does]
+**Description**: Evaluates a basic arithmetic expression and returns the result
 
 **Request**:
 
--   [Request details]
+-   Content-Type: `application/json`
+-   Body: `{ expression: string }`
+-   Expression format: `"operand1 operator operand2"` (e.g., `"2 + 3"`, `"10 - 5"`, `"4 * 7"`, `"20 / 4"`)
 
 **Validation**:
 
--   [Validation rules]
+-   Expression must be a non-empty string
+-   Expression must match pattern: `number operator number` (with optional whitespace)
+-   Supported operators: `+`, `-`, `*`, `/`
+-   Operands must be valid numbers (integers or decimals)
+-   Division by zero must be caught and rejected
 
 **Response**:
 
 ```typescript
-interface [ResponseName] {
-    // Response fields
+interface CalculateResponse {
+    result: number;
+    expression: string;
 }
 ```
 
 **Implementation Flow**:
 
-1. [Step 1]
-2. [Step 2]
-3. [Step 3]
+1. Parse request body and extract expression
+2. Validate expression format and structure
+3. Parse operands and operator from expression
+4. Validate operands are valid numbers
+5. Check for division by zero
+6. Perform arithmetic operation
+7. Return result with original expression
 
 **Error Handling**:
 
--   [Error codes and handling]
+-   `INVALID_INPUT` (400): Invalid expression format, syntax error, or invalid operands
+-   `DIVISION_BY_ZERO` (400): Attempted division by zero
+-   `INTERNAL_ERROR` (500): Unexpected error during evaluation
 
 ## Data Models
 
 ### Database Schema
 
-```sql
--- [Table description]
-CREATE TABLE [table_name] (
-    [column definitions]
-);
-```
+No database required. Calculator is stateless - each request is independent.
 
 ### TypeScript Types
 
 ```typescript
-interface [ModelName] {
-    // Model fields
+interface CalculateRequest {
+    expression: string;
+}
+
+interface CalculateResponse {
+    result: number;
+    expression: string;
+}
+
+interface ErrorResponse {
+    error: string;
+    code: string;
 }
 ```
 
 ## Cloudflare Services
 
-### [Service Name]
-
-**Binding**: `[BINDING_NAME]`
-
-**Usage**:
-
--   [How it's used]
-
-**Operations**:
-
-```typescript
-// [Operation description]
-await env.[BINDING_NAME].[operation]([params]);
-```
+No Cloudflare services required. Calculator performs stateless computation only.
 
 ## Workers Logic
 
@@ -101,18 +106,50 @@ await env.[BINDING_NAME].[operation]([params]);
 
 ```typescript
 try {
-    // Operation
-} catch (error) {
-    if (error instanceof ValidationError) {
-        return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-        });
-    }
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-        status: 500,
+    const { expression } = await request.json();
+
+    // Validate and evaluate expression
+    const result = evaluateExpression(expression);
+
+    return new Response(JSON.stringify({ result, expression }), {
+        status: 200,
         headers: { "Content-Type": "application/json" },
     });
+} catch (error) {
+    if (error instanceof ValidationError) {
+        return new Response(
+            JSON.stringify({
+                error: error.message,
+                code: "INVALID_INPUT",
+            }),
+            {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+            }
+        );
+    }
+    if (error instanceof DivisionByZeroError) {
+        return new Response(
+            JSON.stringify({
+                error: "Division by zero",
+                code: "DIVISION_BY_ZERO",
+            }),
+            {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+            }
+        );
+    }
+    return new Response(
+        JSON.stringify({
+            error: "Internal server error",
+            code: "INTERNAL_ERROR",
+        }),
+        {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+        }
+    );
 }
 ```
 
@@ -121,61 +158,115 @@ try {
 ### Input Validation
 
 ```typescript
-function validate[Input](input: [Type]): { ok: boolean; error?: string } {
-    // Validation logic
+function validateExpression(expression: string): {
+    ok: boolean;
+    error?: string;
+} {
+    if (!expression || typeof expression !== "string") {
+        return { ok: false, error: "Expression must be a non-empty string" };
+    }
+
+    // Match pattern: number operator number (with optional whitespace)
+    const pattern = /^\s*([-+]?\d*\.?\d+)\s*([+\-*/])\s*([-+]?\d*\.?\d+)\s*$/;
+    const match = expression.match(pattern);
+
+    if (!match) {
+        return { ok: false, error: "Invalid expression format" };
+    }
+
     return { ok: true };
+}
+
+function parseExpression(expression: string): {
+    operand1: number;
+    operator: string;
+    operand2: number;
+} {
+    const pattern = /^\s*([-+]?\d*\.?\d+)\s*([+\-*/])\s*([-+]?\d*\.?\d+)\s*$/;
+    const match = expression.match(pattern);
+
+    if (!match) {
+        throw new ValidationError("Invalid expression format");
+    }
+
+    const operand1 = parseFloat(match[1]);
+    const operator = match[2];
+    const operand2 = parseFloat(match[3]);
+
+    if (isNaN(operand1) || isNaN(operand2)) {
+        throw new ValidationError("Invalid operands");
+    }
+
+    return { operand1, operator, operand2 };
 }
 ```
 
 ### Business Rules
 
--   [Business rule 1]
--   [Business rule 2]
+-   Only basic arithmetic operations are supported: addition (+), subtraction (-), multiplication (\*), division (/)
+-   Operands must be valid numbers (integers or decimals)
+-   Division by zero is not allowed and must return a `DIVISION_BY_ZERO` error
+-   Expression must follow format: `number operator number` with optional whitespace
+-   Results are returned as numbers (JavaScript number type)
 
 ## Security Considerations
 
 ### Authentication
 
--   [Authentication requirements]
+-   No authentication required - calculator is a public utility
 
 ### Authorization
 
--   [Authorization requirements]
+-   No authorization required - all users can use the calculator
 
 ### Input Sanitization
 
--   [Input sanitization notes]
+-   Expression string is validated against a strict regex pattern to prevent code injection
+-   Only numeric operands and basic arithmetic operators are allowed
+-   No evaluation of arbitrary JavaScript code - only parsing and arithmetic operations
+-   Input length should be reasonable (e.g., max 100 characters) to prevent abuse
 
 ## Performance Optimization
 
 ### Caching Strategy
 
--   [Caching strategy]
+-   No caching required - calculations are fast and stateless
+-   Each request is independent and doesn't benefit from caching
 
 ### Edge Computing Benefits
 
--   [Edge computing benefits]
+-   Low latency - calculations happen at the edge close to users
+-   No database queries - pure computation reduces response time
+-   Stateless operations allow for easy horizontal scaling
 
 ## Implementation Checklist
 
 ### API Endpoints
 
--   [ ] [METHOD] /[endpoint] endpoint
+-   [ ] POST /api/calculator/calculate endpoint
 -   [ ] Error handling (per API_CONTRACT.md)
+-   [ ] CORS configuration
 
 ### Data Layer
 
--   [ ] [Data layer tasks]
+-   N/A - No data layer required (stateless)
 
 ### Business Logic
 
--   [ ] [Business logic tasks]
+-   [ ] Expression validation function
+-   [ ] Expression parsing function
+-   [ ] Arithmetic evaluation function
+-   [ ] Division by zero detection
+-   [ ] Error handling for invalid inputs
 
 ### Testing
 
--   [ ] Unit tests for handlers
--   [ ] Integration tests
--   [ ] Error scenario testing
+-   [ ] Unit tests for expression validation
+-   [ ] Unit tests for expression parsing
+-   [ ] Unit tests for arithmetic operations
+-   [ ] Unit tests for error cases (division by zero, invalid format)
+-   [ ] Integration tests for API endpoint
+-   [ ] Error scenario testing (all error codes from API_CONTRACT.md)
 
 ## Testing Considerations
 
@@ -188,8 +279,9 @@ function validate[Input](input: [Type]): { ok: boolean; error?: string } {
 ### Integration Tests
 
 -   API endpoint testing (must match API_CONTRACT.md contract)
--   [Service] integration testing
--   End-to-end flow testing
+-   Test all supported operations (+, -, \*, /)
+-   Test error scenarios (invalid input, division by zero)
+-   Test response format matches API_CONTRACT.md
 
 ## Dependencies
 
@@ -202,21 +294,27 @@ function validate[Input](input: [Type]): { ok: boolean; error?: string } {
 
 Must match error codes defined in API_CONTRACT.md:
 
-| Code             | HTTP Status | When to Use             |
-| ---------------- | ----------- | ----------------------- |
-| `INVALID_INPUT`  | 400         | [Description]           |
-| `NOT_FOUND`      | 404         | [Description]           |
-| `INTERNAL_ERROR` | 500         | [Description]           |
+| Code               | HTTP Status | When to Use                               |
+| ------------------ | ----------- | ----------------------------------------- |
+| `INVALID_INPUT`    | 400         | Invalid expression format or syntax error |
+| `DIVISION_BY_ZERO` | 400         | Attempted division by zero                |
+| `INTERNAL_ERROR`   | 500         | Server error during expression evaluation |
 
 ## Monitoring & Logging
 
--   [Logging requirements]
+-   Log calculation requests (expression and result) for debugging
+-   Log errors with error codes for monitoring
+-   Monitor response times (should be very fast for simple calculations)
+-   Track error rates (especially division by zero and invalid input)
 
 ## Future Enhancements
 
--   [Future enhancement ideas]
+-   Support for more complex expressions (parentheses, multiple operations)
+-   Support for additional operations (modulo, exponentiation)
+-   Support for decimal precision control
+-   Support for scientific notation
+-   Calculation history (would require storage)
 
 ---
 
 **Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.
-

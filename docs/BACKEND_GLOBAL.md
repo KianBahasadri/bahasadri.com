@@ -15,7 +15,7 @@ The backend is built with:
 
 -   **Location**: `backend/src/`
 -   **Features**: `backend/src/[feature-name]/` - Each feature is self-contained
--   **API Base**: `/api/tools/[feature-name]/`
+-   **API Base**: `/api/[feature-name]/`
 -   **Deployment**: Cloudflare Workers
 
 ## Patterns

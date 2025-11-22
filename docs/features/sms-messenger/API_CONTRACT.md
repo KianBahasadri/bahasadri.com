@@ -13,7 +13,7 @@ SMS messaging utility that allows sending and receiving SMS messages via Twilio.
 
 ## Endpoints
 
-### `POST /api/tools/sms-messenger/send`
+### `POST /api/sms-messenger/send`
 
 **Description**: Send an SMS message via Twilio
 
@@ -53,7 +53,7 @@ interface Message {
 -   `400 Bad Request`: Invalid phone number or message
 -   `502 Bad Gateway`: Twilio API error
 
-### `GET /api/tools/sms-messenger/messages`
+### `GET /api/sms-messenger/messages`
 
 **Description**: Get messages for a specific counterpart (phone number)
 
@@ -82,7 +82,7 @@ interface MessagesResponse {
 -   `400 Bad Request`: Missing counterpart parameter
 -   `500 Internal Server Error`: Server error
 
-### `GET /api/tools/sms-messenger/messages-since`
+### `GET /api/sms-messenger/messages-since`
 
 **Description**: Polling endpoint to get new messages since a timestamp
 
@@ -119,7 +119,7 @@ interface ThreadSummary {
 -   `400 Bad Request`: Invalid timestamp
 -   `500 Internal Server Error`: Server error
 
-### `GET /api/tools/sms-messenger/threads`
+### `GET /api/sms-messenger/threads`
 
 **Description**: Get list of all conversation threads
 
@@ -138,7 +138,7 @@ interface ThreadListResponse {
 -   `200 OK`: Success
 -   `500 Internal Server Error`: Server error
 
-### `GET /api/tools/sms-messenger/contacts`
+### `GET /api/sms-messenger/contacts`
 
 **Description**: Get list of all contacts
 
@@ -165,7 +165,7 @@ interface Contact {
 -   `200 OK`: Success
 -   `500 Internal Server Error`: Server error
 
-### `POST /api/tools/sms-messenger/contacts`
+### `POST /api/sms-messenger/contacts`
 
 **Description**: Create a new contact
 
@@ -194,7 +194,7 @@ interface ContactMutationResult {
 -   `400 Bad Request`: Invalid input
 -   `500 Internal Server Error`: Server error
 
-### `PATCH /api/tools/sms-messenger/contacts/[contactId]`
+### `PATCH /api/sms-messenger/contacts/[contactId]`
 
 **Description**: Update an existing contact
 
@@ -226,7 +226,7 @@ interface ContactMutationResult {
 -   `400 Bad Request`: Invalid input
 -   `500 Internal Server Error`: Server error
 
-### `POST /api/tools/sms-messenger/webhook`
+### `POST /api/sms-messenger/webhook`
 
 **Description**: Twilio webhook endpoint for receiving incoming SMS messages
 
@@ -330,18 +330,18 @@ interface ErrorResponse {
 
 ```bash
 # Send SMS
-curl -X POST "http://localhost:8787/api/tools/sms-messenger/send" \
+curl -X POST "http://localhost:8787/api/sms-messenger/send" \
   -H "Content-Type: application/json" \
   -d '{"phoneNumber": "+1234567890", "message": "Hello"}'
 
 # Get messages
-curl -X GET "http://localhost:8787/api/tools/sms-messenger/messages?counterpart=+1234567890"
+curl -X GET "http://localhost:8787/api/sms-messenger/messages?counterpart=+1234567890"
 
 # Get threads
-curl -X GET "http://localhost:8787/api/tools/sms-messenger/threads"
+curl -X GET "http://localhost:8787/api/sms-messenger/threads"
 
 # Create contact
-curl -X POST "http://localhost:8787/api/tools/sms-messenger/contacts" \
+curl -X POST "http://localhost:8787/api/sms-messenger/contacts" \
   -H "Content-Type: application/json" \
   -d '{"phoneNumber": "+1234567890", "displayName": "John Doe"}'
 ```

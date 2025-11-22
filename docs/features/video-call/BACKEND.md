@@ -16,7 +16,7 @@ See `docs/features/video-call/API_CONTRACT.md` for the API contract this backend
 
 ## API Endpoints
 
-### `GET /api/tools/video-call/global-room`
+### `GET /api/video-call/global-room`
 
 **Handler**: `getGlobalRoom()`
 
@@ -41,7 +41,7 @@ interface GlobalRoomResponse {
 
 -   500: Room ID not configured
 
-### `POST /api/tools/video-call/session`
+### `POST /api/video-call/session`
 
 **Handler**: `createSession()`
 
@@ -79,7 +79,7 @@ interface CreateSessionResponse {
 
 -   500: RealtimeKit API error or missing config
 
-### `POST /api/tools/video-call/token`
+### `POST /api/video-call/token`
 
 **Handler**: `generateToken()`
 

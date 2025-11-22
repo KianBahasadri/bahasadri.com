@@ -8,7 +8,7 @@ Frontend implementation for the File Hosting utility. Provides a drag-and-drop u
 
 ## Code Location
 
-`frontend/src/pages/tools/file-hosting/`
+`frontend/src/pages/file-hosting/`
 
 ## API Contract Reference
 
@@ -16,7 +16,7 @@ See `docs/features/file-hosting/API_CONTRACT.md` for the API contract this front
 
 ## Pages/Routes
 
-### `/tools/file-hosting`
+### `/file-hosting`
 
 **Component**: `FileHosting.tsx`
 
@@ -25,7 +25,7 @@ See `docs/features/file-hosting/API_CONTRACT.md` for the API contract this front
 **Route Configuration**:
 
 ```typescript
-<Route path="/tools/file-hosting" element={<FileHosting />} />
+<Route path="/file-hosting" element={<FileHosting />} />
 ```
 
 ## Components
@@ -162,7 +162,7 @@ export const uploadFile = async (file: File): Promise<UploadResponse> => {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch("/api/tools/file-hosting/upload", {
+    const response = await fetch("/api/file-hosting/upload", {
         method: "POST",
         body: formData,
     });
@@ -184,7 +184,7 @@ export const fetchFileList = async (
     if (cursor) params.append("cursor", cursor);
     if (limit) params.append("limit", limit.toString());
 
-    const response = await fetch(`/api/tools/file-hosting/files?${params}`);
+    const response = await fetch(`/api/file-hosting/files?${params}`);
     if (!response.ok) throw new Error("Failed to fetch files");
     return response.json();
 };
@@ -193,7 +193,7 @@ export const fetchFileList = async (
 export const fetchFileMetadata = async (
     fileId: string
 ): Promise<FileMetadata> => {
-    const response = await fetch(`/api/tools/file-hosting/files/${fileId}`);
+    const response = await fetch(`/api/file-hosting/files/${fileId}`);
     if (!response.ok) throw new Error("Failed to fetch file metadata");
     return response.json();
 };
@@ -209,7 +209,7 @@ export const fetchAccessLogs = async (
     if (limit) params.append("limit", limit.toString());
 
     const response = await fetch(
-        `/api/tools/file-hosting/access-logs/${fileId}?${params}`
+        `/api/file-hosting/access-logs/${fileId}?${params}`
     );
     if (!response.ok) throw new Error("Failed to fetch access logs");
     return response.json();

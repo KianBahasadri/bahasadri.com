@@ -13,7 +13,7 @@
 
 ## Endpoints
 
-### `[METHOD] /api/tools/[feature-name]/[endpoint]`
+### `[METHOD] /api/[feature-name]/[endpoint]`
 
 **Description**: [What this endpoint does]
 
@@ -88,7 +88,7 @@ interface ErrorResponse {
 
 ```bash
 # [Example curl command]
-curl -X [METHOD] "http://localhost:8787/api/tools/[feature-name]/[endpoint]" \
+curl -X [METHOD] "http://localhost:8787/api/[feature-name]/[endpoint]" \
   -H "Content-Type: application/json" \
   -d '[request body]'
 ```

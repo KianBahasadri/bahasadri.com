@@ -13,7 +13,7 @@ A calculator API that evaluates basic arithmetic expressions. The frontend handl
 
 ## Endpoints
 
-### `POST /api/tools/calculator/calculate`
+### `POST /api/calculator/calculate`
 
 **Description**: Evaluates a basic arithmetic expression and returns the result
 
@@ -106,27 +106,27 @@ The `code` field contains the specific error code that identifies the type of er
 
 ```bash
 # Calculate addition
-curl -X POST "http://localhost:8787/api/tools/calculator/calculate" \
+curl -X POST "http://localhost:8787/api/calculator/calculate" \
   -H "Content-Type: application/json" \
   -d '{"expression": "2 + 3"}'
 
 # Calculate subtraction
-curl -X POST "http://localhost:8787/api/tools/calculator/calculate" \
+curl -X POST "http://localhost:8787/api/calculator/calculate" \
   -H "Content-Type: application/json" \
   -d '{"expression": "10 - 5"}'
 
 # Calculate multiplication
-curl -X POST "http://localhost:8787/api/tools/calculator/calculate" \
+curl -X POST "http://localhost:8787/api/calculator/calculate" \
   -H "Content-Type: application/json" \
   -d '{"expression": "4 * 7"}'
 
 # Calculate division
-curl -X POST "http://localhost:8787/api/tools/calculator/calculate" \
+curl -X POST "http://localhost:8787/api/calculator/calculate" \
   -H "Content-Type: application/json" \
   -d '{"expression": "20 / 4"}'
 
 # Division by zero (returns error)
-curl -X POST "http://localhost:8787/api/tools/calculator/calculate" \
+curl -X POST "http://localhost:8787/api/calculator/calculate" \
   -H "Content-Type: application/json" \
   -d '{"expression": "10 / 0"}'
 # Response: {"error": "Division by zero", "code": "DIVISION_BY_ZERO"}

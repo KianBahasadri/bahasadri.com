@@ -13,7 +13,7 @@ A personal file hosting and sharing utility with automatic compression, detailed
 
 ## Endpoints
 
-### `POST /api/tools/file-hosting/upload`
+### `POST /api/file-hosting/upload`
 
 **Description**: Upload a file to R2 storage and store metadata in D1
 
@@ -51,7 +51,7 @@ interface ErrorResponse {
 - `404 Not Found`: File not found or deleted
 - `500 Internal Server Error`: Server error
 
-### `GET /api/tools/file-hosting/files`
+### `GET /api/file-hosting/files`
 
 **Description**: List all uploaded files with metadata
 
@@ -89,7 +89,7 @@ interface FileMetadata {
 -   `200 OK`: Success
 -   `500 Internal Server Error`: Server error
 
-### `GET /api/tools/file-hosting/files/[fileId]`
+### `GET /api/file-hosting/files/[fileId]`
 
 **Description**: Get detailed metadata for a specific file
 
@@ -123,7 +123,7 @@ interface FileMetadata {
 -   `404 Not Found`: File not found
 -   `500 Internal Server Error`: Server error
 
-### `GET /api/tools/file-hosting/access-logs/[fileId]`
+### `GET /api/file-hosting/access-logs/[fileId]`
 
 **Description**: Get access logs for a specific file
 
@@ -240,20 +240,20 @@ interface ErrorResponse {
 
 ```bash
 # Upload file
-curl -X POST "http://localhost:8787/api/tools/file-hosting/upload" \
+curl -X POST "http://localhost:8787/api/file-hosting/upload" \
   -F "file=@example.pdf"
 
 # Download file
-curl -X GET "http://localhost:8787/api/tools/file-hosting/download/[fileId]"
+curl -X GET "http://localhost:8787/api/file-hosting/download/[fileId]"
 
 # List files
-curl -X GET "http://localhost:8787/api/tools/file-hosting/files"
+curl -X GET "http://localhost:8787/api/file-hosting/files"
 
 # Get file metadata
-curl -X GET "http://localhost:8787/api/tools/file-hosting/files/[fileId]"
+curl -X GET "http://localhost:8787/api/file-hosting/files/[fileId]"
 
 # Get access logs
-curl -X GET "http://localhost:8787/api/tools/file-hosting/access-logs/[fileId]"
+curl -X GET "http://localhost:8787/api/file-hosting/access-logs/[fileId]"
 ```
 
 ---

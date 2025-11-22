@@ -50,7 +50,7 @@ function generateContactId(): string {
   return crypto.randomUUID();
 }
 
-// POST /api/tools/sms-messenger/send
+// POST /api/sms-messenger/send
 app.post("/send", async (c) => {
   try {
     const body = await c.req.json<SendSMSRequest>();
@@ -123,7 +123,7 @@ app.post("/send", async (c) => {
   }
 });
 
-// GET /api/tools/sms-messenger/messages
+// GET /api/sms-messenger/messages
 app.get("/messages", async (c) => {
   try {
     const counterpart = c.req.query("counterpart");
@@ -155,7 +155,7 @@ app.get("/messages", async (c) => {
   }
 });
 
-// GET /api/tools/sms-messenger/messages-since
+// GET /api/sms-messenger/messages-since
 app.get("/messages-since", async (c) => {
   try {
     const sinceParam = c.req.query("since");
@@ -206,7 +206,7 @@ app.get("/messages-since", async (c) => {
   }
 });
 
-// GET /api/tools/sms-messenger/threads
+// GET /api/sms-messenger/threads
 app.get("/threads", async (c) => {
   try {
     const env = c.env;
@@ -233,7 +233,7 @@ app.get("/threads", async (c) => {
   }
 });
 
-// GET /api/tools/sms-messenger/contacts
+// GET /api/sms-messenger/contacts
 app.get("/contacts", async (c) => {
   try {
     const env = c.env;
@@ -247,7 +247,7 @@ app.get("/contacts", async (c) => {
   }
 });
 
-// POST /api/tools/sms-messenger/contacts
+// POST /api/sms-messenger/contacts
 app.post("/contacts", async (c) => {
   try {
     const body = await c.req.json<ContactCreatePayload>();
@@ -301,7 +301,7 @@ app.post("/contacts", async (c) => {
   }
 });
 
-// PATCH /api/tools/sms-messenger/contacts/:id
+// PATCH /api/sms-messenger/contacts/:id
 app.patch("/contacts/:id", async (c) => {
   try {
     const contactId = c.req.param("id");
@@ -342,7 +342,7 @@ app.patch("/contacts/:id", async (c) => {
   }
 });
 
-// POST /api/tools/sms-messenger/webhook
+// POST /api/sms-messenger/webhook
 app.post("/webhook", async (c) => {
   try {
     const env = c.env;
