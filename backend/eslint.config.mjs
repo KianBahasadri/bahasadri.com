@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import unicorn from "eslint-plugin-unicorn";
@@ -6,9 +8,18 @@ import security from "eslint-plugin-security";
 import importPlugin from "eslint-plugin-import";
 import promisePlugin from "eslint-plugin-promise";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 export default [
     {
-        ignores: ["dist", "node_modules", "public", ".wrangler", "coverage"],
+        ignores: [
+            "dist",
+            "node_modules",
+            "public",
+            ".wrangler",
+            "coverage",
+            "eslint.config.mjs",
+        ],
     },
 
     js.configs.recommended,
@@ -32,7 +43,15 @@ export default [
         languageOptions: {
             parserOptions: {
                 project: "./tsconfig.json",
-                tsconfigRootDir: import.meta.dirname,
+                tsconfigRootDir: __dirname,
+            },
+        },
+        settings: {
+            "import/resolver": {
+                typescript: {
+                    alwaysTryTypes: true,
+                    project: "./tsconfig.json",
+                },
             },
         },
         rules: {

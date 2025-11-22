@@ -24,7 +24,7 @@ const formatTimestamp = (timestamp: number): string => {
 
 export default function MessageList({
   messages,
-}: MessageListProps): JSX.Element {
+}: MessageListProps): React.JSX.Element {
   if (messages.length === 0) {
     return (
       <div className={styles.emptyState}>

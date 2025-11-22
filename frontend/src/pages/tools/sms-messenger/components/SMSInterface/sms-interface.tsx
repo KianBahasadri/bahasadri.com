@@ -61,10 +61,10 @@ export default function SMSInterface({
   initialThreads,
   initialContacts,
   initialCounterpart,
-}: SMSInterfaceProps): JSX.Element {
+}: SMSInterfaceProps): React.JSX.Element {
   const queryClient = useQueryClient();
-  const [threads, setThreads] = useState<ThreadSummary[]>(initialThreads);
-  const [contacts, setContacts] = useState<Contact[]>(initialContacts);
+  const [threads, setThreads] = useState<ThreadSummary[]>([...initialThreads]);
+  const [contacts, setContacts] = useState<Contact[]>([...initialContacts]);
   const [messageCache, setMessageCache] = useState<Record<string, Message[]>>({});
   const [activeCounterpart, setActiveCounterpart] = useState<string | undefined>(initialCounterpart);
   const [draftNumber, setDraftNumber] = useState("");
@@ -83,9 +83,9 @@ export default function SMSInterface({
   // Fetch messages for active counterpart
   const { data: messagesData } = useQuery({
     queryKey: ["sms-messenger", "messages", activeCounterpart],
-    queryFn: () => {
+    queryFn: async () => {
       if (!activeCounterpart) throw new Error("No counterpart selected");
-      return fetchMessages(activeCounterpart);
+      return await fetchMessages(activeCounterpart);
     },
     enabled: !!activeCounterpart,
   });
@@ -105,7 +105,6 @@ export default function SMSInterface({
     if (!activeCounterpart) {
       return [];
     }
-    // eslint-disable-next-line security/detect-object-injection
     return messageCache[activeCounterpart] ?? [];
   }, [activeCounterpart, messageCache]);
 
@@ -164,8 +163,8 @@ export default function SMSInterface({
 
   // Send SMS mutation
   const sendMutation = useMutation({
-    mutationFn: ({ phoneNumber, message }: { phoneNumber: string; message: string }) =>
-      sendSMS(phoneNumber, message),
+    mutationFn: async ({ phoneNumber, message }: { phoneNumber: string; message: string }) =>
+      await sendSMS(phoneNumber, message),
     onSuccess: (data) => {
       if (data.success && data.message) {
         const msg = data.message;
@@ -186,6 +185,9 @@ export default function SMSInterface({
         void queryClient.invalidateQueries({ queryKey: ["sms-messenger", "threads"] });
         void fetchThreads().then((data) => {
           setThreads(data.threads);
+          return data;
+        }).catch(() => {
+          // Error handled silently
         });
 
         setMessageBody("");
@@ -202,11 +204,12 @@ export default function SMSInterface({
 
   // Create contact mutation
   const createContactMutation = useMutation({
-    mutationFn: ({ phoneNumber, displayName }: { phoneNumber: string; displayName: string }) =>
-      createContact(phoneNumber, displayName),
+    mutationFn: async ({ phoneNumber, displayName }: { phoneNumber: string; displayName: string }) =>
+      await createContact(phoneNumber, displayName),
     onSuccess: (data) => {
       if (data.success && data.contact) {
-        setContacts((previous) => [...previous, data.contact]);
+        const contact = data.contact;
+        setContacts((previous) => [...previous, contact]);
         void queryClient.invalidateQueries({ queryKey: ["sms-messenger", "contacts"] });
         setShowContactForm(false);
         setContactPhoneNumber("");

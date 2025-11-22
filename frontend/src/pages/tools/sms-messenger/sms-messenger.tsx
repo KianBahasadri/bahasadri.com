@@ -9,15 +9,15 @@ const queryKeys = {
   contacts: ["sms-messenger", "contacts"] as const,
 };
 
-export default function SMSMessenger(): JSX.Element {
+export default function SMSMessenger(): React.JSX.Element {
   const { data: threadsData } = useQuery({
     queryKey: queryKeys.threads,
-    queryFn: () => fetchThreads(),
+    queryFn: async () => await fetchThreads(),
   });
 
   const { data: contactsData } = useQuery({
     queryKey: queryKeys.contacts,
-    queryFn: () => fetchContacts(),
+    queryFn: async () => await fetchContacts(),
   });
 
   const initialThreads: ThreadSummary[] = threadsData?.threads ?? [];

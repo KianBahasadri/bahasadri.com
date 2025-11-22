@@ -350,10 +350,16 @@ app.post("/webhook", async (c) => {
     // Parse form data
     const formData = await c.req.formData();
     const params: Record<string, string> = {};
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    for (const [key, value] of formData.entries()) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, security/detect-object-injection
-      params[key] = value.toString();
+    // FormData iteration - using type assertion for Cloudflare Workers compatibility
+    const formDataEntries = formData as unknown as Iterable<[string, FormDataEntryValue]>;
+    for (const [key, value] of formDataEntries) {
+      if (typeof value === "string") {
+        params[key] = value;
+      } else if (value instanceof File) {
+        params[key] = value.name;
+      } else {
+        params[key] = String(value);
+      }
     }
 
     // Validate Twilio signature
