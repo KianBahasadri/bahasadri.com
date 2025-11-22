@@ -23,7 +23,7 @@ export default function SMSMessenger(): React.JSX.Element {
   const initialThreads: ThreadSummary[] = threadsData?.threads ?? [];
   const initialContacts: Contact[] = contactsData?.contacts ?? [];
   const initialCounterpart: string | undefined =
-    initialThreads.length > 0 ? initialThreads[0].counterpart : undefined;
+    initialThreads.length > 0 ? initialThreads[0]?.counterpart : undefined;
 
   return (
     <SMSInterface

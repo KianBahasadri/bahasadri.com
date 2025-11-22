@@ -8,10 +8,13 @@
         "frontend:build": "pnpm --filter frontend build",
         "frontend:preview": "pnpm --filter frontend preview",
         "frontend:lint": "pnpm --filter frontend lint",
+        "frontend:typecheck": "pnpm --filter frontend typecheck",
         "backend:dev": "pnpm --filter backend dev",
         "backend:build": "pnpm --filter backend build",
         "backend:preview": "pnpm --filter backend preview",
         "backend:lint": "pnpm --filter backend lint",
+        "backend:typecheck": "pnpm --filter backend typecheck",
+        "typecheck": "pnpm frontend:typecheck && pnpm backend:typecheck",
         "lint": "pnpm frontend:lint && pnpm backend:lint"
     }
 }

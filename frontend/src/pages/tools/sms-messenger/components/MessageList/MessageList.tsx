@@ -27,33 +27,33 @@ export default function MessageList({
 }: MessageListProps): React.JSX.Element {
   if (messages.length === 0) {
     return (
-      <div className={styles.emptyState}>
+      <div className={styles["emptyState"]}>
         <p>No messages yet. Start the conversation!</p>
       </div>
     );
   }
 
   return (
-    <div className={styles.messageList}>
+    <div className={styles["messageList"]}>
       {messages.map((message) => {
         const isSent = message.direction === "sent";
         return (
           <div
             key={message.id}
-            className={`${styles.message} ${isSent ? styles.sent : styles.received}`}
+            className={`${styles["message"] ?? ""} ${isSent ? styles["sent"] ?? "" : styles["received"] ?? ""}`}
           >
-            <div className={styles.messageBubble}>
-              <div className={styles.messageBody}>{message.body}</div>
-              <div className={styles.messageMeta}>
-                <span className={styles.messageTime}>
+            <div className={styles["messageBubble"]}>
+              <div className={styles["messageBody"]}>{message.body}</div>
+              <div className={styles["messageMeta"]}>
+                <span className={styles["messageTime"]}>
                   {formatTimestamp(message.timestamp)}
                 </span>
                 {message.status ? (
-                  <span className={styles.messageStatus}>{message.status}</span>
+                  <span className={styles["messageStatus"]}>{message.status}</span>
                 ) : undefined}
               </div>
               {message.errorMessage ? (
-                <div className={styles.messageError}>{message.errorMessage}</div>
+                <div className={styles["messageError"]}>{message.errorMessage}</div>
               ) : undefined}
             </div>
           </div>
