@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
-import SMSMessenger from './pages/tools/sms-messenger/SMSMessenger';
+import SMSMessenger from './pages/tools/sms-messenger/sms-messenger';
 
 export default function App(): JSX.Element {
   return (

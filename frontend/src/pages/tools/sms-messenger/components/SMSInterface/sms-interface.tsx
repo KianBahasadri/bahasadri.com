@@ -3,18 +3,60 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { sendSMS, fetchMessages, pollMessagesSince, fetchThreads, createContact } from "../../../../../lib/api";
 import MessageList from "../MessageList/MessageList";
 import type { Message, ThreadSummary, Contact } from "../../../../../types/sms-messenger";
-import styles from "./SMSInterface.module.css";
+import styles from "./sms-interface.module.css";
 
 interface SMSInterfaceProps {
-  initialThreads: ThreadSummary[];
-  initialMessages: Message[];
-  initialContacts: Contact[];
-  initialCounterpart: string | null;
+  readonly initialThreads: readonly ThreadSummary[];
+  readonly initialMessages: readonly Message[];
+  readonly initialContacts: readonly Contact[];
+  readonly initialCounterpart: string | undefined;
 }
 
 const POLL_INTERVAL = 2000; // 2 seconds
 const POLL_MAX_ATTEMPTS = 1000;
 
+const updateMessageCache = (
+  previous: Record<string, Message[]>,
+  newMessages: Message[]
+): Record<string, Message[]> => {
+  const updated = { ...previous };
+
+  // Group by counterpart
+  for (const msg of newMessages) {
+    if (!(msg.counterpart in updated)) {
+      updated[msg.counterpart] = [];
+    }
+    const existing = updated[msg.counterpart].some((m) => m.id === msg.id);
+    if (!existing) {
+      updated[msg.counterpart].push(msg);
+    }
+  }
+
+  // Sort messages by timestamp
+  for (const counterpart of Object.keys(updated)) {
+    updated[counterpart].sort((a, b) => a.timestamp - b.timestamp);
+  }
+
+  return updated;
+};
+
+const formatTimestamp = (timestamp: number): string => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  return messageDate.getTime() === today.getTime()
+    ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : date.toLocaleDateString([], {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+};
+
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export default function SMSInterface({
   initialThreads,
   initialContacts,
@@ -24,19 +66,19 @@ export default function SMSInterface({
   const [threads, setThreads] = useState<ThreadSummary[]>(initialThreads);
   const [contacts, setContacts] = useState<Contact[]>(initialContacts);
   const [messageCache, setMessageCache] = useState<Record<string, Message[]>>({});
-  const [activeCounterpart, setActiveCounterpart] = useState<string | null>(initialCounterpart);
+  const [activeCounterpart, setActiveCounterpart] = useState<string | undefined>(initialCounterpart);
   const [draftNumber, setDraftNumber] = useState("");
   const [messageBody, setMessageBody] = useState("");
   const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | undefined>(undefined);
   const [pollCounter, setPollCounter] = useState(0);
   const [lastPollTimestamp, setLastPollTimestamp] = useState(Date.now());
-  const pollIntervalRef = useRef<number | null>(null);
+  const pollIntervalRef = useRef<number | undefined>(undefined);
   const messageListRef = useRef<HTMLDivElement>(null);
   const [showContactForm, setShowContactForm] = useState(false);
   const [contactPhoneNumber, setContactPhoneNumber] = useState("");
   const [contactDisplayName, setContactDisplayName] = useState("");
-  const [contactError, setContactError] = useState<string | null>(null);
+  const [contactError, setContactError] = useState<string | undefined>(undefined);
 
   // Fetch messages for active counterpart
   const { data: messagesData } = useQuery({
@@ -51,18 +93,21 @@ export default function SMSInterface({
   // Update message cache when messages are fetched
   useEffect(() => {
     if (messagesData?.messages && activeCounterpart) {
-      setMessageCache((prev) => ({
-        ...prev,
+      setMessageCache((previous) => ({
+        ...previous,
         [activeCounterpart]: messagesData.messages,
       }));
     }
   }, [messagesData, activeCounterpart]);
 
   // Get messages for active counterpart from cache
-  const activeMessages = useMemo(
-    () => (activeCounterpart ? messageCache[activeCounterpart] ?? [] : []),
-    [activeCounterpart, messageCache]
-  );
+  const activeMessages = useMemo(() => {
+    if (!activeCounterpart) {
+      return [];
+    }
+    // eslint-disable-next-line security/detect-object-injection
+    return messageCache[activeCounterpart] ?? [];
+  }, [activeCounterpart, messageCache]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -70,6 +115,23 @@ export default function SMSInterface({
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
   }, [activeMessages]);
+
+  // Handle polling response
+  const handlePollResponse = useCallback(
+    (response: Awaited<ReturnType<typeof pollMessagesSince>>) => {
+      if (response.success && response.messages.length > 0) {
+        setMessageCache((previous) => updateMessageCache(previous, response.messages));
+
+        // Update threads
+        if (response.threads.length > 0) {
+          setThreads(response.threads);
+        }
+
+        setLastPollTimestamp(response.timestamp);
+      }
+    },
+    []
+  );
 
   // Polling logic
   const pollForUpdates = useCallback(async () => {
@@ -79,63 +141,22 @@ export default function SMSInterface({
 
     try {
       const response = await pollMessagesSince(lastPollTimestamp);
-      if (response.success && response.messages.length > 0) {
-        // Deduplicate messages
-        setMessageCache((prev) => {
-          const updated = { ...prev };
-          const messageMap = new Map<string, Message>();
-
-          // Add existing messages to map
-          Object.values(prev).flat().forEach((msg) => {
-            messageMap.set(msg.id, msg);
-          });
-
-          // Add new messages
-          response.messages.forEach((msg) => {
-            messageMap.set(msg.id, msg);
-          });
-
-          // Group by counterpart
-          response.messages.forEach((msg) => {
-            if (!updated[msg.counterpart]) {
-              updated[msg.counterpart] = [];
-            }
-            const existing = updated[msg.counterpart].find((m) => m.id === msg.id);
-            if (!existing) {
-              updated[msg.counterpart].push(msg);
-            }
-          });
-
-          // Sort messages by timestamp
-          Object.keys(updated).forEach((counterpart) => {
-            updated[counterpart].sort((a, b) => a.timestamp - b.timestamp);
-          });
-
-          return updated;
-        });
-
-        // Update threads
-        if (response.threads.length > 0) {
-          setThreads(response.threads);
-        }
-
-        setLastPollTimestamp(response.timestamp);
-      }
-      setPollCounter((prev) => prev + 1);
+      handlePollResponse(response);
+      setPollCounter((previous) => previous + 1);
     } catch {
       // Error handled silently - polling will continue
-      setPollCounter((prev) => prev + 1);
+      setPollCounter((previous) => previous + 1);
     }
-  }, [pollCounter, lastPollTimestamp]);
+  }, [pollCounter, lastPollTimestamp, handlePollResponse]);
 
   // Set up polling interval
   useEffect(() => {
-    pollIntervalRef.current = window.setInterval(() => {
+    pollIntervalRef.current = globalThis.setInterval(() => {
       void pollForUpdates();
     }, POLL_INTERVAL);
 
     return (): void => {
-      if (pollIntervalRef.current) {
+      if (pollIntervalRef.current !== undefined) {
         clearInterval(pollIntervalRef.current);
       }
     };
@@ -148,13 +169,13 @@ export default function SMSInterface({
     onSuccess: (data) => {
       if (data.success && data.message) {
         const msg = data.message;
-        setMessageCache((prev) => {
-          const updated = { ...prev };
-          if (!updated[msg.counterpart]) {
+        setMessageCache((previous) => {
+          const updated = { ...previous };
+          if (!(msg.counterpart in updated)) {
             updated[msg.counterpart] = [];
           }
           // Check for duplicates
-          if (!updated[msg.counterpart].find((m) => m.id === msg.id)) {
+          if (!updated[msg.counterpart].some((m) => m.id === msg.id)) {
             updated[msg.counterpart].push(msg);
             updated[msg.counterpart].sort((a, b) => a.timestamp - b.timestamp);
           }
@@ -164,13 +185,11 @@ export default function SMSInterface({
         // Refresh threads
         void queryClient.invalidateQueries({ queryKey: ["sms-messenger", "threads"] });
         void fetchThreads().then((data) => {
-          if (data.threads) {
-            setThreads(data.threads);
-          }
+          setThreads(data.threads);
         });
 
         setMessageBody("");
-        setSendError(null);
+        setSendError(undefined);
       }
     },
     onError: (error: Error) => {
@@ -187,12 +206,12 @@ export default function SMSInterface({
       createContact(phoneNumber, displayName),
     onSuccess: (data) => {
       if (data.success && data.contact) {
-        setContacts((prev) => [...prev, data.contact]);
+        setContacts((previous) => [...previous, data.contact]);
         void queryClient.invalidateQueries({ queryKey: ["sms-messenger", "contacts"] });
         setShowContactForm(false);
         setContactPhoneNumber("");
         setContactDisplayName("");
-        setContactError(null);
+        setContactError(undefined);
       }
     },
     onError: (error: Error) => {
@@ -200,8 +219,8 @@ export default function SMSInterface({
     },
   });
 
-  const handleCreateContact = (e: React.FormEvent): void => {
-    e.preventDefault();
+  const handleCreateContact = (event: React.FormEvent): void => {
+    event.preventDefault();
     if (!contactPhoneNumber.trim() || !contactDisplayName.trim()) {
       setContactError("Please fill in all fields");
       return;
@@ -212,8 +231,8 @@ export default function SMSInterface({
     });
   };
 
-  const handleSend = (e: React.FormEvent): void => {
-    e.preventDefault();
+  const handleSend = (event: React.FormEvent): void => {
+    event.preventDefault();
     if (!messageBody.trim() || sending) return;
 
     const phoneNumber = activeCounterpart ?? draftNumber.trim();
@@ -236,24 +255,6 @@ export default function SMSInterface({
     return contact?.displayName ?? phoneNumber;
   };
 
-  const formatTimestamp = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-    if (messageDate.getTime() === today.getTime()) {
-      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    } else {
-      return date.toLocaleDateString([], {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    }
-  };
-
   return (
     <div className={styles.container}>
       <div className={styles.sidebar}>
@@ -261,22 +262,26 @@ export default function SMSInterface({
           <h2 className={styles.sidebarTitle}>Conversations</h2>
           <button
             className={styles.addContactButton}
-            onClick={() => setShowContactForm(true)}
+            onClick={(): void => {
+              setShowContactForm(true);
+            }}
             title="Add Contact"
           >
             +
           </button>
         </div>
-        {showContactForm && (
+        {showContactForm ? (
           <div className={styles.contactForm}>
             <h3 className={styles.contactFormTitle}>Add Contact</h3>
             <form onSubmit={handleCreateContact}>
-              {contactError && <div className={styles.error}>{contactError}</div>}
+              {contactError ? <div className={styles.error}>{contactError}</div> : undefined}
               <input
                 type="tel"
                 className={styles.contactInput}
                 value={contactPhoneNumber}
-                onChange={(e) => setContactPhoneNumber(e.target.value)}
+                onChange={(event) => {
+                  setContactPhoneNumber(event.target.value);
+                }}
                 placeholder="Phone number (E.164)"
                 required
               />
@@ -284,7 +289,9 @@ export default function SMSInterface({
                 type="text"
                 className={styles.contactInput}
                 value={contactDisplayName}
-                onChange={(e) => setContactDisplayName(e.target.value)}
+                onChange={(event) => {
+                  setContactDisplayName(event.target.value);
+                }}
                 placeholder="Display name"
                 required
               />
@@ -303,7 +310,7 @@ export default function SMSInterface({
                     setShowContactForm(false);
                     setContactPhoneNumber("");
                     setContactDisplayName("");
-                    setContactError(null);
+                    setContactError(undefined);
                   }}
                 >
                   Cancel
@@ -311,7 +318,7 @@ export default function SMSInterface({
               </div>
             </form>
           </div>
-        )}
+        ) : undefined}
         <div className={styles.threadList}>
           {threads.length === 0 ? (
             <div className={styles.emptyState}>No conversations yet</div>
@@ -322,7 +329,9 @@ export default function SMSInterface({
                 className={`${styles.threadItem} ${
                   activeCounterpart === thread.counterpart ? styles.active : ""
                 }`}
-                onClick={() => handleThreadSelect(thread.counterpart)}
+                onClick={(): void => {
+                  handleThreadSelect(thread.counterpart);
+                }}
               >
                 <div className={styles.threadName}>
                   {thread.contactName ?? thread.counterpart}
@@ -344,20 +353,20 @@ export default function SMSInterface({
               <h2 className={styles.headerTitle}>
                 {getContactName(activeCounterpart)}
               </h2>
-              {activeCounterpart && !contacts.find((c) => c.phoneNumber === activeCounterpart) && (
+              {activeCounterpart && !contacts.some((c) => c.phoneNumber === activeCounterpart) ? (
                 <button
                   className={styles.addContactToThreadButton}
                   onClick={() => {
                     setContactPhoneNumber(activeCounterpart);
                     setContactDisplayName("");
-                    setContactError(null);
+                    setContactError(undefined);
                     setShowContactForm(true);
                   }}
                   title="Add to contacts"
                 >
                   Add Contact
                 </button>
-              )}
+              ) : undefined}
             </div>
 
             <div className={styles.messageList} ref={messageListRef}>
@@ -367,12 +376,14 @@ export default function SMSInterface({
             </div>
 
             <form className={styles.composer} onSubmit={handleSend}>
-              {sendError && <div className={styles.error}>{sendError}</div>}
+              {sendError ? <div className={styles.error}>{sendError}</div> : undefined}
               <div className={styles.composerInputs}>
                 <textarea
                   className={styles.messageInput}
                   value={messageBody}
-                  onChange={(e) => setMessageBody(e.target.value)}
+                  onChange={(event) => {
+                    setMessageBody(event.target.value);
+                  }}
                   placeholder="Type a message..."
                   rows={3}
                   disabled={sending}
@@ -395,12 +406,14 @@ export default function SMSInterface({
                 type="tel"
                 className={styles.phoneInput}
                 value={draftNumber}
-                onChange={(e) => setDraftNumber(e.target.value)}
+                onChange={(event) => {
+                  setDraftNumber(event.target.value);
+                }}
                 placeholder="Enter phone number (E.164 format)"
               />
               <button
                 className={styles.startButton}
-                onClick={() => {
+                onClick={(): void => {
                   if (draftNumber.trim()) {
                     setActiveCounterpart(draftNumber.trim());
                   }

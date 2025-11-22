@@ -6,7 +6,7 @@ const THREAD_PREFIX = "thread:";
 const CONTACT_PREFIX = "contact:";
 
 export function generateMessageKey(counterpart: string, timestamp: number, id: string): string {
-  return `${MESSAGE_PREFIX}${counterpart}:${timestamp}:${id}`;
+  return `${MESSAGE_PREFIX}${counterpart}:${String(timestamp)}:${id}`;
 }
 
 export function getThreadKey(counterpart: string): string {
@@ -56,15 +56,16 @@ export async function getMessages(
   }
 
   // Sort by timestamp ascending (oldest first)
-  messages.sort((a, b) => a.timestamp - b.timestamp);
+  const sortedMessages = messages.toSorted((a, b) => a.timestamp - b.timestamp);
 
   return {
-    messages,
+    messages: sortedMessages,
     cursor: "cursor" in result ? result.cursor : undefined,
     listComplete: result.list_complete,
   };
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export async function getMessagesSince(
   kv: KVNamespace,
   since: number
@@ -99,9 +100,7 @@ export async function getMessagesSince(
   } while (cursor);
 
   // Sort by timestamp ascending
-  messages.sort((a, b) => a.timestamp - b.timestamp);
-
-  return messages;
+  return messages.toSorted((a, b) => a.timestamp - b.timestamp);
 }
 
 export async function updateThreadSummary(
@@ -115,14 +114,14 @@ export async function updateThreadSummary(
   let threadSummary: ThreadSummary;
   if (existing) {
     threadSummary = JSON.parse(existing) as ThreadSummary;
-    threadSummary.lastMessagePreview = message.body.substring(0, 100);
+    threadSummary.lastMessagePreview = message.body.slice(0, 100);
     threadSummary.lastMessageTimestamp = message.timestamp;
     threadSummary.lastDirection = message.direction;
     threadSummary.messageCount += 1;
   } else {
     threadSummary = {
       counterpart: message.counterpart,
-      lastMessagePreview: message.body.substring(0, 100),
+      lastMessagePreview: message.body.slice(0, 100),
       lastMessageTimestamp: message.timestamp,
       lastDirection: message.direction,
       messageCount: 1,
@@ -168,9 +167,7 @@ export async function getThreadSummaries(
   } while (cursor);
 
   // Sort by last message timestamp descending (newest first)
-  threads.sort((a, b) => b.lastMessageTimestamp - a.lastMessageTimestamp);
-
-  return threads;
+  return threads.toSorted((a, b) => b.lastMessageTimestamp - a.lastMessageTimestamp);
 }
 
 export async function storeContact(
@@ -184,22 +181,23 @@ export async function storeContact(
 export async function getContact(
   kv: KVNamespace,
   id: string
-): Promise<Contact | null> {
+): Promise<Contact | undefined> {
   const key = getContactKey(id);
   const value = await kv.get(key);
-  if (!value) return null;
+  if (!value) return undefined;
   try {
     return JSON.parse(value) as Contact;
   } catch {
     // Failed to parse contact
-    return null;
+    return undefined;
   }
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export async function getContactByPhoneNumber(
   kv: KVNamespace,
   phoneNumber: string
-): Promise<Contact | null> {
+): Promise<Contact | undefined> {
   const prefix = CONTACT_PREFIX;
   let cursor: string | undefined;
 
@@ -228,7 +226,7 @@ export async function getContactByPhoneNumber(
     cursor = "cursor" in result ? result.cursor : undefined;
   } while (cursor);
 
-  return null;
+  return undefined;
 }
 
 export async function getAllContacts(kv: KVNamespace): Promise<Contact[]> {
@@ -260,8 +258,6 @@ export async function getAllContacts(kv: KVNamespace): Promise<Contact[]> {
   } while (cursor);
 
   // Sort by display name
-  contacts.sort((a, b) => a.displayName.localeCompare(b.displayName));
-
-  return contacts;
+  return contacts.toSorted((a, b) => a.displayName.localeCompare(b.displayName));
 }
 

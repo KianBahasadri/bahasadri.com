@@ -26,11 +26,11 @@ export const sendSMS = async (
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = (await response.json()) as { error?: string };
     throw new Error(error.error ?? "Failed to send SMS");
   }
 
-  return response.json();
+  return response.json() as Promise<SendSMSResponse>;
 };
 
 export const fetchMessages = async (
@@ -40,35 +40,35 @@ export const fetchMessages = async (
 ): Promise<MessagesResponse> => {
   const params = new URLSearchParams({ counterpart });
   if (cursor) params.append("cursor", cursor);
-  if (limit) params.append("limit", limit.toString());
+  if (limit) params.append("limit", String(limit));
 
   const response = await fetch(
     `${API_BASE_URL}/sms-messenger/messages?${params}`
   );
   if (!response.ok) throw new Error("Failed to fetch messages");
-  return response.json();
+  return response.json() as Promise<MessagesResponse>;
 };
 
 export const pollMessagesSince = async (
   since: number
 ): Promise<MessagesSinceResponse> => {
   const response = await fetch(
-    `${API_BASE_URL}/sms-messenger/messages-since?since=${since}`
+    `${API_BASE_URL}/sms-messenger/messages-since?since=${String(since)}`
   );
   if (!response.ok) throw new Error("Failed to poll messages");
-  return response.json();
+  return response.json() as Promise<MessagesSinceResponse>;
 };
 
 export const fetchThreads = async (): Promise<ThreadListResponse> => {
   const response = await fetch(`${API_BASE_URL}/sms-messenger/threads`);
   if (!response.ok) throw new Error("Failed to fetch threads");
-  return response.json();
+  return response.json() as Promise<ThreadListResponse>;
 };
 
 export const fetchContacts = async (): Promise<ContactListResponse> => {
   const response = await fetch(`${API_BASE_URL}/sms-messenger/contacts`);
   if (!response.ok) throw new Error("Failed to fetch contacts");
-  return response.json();
+  return response.json() as Promise<ContactListResponse>;
 };
 
 export const createContact = async (
@@ -82,11 +82,11 @@ export const createContact = async (
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = (await response.json()) as { error?: string };
     throw new Error(error.error ?? "Failed to create contact");
   }
 
-  return response.json();
+  return response.json() as Promise<ContactMutationResult>;
 };
 
 export const updateContact = async (
@@ -103,10 +103,10 @@ export const updateContact = async (
   );
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = (await response.json()) as { error?: string };
     throw new Error(error.error ?? "Failed to update contact");
   }
 
-  return response.json();
+  return response.json() as Promise<ContactMutationResult>;
 };
 

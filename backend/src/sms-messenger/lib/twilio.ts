@@ -29,7 +29,7 @@ export async function sendSMS(
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Twilio API error: ${response.status} ${errorText}`);
+        throw new Error(`Twilio API error: ${String(response.status)} ${errorText}`);
     }
 
     const data = await response.json();
@@ -47,7 +47,7 @@ export async function validateTwilioSignature(
 ): Promise<boolean> {
     // Create the signature string
     const sortedParams = Object.keys(params)
-        .sort()
+        .toSorted((a, b) => a.localeCompare(b))
         .map((key) => `${key}${params[key]}`)
         .join("");
 
@@ -73,7 +73,7 @@ export async function validateTwilioSignature(
             messageData
         );
         const hash = btoa(
-            String.fromCharCode(...new Uint8Array(signatureBuffer))
+            String.fromCodePoint(...new Uint8Array(signatureBuffer))
         );
         return hash === signature;
     } catch {

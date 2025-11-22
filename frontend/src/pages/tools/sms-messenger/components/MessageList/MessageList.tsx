@@ -3,31 +3,28 @@ import type { Message } from "../../../../../types/sms-messenger";
 import styles from "./MessageList.module.css";
 
 interface MessageListProps {
-  messages: Message[];
+  readonly messages: readonly Message[];
 }
 
-export default function MessageList({
-  messages,
-}: MessageListProps): JSX.Element {
+const formatTimestamp = (timestamp: number): string => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-  const formatTimestamp = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-    if (messageDate.getTime() === today.getTime()) {
-      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    } else {
-      return date.toLocaleDateString([], {
+  return messageDate.getTime() === today.getTime()
+    ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : date.toLocaleDateString([], {
         month: "short",
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit",
       });
-    }
-  };
+};
 
+export default function MessageList({
+  messages,
+}: MessageListProps): JSX.Element {
   if (messages.length === 0) {
     return (
       <div className={styles.emptyState}>
@@ -51,13 +48,13 @@ export default function MessageList({
                 <span className={styles.messageTime}>
                   {formatTimestamp(message.timestamp)}
                 </span>
-                {message.status && (
+                {message.status ? (
                   <span className={styles.messageStatus}>{message.status}</span>
-                )}
+                ) : undefined}
               </div>
-              {message.errorMessage && (
+              {message.errorMessage ? (
                 <div className={styles.messageError}>{message.errorMessage}</div>
-              )}
+              ) : undefined}
             </div>
           </div>
         );

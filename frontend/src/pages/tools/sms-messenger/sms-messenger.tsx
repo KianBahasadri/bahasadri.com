@@ -1,7 +1,7 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchThreads, fetchContacts } from "../../../lib/api";
-import SMSInterface from "./components/SMSInterface/SMSInterface";
+import SMSInterface from "./components/SMSInterface/sms-interface";
 import type { ThreadSummary, Contact } from "../../../types/sms-messenger";
 
 const queryKeys = {
@@ -22,8 +22,8 @@ export default function SMSMessenger(): JSX.Element {
 
   const initialThreads: ThreadSummary[] = threadsData?.threads ?? [];
   const initialContacts: Contact[] = contactsData?.contacts ?? [];
-  const initialCounterpart: string | null =
-    initialThreads.length > 0 ? initialThreads[0].counterpart : null;
+  const initialCounterpart: string | undefined =
+    initialThreads.length > 0 ? initialThreads[0].counterpart : undefined;
 
   return (
     <SMSInterface

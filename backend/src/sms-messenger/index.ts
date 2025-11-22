@@ -39,7 +39,10 @@ function getTwilioConfig(env: Env): { accountSid: string; authToken: string; pho
 
 // Helper to generate message ID
 function generateMessageId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  // Using crypto for better randomness instead of Math.random
+  const randomBytes = crypto.getRandomValues(new Uint8Array(4));
+  const randomString = Array.from(randomBytes, (byte) => byte.toString(36)).join("").slice(0, 7);
+  return `${String(Date.now())}-${randomString}`;
 }
 
 // Helper to generate contact ID (UUID v4)
@@ -75,18 +78,17 @@ app.post("/send", async (c) => {
     const counterpart = body.phoneNumber;
 
     // Send SMS via Twilio
-    let status: "success" | "failed" | "pending" = "pending";
     let errorMessage: string | undefined;
 
+    let status: "success" | "failed" | "pending";
     try {
       const twilioConfig = getTwilioConfig(env);
       const result = await sendSMS(twilioConfig, body.phoneNumber, body.message);
       status = result.status === "queued" || result.status === "sent" ? "success" : "failed";
     } catch (error) {
-      status = "failed";
       errorMessage = error instanceof Error ? error.message : "Twilio API error";
       return c.json<SendSMSResponse>(
-        { success: false, error: "TWILIO_ERROR" },
+        { success: false, error: errorMessage },
         502
       );
     }
@@ -110,7 +112,7 @@ app.post("/send", async (c) => {
     const contact = await getContactByPhoneNumber(env.SMS_MESSAGES, counterpart);
 
     // Update thread summary
-    await updateThreadSummary(env.SMS_MESSAGES, message, contact ?? undefined);
+    await updateThreadSummary(env.SMS_MESSAGES, message, contact);
 
     return c.json<SendSMSResponse>({ success: true, message });
   } catch {
@@ -134,7 +136,7 @@ app.get("/messages", async (c) => {
 
     const cursor = c.req.query("cursor");
     const limitParam = c.req.query("limit");
-    const limit = limitParam ? parseInt(limitParam, 10) : 50;
+    const limit = limitParam ? Number.parseInt(limitParam, 10) : 50;
 
     const env = c.env;
     const result = await getMessages(env.SMS_MESSAGES, counterpart, cursor, limit);
@@ -164,8 +166,8 @@ app.get("/messages-since", async (c) => {
       );
     }
 
-    const since = parseInt(sinceParam, 10);
-    if (isNaN(since) || since < 0) {
+    const since = Number.parseInt(sinceParam, 10);
+    if (Number.isNaN(since) || since < 0) {
       return c.json<MessagesSinceResponse>(
         { success: false, messages: [], threads: [], timestamp: Date.now(), error: "Invalid timestamp" },
         400
@@ -348,9 +350,11 @@ app.post("/webhook", async (c) => {
     // Parse form data
     const formData = await c.req.formData();
     const params: Record<string, string> = {};
-    formData.forEach((value, key) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    for (const [key, value] of formData.entries()) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, security/detect-object-injection
       params[key] = value.toString();
-    });
+    }
 
     // Validate Twilio signature
     const signature = c.req.header("X-Twilio-Signature");
@@ -400,7 +404,7 @@ app.post("/webhook", async (c) => {
     const contact = await getContactByPhoneNumber(env.SMS_MESSAGES, from);
 
     // Update thread summary
-    await updateThreadSummary(env.SMS_MESSAGES, message, contact ?? undefined);
+    await updateThreadSummary(env.SMS_MESSAGES, message, contact);
 
     // Return TwiML response
     return c.text('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', 200, {

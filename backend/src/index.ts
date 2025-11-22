@@ -12,7 +12,7 @@ app.use(
         allowMethods: ["GET", "POST", "PATCH", "OPTIONS"],
         allowHeaders: ["Content-Type", "X-Twilio-Signature"],
         exposeHeaders: ["Content-Length"],
-        maxAge: 86400,
+        maxAge: 86_400,
         credentials: true,
     })
 );
