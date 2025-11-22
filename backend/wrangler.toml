@@ -1,6 +1,11 @@
 name = "bahasadri-backend"
 main = "src/index.ts"
 compatibility_date = "2025-11-22"
+workers_dev = false
+
+routes = [
+    { pattern = "bahasadri.com/api/*", zone_name = "bahasadri.com" }
+]
 
 [[kv_namespaces]]
 binding = "SMS_MESSAGES"
