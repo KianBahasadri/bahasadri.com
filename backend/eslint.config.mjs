@@ -3,25 +3,21 @@ import tseslint from "typescript-eslint";
 import unicorn from "eslint-plugin-unicorn";
 import sonarjs from "eslint-plugin-sonarjs";
 import security from "eslint-plugin-security";
+import importPlugin from "eslint-plugin-import";
+import promisePlugin from "eslint-plugin-promise";
 
 export default [
     {
         ignores: ["dist", "node_modules", "public", ".wrangler", "coverage"],
     },
 
-    // 1. Base JS Recommendations
     js.configs.recommended,
-
-    // 3. Unicorn
     unicorn.configs["recommended"],
-
-    // 4. SonarJS
     sonarjs.configs.recommended,
-
-    // 5. Security
     security.configs.recommended,
+    promisePlugin.configs["flat/recommended"],
+    importPlugin.flatConfigs.recommended,
 
-    // 2. TypeScript "God Mode" - only for TypeScript files
     ...tseslint.configs.strictTypeChecked.map((config) => ({
         ...config,
         files: ["**/*.ts"],
@@ -40,27 +36,57 @@ export default [
             },
         },
         rules: {
-            // --- 11/10 STRICT RULES ---
+            // Core Strict Rules
             "@typescript-eslint/explicit-function-return-type": "error",
             "@typescript-eslint/no-explicit-any": "error",
             "no-console": ["error", { allow: ["warn", "error"] }],
 
-            // Unicorn Overrides
+            // Async/Promise Safety
+            "@typescript-eslint/no-floating-promises": "error",
+            "@typescript-eslint/await-thenable": "error",
+            "@typescript-eslint/no-misused-promises": "error",
+            "@typescript-eslint/promise-function-async": "error",
+
+            // Null/Undefined Safety
+            "@typescript-eslint/no-non-null-assertion": "error",
+            "@typescript-eslint/prefer-nullish-coalescing": "error",
+            "@typescript-eslint/prefer-optional-chain": "error",
+
+            // Type Consistency
+            "@typescript-eslint/consistent-type-imports": [
+                "error",
+                {
+                    prefer: "type-imports",
+                    fixStyle: "inline-type-imports",
+                },
+            ],
+            "@typescript-eslint/consistent-type-exports": "error",
+
+            // Import Organization
+            "import/no-cycle": "error",
+            "import/no-self-import": "error",
+            "import/no-duplicates": "error",
+            "import/first": "error",
+
+            // Common Mistakes
+            "no-param-reassign": ["error", { props: false }],
+            eqeqeq: ["error", "always"],
+            "require-await": "error",
+
+            // Overrides for preset rules (KEEP these "off" statements)
+            "unicorn/prevent-abbreviations": "off", // Unicorn enables this by default
             "unicorn/filename-case": [
                 "error",
-                { cases: { kebabCase: true, pascalCase: true } },
+                {
+                    cases: { kebabCase: true, pascalCase: true },
+                },
             ],
-            "unicorn/prevent-abbreviations": "off", // Turn this off if "props" -> "properties" annoys you
+            "sonarjs/cognitive-complexity": ["error", 15],
 
-            // SonarJS Overrides
-            "sonarjs/cognitive-complexity": ["error", 15], // Slightly higher limit for backend
-
-            // TypeScript Overrides
-            "@typescript-eslint/no-unsafe-assignment": "warn", // Downgrade to warning for external APIs
-            "@typescript-eslint/no-unsafe-member-access": "warn", // Downgrade to warning for external APIs
-
-            // Security Overrides
-            "security/detect-object-injection": "warn", // Downgrade to warning (false positives for Record<string, T>)
+            // Disable problematic strict rules from preset configs
+            "@typescript-eslint/no-unsafe-assignment": "off",
+            "@typescript-eslint/no-unsafe-member-access": "off",
+            "security/detect-object-injection": "off",
         },
     },
 ];
