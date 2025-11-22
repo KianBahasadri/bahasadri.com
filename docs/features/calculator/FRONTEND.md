@@ -398,7 +398,7 @@ export const calculateExpression = async (
 
 -   Semantic HTML: Use `<button>` elements for all calculator buttons
 -   ARIA labels: Label all buttons with descriptive text (e.g., "Number 5", "Add", "Calculate", "Clear")
--   Keyboard navigation: Support keyboard shortcuts (optional enhancement):
+-   Keyboard navigation: Support keyboard shortcuts:
     -   Number keys (0-9) for number input
     -   +, -, \*, / for operators
     -   Enter or = for equals
@@ -406,17 +406,6 @@ export const calculateExpression = async (
     -   Power key for power on/off
 -   Screen reader support: Announce display value changes, announce calculation results, announce errors
 -   Focus management: Maintain focus on calculator container, allow tab navigation between buttons
-
-## Future Enhancements
-
--   Keyboard input support (type numbers and operators)
--   Calculation history (show previous calculations)
--   Memory functions (M+, M-, MR, MC)
--   Scientific calculator functions (sin, cos, tan, log, etc.)
--   Theme customization (different calculator styles)
--   Sound effects for button clicks (optional)
--   Support for parentheses and complex expressions
--   Undo/redo functionality
 
 ---
 

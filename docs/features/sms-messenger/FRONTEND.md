@@ -380,14 +380,6 @@ export const createContact = async (
 -   Keyboard navigation: Support keyboard shortcuts
 -   Screen reader support: Announce new messages
 
-## Future Enhancements
-
--   Message search
--   Bulk messaging
--   Scheduled messages
--   Message reactions
--   File attachments
-
 ---
 
 **Note**: This document is independent of backend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend.

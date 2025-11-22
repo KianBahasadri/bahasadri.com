@@ -392,14 +392,6 @@ meeting.on("participantLeft", (participantId) => {
 -   Keyboard navigation: Support keyboard shortcuts
 -   Screen reader support: Announce participant changes
 
-## Future Enhancements
-
--   Screen sharing
--   Chat functionality
--   Recording
--   Meeting scheduling
--   Participant roles/permissions
-
 ---
 
 **Note**: This document is independent of backend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend.

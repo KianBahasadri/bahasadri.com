@@ -464,14 +464,6 @@ Must match error codes defined in API_CONTRACT.md:
 -   Track R2 storage usage
 -   Monitor D1 query performance
 
-## Future Enhancements
-
--   Background compression via Queues
--   WHOIS IP lookup and caching
--   File deletion endpoint
--   File expiration
--   Password protection
-
 ---
 
 **Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.

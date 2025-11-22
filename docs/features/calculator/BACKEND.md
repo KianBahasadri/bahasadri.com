@@ -307,14 +307,6 @@ Must match error codes defined in API_CONTRACT.md:
 -   Monitor response times (should be very fast for simple calculations)
 -   Track error rates (especially division by zero and invalid input)
 
-## Future Enhancements
-
--   Support for more complex expressions (parentheses, multiple operations)
--   Support for additional operations (modulo, exponentiation)
--   Support for decimal precision control
--   Support for scientific notation
--   Calculation history (would require storage)
-
 ---
 
 **Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.

@@ -228,11 +228,6 @@ export const [functionName] = async ([params]): Promise<[ReturnType]> => {
 -   Keyboard navigation: Support keyboard shortcuts
 -   Screen reader support: [Screen reader considerations]
 
-## Future Enhancements
-
--   [Future enhancement ideas]
-
 ---
 
 **Note**: This document is independent of backend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend.
-

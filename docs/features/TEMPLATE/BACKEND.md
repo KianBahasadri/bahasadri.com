@@ -212,10 +212,6 @@ Must match error codes defined in API_CONTRACT.md:
 
 -   [Logging requirements]
 
-## Future Enhancements
-
--   [Future enhancement ideas]
-
 ---
 
 **Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.

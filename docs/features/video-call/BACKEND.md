@@ -352,14 +352,6 @@ Must match error codes defined in API_CONTRACT.md:
 -   Log RealtimeKit API errors
 -   Track API response times
 
-## Future Enhancements
-
--   Meeting management (list, delete)
--   Participant management
--   Meeting recording
--   Meeting analytics
--   Custom room creation
-
 ---
 
 **Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.

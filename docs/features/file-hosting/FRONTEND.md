@@ -240,7 +240,7 @@ export const fetchAccessLogs = async (
     -   No error handling needed (browser handles)
 
 -   **View File Details**:
-    -   Trigger: Click on file (future enhancement)
+    -   Trigger: Click on file
     -   Flow: Navigate to file detail page with analytics
 
 ### Form Handling
@@ -351,14 +351,6 @@ export const fetchAccessLogs = async (
 -   ARIA labels: Label upload zone and buttons
 -   Keyboard navigation: Support keyboard file selection
 -   Screen reader support: Announce upload status
-
-## Future Enhancements
-
--   File detail page with analytics
--   Bulk file upload
--   File preview for images/PDFs
--   File deletion
--   File sharing link generation
 
 ---
 
