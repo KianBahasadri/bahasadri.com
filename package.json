@@ -1,11 +1,14 @@
 {
-  "name": "bahasadri-com",
-  "version": "0.1.0",
-  "private": true,
-  "packageManager": "pnpm@8.8.0",
-  "scripts": {
-    "dev": "pnpm --filter frontend dev",
-    "build": "pnpm --filter frontend build",
-    "preview": "pnpm --filter frontend preview"
-  }
+    "name": "bahasadri-com",
+    "version": "0.1.0",
+    "private": true,
+    "packageManager": "pnpm@8.8.0",
+    "scripts": {
+        "frontend:dev": "pnpm --filter frontend dev",
+        "frontend:build": "pnpm --filter frontend build",
+        "frontend:preview": "pnpm --filter frontend preview",
+        "backend:dev": "pnpm --filter backend dev",
+        "backend:build": "pnpm --filter backend build",
+        "backend:preview": "pnpm --filter backend preview"
+    }
 }
