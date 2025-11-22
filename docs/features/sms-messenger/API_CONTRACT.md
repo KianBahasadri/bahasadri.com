@@ -1,154 +1,87 @@
 # SMS Messenger - API Contract
 
-**API contract document defining the interface between frontend and backend. This is the ONLY coupling point between frontend and backend.**
+**API contract defining the interface between frontend and backend. This is the only coupling point for the SMS messenger feature.**
 
 ## Purpose
 
-SMS messaging utility that allows sending and receiving SMS messages via Twilio. Features include message history, threaded conversations, and contact management.
+Deliver a browser-based SMS experience powered by Twilio that supports sending, receiving, history, threaded conversations, and contact aliases.
 
 ## API Base URL
 
 -   Development: `http://localhost:8787/api`
 -   Production: `https://bahasadri.com/api`
 
-## Endpoints
+## Shared primitives
 
-### `POST /api/sms-messenger/send`
+### Success response envelope
 
-**Description**: Send an SMS message via Twilio
-
-**Request Body**:
+All REST responses follow this envelope so the frontend can apply shared handling logic:
 
 ```typescript
-interface SendSMSRequest {
-    phoneNumber: string; // E.164 format
-    message: string;
+interface ApiSuccess<T> {
+    success: true;
+    data: T;
 }
 ```
 
-**Response**:
+### Standard error response
 
 ```typescript
-interface SendSMSResponse {
-    success: boolean;
-    message?: Message;
-    error?: string;
+interface ApiError {
+    success: false;
+    error: string;
+    code:
+        | "INVALID_INPUT"
+        | "NOT_FOUND"
+        | "UNAUTHORIZED"
+        | "INTERNAL_ERROR"
+        | "TWILIO_ERROR";
 }
+```
+
+| Code             | HTTP Status | When to use                                                        |
+| ---------------- | ----------- | ------------------------------------------------------------------ |
+| `INVALID_INPUT`  | 400         | Missing required fields, invalid phone number, malformed timestamp |
+| `NOT_FOUND`      | 404         | Requested resource does not exist                                  |
+| `UNAUTHORIZED`   | 403         | Twilio webhook signature is invalid                                |
+| `INTERNAL_ERROR` | 500         | Unexpected server failure                                          |
+| `TWILIO_ERROR`   | 502         | Twilio rejects the SMS send request                                |
+
+### Authentication & CORS
+
+-   **Authentication**: Public endpoints have no auth, the webhook relies on Twilio signature validation.
+-   **CORS**:
+    -   Allowed origins: `https://bahasadri.com`
+    -   Allowed methods: `GET`, `POST`, `PATCH`
+    -   Allowed headers: `Content-Type`
+
+## Data models
+
+```typescript
+type MessageDirection = "sent" | "received";
 
 interface Message {
     id: string;
-    direction: "sent" | "received";
-    phoneNumber: string;
-    counterpart: string;
+    direction: MessageDirection;
+    phoneNumber: string; // the service's number sending/receiving the SMS
+    counterpart: string; // the other party's E.164 phone number
     body: string;
-    timestamp: number;
+    timestamp: number; // milliseconds since epoch
     status?: "success" | "failed" | "pending";
     errorMessage?: string;
-}
-```
-
-**Status Codes**:
-
--   `200 OK`: Message sent successfully
--   `400 Bad Request`: Invalid phone number or message
--   `502 Bad Gateway`: Twilio API error
-
-### `GET /api/sms-messenger/messages`
-
-**Description**: Get messages for a specific counterpart (phone number)
-
-**Request**:
-
--   Query parameters:
-    -   `counterpart` (required, string): Phone number in E.164 format
-    -   `cursor` (optional, string): Pagination cursor
-    -   `limit` (optional, number): Number of messages to return
-
-**Response**:
-
-```typescript
-interface MessagesResponse {
-    success: boolean;
-    messages: Message[];
-    cursor?: string;
-    listComplete: boolean;
-    error?: string;
-}
-```
-
-**Status Codes**:
-
--   `200 OK`: Success
--   `400 Bad Request`: Missing counterpart parameter
--   `500 Internal Server Error`: Server error
-
-### `GET /api/sms-messenger/messages-since`
-
-**Description**: Polling endpoint to get new messages since a timestamp
-
-**Request**:
-
--   Query parameters:
-    -   `since` (required, number): Unix timestamp in milliseconds
-
-**Response**:
-
-```typescript
-interface MessagesSinceResponse {
-    success: boolean;
-    messages: Message[];
-    threads: ThreadSummary[];
-    timestamp: number;
-    error?: string;
+    contactId?: string;
+    unread?: boolean;
 }
 
 interface ThreadSummary {
     counterpart: string;
     lastMessagePreview: string;
     lastMessageTimestamp: number;
-    lastDirection: "sent" | "received";
+    lastDirection: MessageDirection;
     messageCount: number;
+    unreadCount: number;
     contactId?: string;
     contactName?: string;
-}
-```
-
-**Status Codes**:
-
--   `200 OK`: Success
--   `400 Bad Request`: Invalid timestamp
--   `500 Internal Server Error`: Server error
-
-### `GET /api/sms-messenger/threads`
-
-**Description**: Get list of all conversation threads
-
-**Request**: None
-
-**Response**:
-
-```typescript
-interface ThreadListResponse {
-    threads: ThreadSummary[];
-}
-```
-
-**Status Codes**:
-
--   `200 OK`: Success
--   `500 Internal Server Error`: Server error
-
-### `GET /api/sms-messenger/contacts`
-
-**Description**: Get list of all contacts
-
-**Request**: None
-
-**Response**:
-
-```typescript
-interface ContactListResponse {
-    contacts: Contact[];
 }
 
 interface Contact {
@@ -160,20 +93,143 @@ interface Contact {
 }
 ```
 
-**Status Codes**:
+## Endpoints
 
--   `200 OK`: Success
--   `500 Internal Server Error`: Server error
+### `POST /api/sms-messenger/send`
+
+**Description**: Sends an SMS via Twilio from the service phone number.
+
+**Request body**:
+
+```typescript
+interface SendSMSRequest {
+    phoneNumber: string; // recipient in E.164
+    message: string;
+    contactId?: string;
+}
+```
+
+**Response**:
+
+```typescript
+interface SendSMSResult {
+    message: Message;
+}
+```
+
+`ApiSuccess<SendSMSResult>`
+
+**Status codes**:
+
+-   `200 OK`: message queued and stored
+-   `400 Bad Request`: invalid phone number or empty message (`INVALID_INPUT`)
+-   `502 Bad Gateway`: Twilio rejected the request (`TWILIO_ERROR`)
+
+### `GET /api/sms-messenger/messages`
+
+**Description**: Retrieves a page of messages with a given counterpart.
+
+**Query parameters**:
+
+-   `counterpart` (required): the other party’s phone number in E.164
+-   `cursor` (optional): pagination cursor from the previous response
+-   `limit` (optional): number of messages to return (default `50`, max `200`)
+
+**Response**:
+
+```typescript
+interface MessagesResult {
+    messages: Message[];
+    cursor?: string;
+    listComplete: boolean;
+}
+```
+
+`ApiSuccess<MessagesResult>`
+
+Messages are newest-first. `listComplete` is `true` when there are no older messages to page through.
+
+**Status codes**:
+
+-   `200 OK`
+-   `400 Bad Request`: missing `counterpart` (`INVALID_INPUT`)
+-   `500 Internal Server Error`
+
+### `GET /api/sms-messenger/messages-since`
+
+**Description**: Polls for new activity since a provided timestamp and refreshes thread summaries.
+
+**Query parameters**:
+
+-   `since` (required): unix timestamp in milliseconds; use the `timestamp` returned by the previous call
+
+**Response**:
+
+```typescript
+interface MessagesSinceResult {
+    messages: Message[];
+    threads: ThreadSummary[];
+    timestamp: number; // server clock (ms) to use for the next poll
+}
+```
+
+`ApiSuccess<MessagesSinceResult>`
+
+`messages` contains newly received or sent items. `threads` contains any threads with activity since `since` so the UI can refresh previews and unread counts without a separate request. `timestamp` is the server time when the response was generated and should seed the next poll.
+
+**Status codes**:
+
+-   `200 OK`
+-   `400 Bad Request`: invalid `since` (`INVALID_INPUT`)
+-   `500 Internal Server Error`
+
+### `GET /api/sms-messenger/threads`
+
+**Description**: Returns summaries for all conversation threads.
+
+**Response**:
+
+```typescript
+interface ThreadListResult {
+    threads: ThreadSummary[];
+}
+```
+
+`ApiSuccess<ThreadListResult>`
+
+**Status codes**:
+
+-   `200 OK`
+-   `500 Internal Server Error`
+
+### `GET /api/sms-messenger/contacts`
+
+**Description**: Lists all saved contact aliases.
+
+**Response**:
+
+```typescript
+interface ContactListResult {
+    contacts: Contact[];
+}
+```
+
+`ApiSuccess<ContactListResult>`
+
+**Status codes**:
+
+-   `200 OK`
+-   `500 Internal Server Error`
 
 ### `POST /api/sms-messenger/contacts`
 
-**Description**: Create a new contact
+**Description**: Adds a new contact alias for a phone number.
 
-**Request Body**:
+**Request body**:
 
 ```typescript
 interface ContactCreatePayload {
-    phoneNumber: string;
+    phoneNumber: string; // E.164 format
     displayName: string;
 }
 ```
@@ -182,26 +238,25 @@ interface ContactCreatePayload {
 
 ```typescript
 interface ContactMutationResult {
-    success: boolean;
-    contact?: Contact;
-    error?: string;
+    contact: Contact;
 }
 ```
 
-**Status Codes**:
+`ApiSuccess<ContactMutationResult>`
 
--   `200 OK`: Contact created
--   `400 Bad Request`: Invalid input
--   `500 Internal Server Error`: Server error
+**Status codes**:
+
+-   `200 OK`
+-   `400 Bad Request`: invalid payload (`INVALID_INPUT`)
+-   `500 Internal Server Error`
 
 ### `PATCH /api/sms-messenger/contacts/[contactId]`
 
-**Description**: Update an existing contact
+**Description**: Updates the display name of an existing contact.
 
-**Request**:
+**Path parameter**: `contactId` (string, UUID)
 
--   Path parameter: `contactId` (string, UUID)
--   Body:
+**Request body**:
 
 ```typescript
 interface ContactUpdatePayload {
@@ -211,141 +266,66 @@ interface ContactUpdatePayload {
 
 **Response**:
 
-```typescript
-interface ContactMutationResult {
-    success: boolean;
-    contact?: Contact;
-    error?: string;
-}
-```
+`ApiSuccess<ContactMutationResult>`
 
-**Status Codes**:
+**Status codes**:
 
--   `200 OK`: Contact updated
--   `404 Not Found`: Contact not found
--   `400 Bad Request`: Invalid input
--   `500 Internal Server Error`: Server error
+-   `200 OK`
+-   `400 Bad Request`: invalid payload (`INVALID_INPUT`)
+-   `404 Not Found`: contact does not exist (`NOT_FOUND`)
+-   `500 Internal Server Error`
 
 ### `POST /api/sms-messenger/webhook`
 
-**Description**: Twilio webhook endpoint for receiving incoming SMS messages
+**Description**: Twilio posts incoming messages to this endpoint. This is backend-only; the frontend does not call it directly.
 
 **Request**:
 
 -   Content-Type: `application/x-www-form-urlencoded`
--   Body: Twilio webhook form data
+-   Body: Twilio webhook payload (`From`, `To`, `Body`, `MessageSid`, etc.)
+
+**Security**: Validate the `X-Twilio-Signature` header before processing.
 
 **Response**:
 
 -   Content-Type: `text/xml`
--   Body: TwiML response (`<Response></Response>`)
+-   Body: TwiML (`<Response></Response>`)
 
-**Status Codes**:
+**Status codes**:
 
--   `200 OK`: Webhook processed
--   `403 Forbidden`: Invalid Twilio signature
--   `500 Internal Server Error`: Server error
-
-## Shared Data Models
-
-### TypeScript Types
-
-```typescript
-type MessageDirection = "sent" | "received";
-
-interface Message {
-    id: string;
-    direction: MessageDirection;
-    phoneNumber: string;
-    counterpart: string;
-    body: string;
-    timestamp: number;
-    status?: "success" | "failed" | "pending";
-    errorMessage?: string;
-    contactId?: string;
-}
-
-interface ThreadSummary {
-    counterpart: string;
-    lastMessagePreview: string;
-    lastMessageTimestamp: number;
-    lastDirection: MessageDirection;
-    messageCount: number;
-    contactId?: string;
-    contactName?: string;
-}
-
-interface Contact {
-    id: string;
-    phoneNumber: string;
-    displayName: string;
-    createdAt: number;
-    updatedAt: number;
-}
-```
-
-## Error Handling
-
-### Standard Error Response
-
-All errors follow this format:
-
-```typescript
-interface ErrorResponse {
-    success: false;
-    error: string;
-}
-```
-
-### Error Codes
-
-| Code             | HTTP Status | When to Use                      |
-| ---------------- | ----------- | -------------------------------- |
-| `INVALID_INPUT`  | 400         | Invalid phone number or message  |
-| `NOT_FOUND`      | 404         | Contact not found                |
-| `UNAUTHORIZED`   | 403         | Invalid Twilio webhook signature |
-| `INTERNAL_ERROR` | 500         | Server error                     |
-| `TWILIO_ERROR`   | 502         | Twilio API error                 |
-
-## Authentication/Authorization
-
--   **Required**: No (public utility)
--   **Method**: None
--   **Webhook Security**: Twilio signature validation for webhook endpoint
-
-## CORS
-
--   **Allowed Origins**: `https://bahasadri.com`
--   **Allowed Methods**: GET, POST, PATCH
--   **Allowed Headers**: Content-Type
+-   `200 OK`
+-   `403 Forbidden`: invalid signature (`UNAUTHORIZED`)
+-   `500 Internal Server Error`
 
 ## Testing
 
-### Test Endpoints
-
--   Development: Use localhost endpoints
--   Production: Use production API URL
-
-### Example Requests
+### Example requests
 
 ```bash
 # Send SMS
 curl -X POST "http://localhost:8787/api/sms-messenger/send" \
   -H "Content-Type: application/json" \
-  -d '{"phoneNumber": "+1234567890", "message": "Hello"}'
+  -d '{"phoneNumber":"+1234567890","message":"Hello"}'
 
-# Get messages
-curl -X GET "http://localhost:8787/api/sms-messenger/messages?counterpart=+1234567890"
+# Fetch paginated conversation
+curl -X GET "http://localhost:8787/api/sms-messenger/messages?counterpart=+1234567890&limit=50"
 
-# Get threads
+# Poll for updates
+curl -X GET "http://localhost:8787/api/sms-messenger/messages-since?since=1698259200000"
+
+# List threads
 curl -X GET "http://localhost:8787/api/sms-messenger/threads"
 
-# Create contact
+# Manage contacts
 curl -X POST "http://localhost:8787/api/sms-messenger/contacts" \
   -H "Content-Type: application/json" \
-  -d '{"phoneNumber": "+1234567890", "displayName": "John Doe"}'
+  -d '{"phoneNumber":"+1234567890","displayName":"John Doe"}'
+
+curl -X PATCH "http://localhost:8787/api/sms-messenger/contacts/abc-123" \
+  -H "Content-Type: application/json" \
+  -d '{"displayName":"John Updated"}'
 ```
 
 ---
 
-**Note**: This document defines the contract between frontend and backend. Implementation details are in FRONTEND.md and BACKEND.md respectively.
+**Note**: This document defines the frontend/backend contract. Implementation guidance is in `FRONTEND.md` and `BACKEND.md`.

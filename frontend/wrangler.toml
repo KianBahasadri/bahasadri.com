@@ -1,6 +1,6 @@
 name = "bahasadri-frontend"
 compatibility_date = "2025-11-22"
-
+preview_urls = false
 pages_build_output_dir = "./dist"
 
 # Backend bindings (same as backend/wrangler.toml)
@@ -17,7 +17,3 @@ bucket_name = "file-hosting-prod"
 binding = "FILE_HOSTING_DB"
 database_name = "file-hosting"
 database_id = "00822e66-3363-42df-b80a-526c0a1efc30"
-
-[placement]
-mode = "smart"
-
