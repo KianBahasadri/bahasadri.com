@@ -9,6 +9,11 @@ import type {
   ContactMutationResult,
   ContactUpdatePayload,
 } from "../types/sms-messenger";
+import type {
+  CalculateRequest,
+  CalculateResponse,
+  ErrorResponse,
+} from "../types/calculator";
 
 const API_BASE_URL =
   import.meta.env.MODE === "production"
@@ -108,5 +113,22 @@ export const updateContact = async (
   }
 
   return response.json() as Promise<ContactMutationResult>;
+};
+
+export const calculateExpression = async (
+  expression: string
+): Promise<CalculateResponse> => {
+  const response = await fetch(`${API_BASE_URL}/calculator/calculate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ expression } satisfies CalculateRequest),
+  });
+
+  if (!response.ok) {
+    const error = (await response.json()) as ErrorResponse;
+    throw new Error(error.error || "Calculation failed");
+  }
+
+  return response.json() as Promise<CalculateResponse>;
 };
 

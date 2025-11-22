@@ -1,0 +1,27 @@
+.calculator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 2rem);
+  padding: 1rem;
+}
+
+.container {
+  width: 100%;
+  max-width: 400px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+@media (max-width: 480px) {
+  .calculator {
+    padding: 0.5rem;
+  }
+
+  .container {
+    max-width: 100%;
+  }
+}
+

@@ -1,0 +1,90 @@
+.button {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1.2rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.button:hover:not(:disabled) {
+  background-color: #f0f0f0;
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.95);
+  background-color: #e0e0e0;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.number {
+  background-color: #fff;
+  color: #333;
+}
+
+.operator {
+  background-color: #ff9500;
+  color: #fff;
+  border-color: #ff9500;
+}
+
+.operator:hover:not(:disabled) {
+  background-color: #ff8500;
+}
+
+.operator:active:not(:disabled) {
+  background-color: #ff7500;
+}
+
+.equals {
+  background-color: #007aff;
+  color: #fff;
+  border-color: #007aff;
+  grid-column: span 2;
+}
+
+.equals:hover:not(:disabled) {
+  background-color: #0066cc;
+}
+
+.equals:active:not(:disabled) {
+  background-color: #0052a3;
+}
+
+.clear {
+  background-color: #ff3b30;
+  color: #fff;
+  border-color: #ff3b30;
+}
+
+.clear:hover:not(:disabled) {
+  background-color: #ff2d20;
+}
+
+.clear:active:not(:disabled) {
+  background-color: #ff1f10;
+}
+
+.power {
+  background-color: #34c759;
+  color: #fff;
+  border-color: #34c759;
+}
+
+.power:hover:not(:disabled) {
+  background-color: #2fb04a;
+}
+
+.power:active:not(:disabled) {
+  background-color: #2a9d42;
+}
+

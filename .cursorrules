@@ -28,6 +28,12 @@ When making decisions, prioritize:
 
 Do not write any documentation for your task. You will follow exactly the documentation outlined for you. You will always be provided with a spec and you will satisfy it.
 
+**Linter Rules**:
+
+-   **NEVER disable linter rules** - Do not use `eslint-disable`, `eslint-disable-next-line`, `@ts-ignore`, `@ts-expect-error`, or any other linter/TypeScript suppressions
+-   **Fix the underlying issue** - If the linter complains, refactor the code to address the concern rather than suppressing it
+-   **Simplify when needed** - If a pattern is too complex for the linter, simplify it (e.g., use simpler regex patterns, break complex logic into smaller functions)
+
 **For new features**: Use `docs/features/TEMPLATE/` as a starting point for creating `FEATURES.md`, `API_CONTRACT.md`, `FRONTEND.md`, and `BACKEND.md`.
 
 If working on frontend:
