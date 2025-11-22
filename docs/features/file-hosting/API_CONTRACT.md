@@ -40,16 +40,72 @@ interface UploadResponse {
 
 **Error Response Format**:
 
-````typescript
+```typescript
 interface ErrorResponse {
   error: string;
 }
+```
+
+### `POST /api/file-hosting/upload-from-url`
+
+**Description**: Download a file from a URL and host it in R2 storage, storing metadata in D1
+
+**Request**:
+
+-   Content-Type: `application/json`
+-   Body: JSON with `url` field containing the file URL
+
+```typescript
+interface UploadFromUrlRequest {
+    url: string;
+}
+```
+
+**Response**:
+
+```typescript
+interface UploadResponse {
+    fileId: string;
+    downloadUrl: string;
+    compressionStatus: "pending" | "processing" | "done" | "failed";
+}
+```
+
+**Status Codes**:
+
+-   `200 OK`: File downloaded and hosted successfully
+-   `400 Bad Request`: Invalid URL, missing URL, or URL does not point to a downloadable file
+-   `404 Not Found`: File at URL not found
+-   `500 Internal Server Error`: Server error (download failure, upload failure, etc.)
+
+**Error Response Format**:
+
+```typescript
+interface ErrorResponse {
+  error: string;
+}
+```
+
+### `GET /api/file-hosting/download/[fileId]`
+
+**Description**: Download a hosted file
+
+**Request**:
+
+-   Path parameter: `fileId` (string, UUID)
+
+**Response**:
+
+-   Content-Type: Based on file mime type
+-   Body: File content (binary stream)
+-   Headers:
   - `Content-Disposition`: Attachment with filename
 
 **Status Codes**:
-- `200 OK`: File found and returned
-- `404 Not Found`: File not found or deleted
-- `500 Internal Server Error`: Server error
+
+-   `200 OK`: File found and returned
+-   `404 Not Found`: File not found or deleted
+-   `500 Internal Server Error`: Server error
 
 ### `GET /api/file-hosting/files`
 
@@ -242,6 +298,11 @@ interface ErrorResponse {
 # Upload file
 curl -X POST "http://localhost:8787/api/file-hosting/upload" \
   -F "file=@example.pdf"
+
+# Upload file from URL
+curl -X POST "http://localhost:8787/api/file-hosting/upload-from-url" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/file.pdf"}'
 
 # Download file
 curl -X GET "http://localhost:8787/api/file-hosting/download/[fileId]"

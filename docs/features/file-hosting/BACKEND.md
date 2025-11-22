@@ -58,6 +58,53 @@ interface UploadResponse {
 -   400: Missing file or invalid file
 -   500: R2 upload failure or database error
 
+### `POST /api/file-hosting/upload-from-url`
+
+**Handler**: `uploadFileFromUrl()`
+
+**Description**: Downloads a file from a URL, stores it in R2, saves metadata to D1
+
+**Request**:
+
+-   Content-Type: `application/json`
+-   Body: JSON with `url` field
+
+**Validation**:
+
+-   URL format: Must be a valid HTTP/HTTPS URL
+-   File size limit: 100MB (configurable, same as regular upload)
+-   Required: URL field must be present and valid
+-   URL accessibility: Must return a downloadable file (status 200)
+
+**Response**:
+
+```typescript
+interface UploadResponse {
+    fileId: string;
+    downloadUrl: string;
+    compressionStatus: "pending" | "processing" | "done" | "failed";
+}
+```
+
+**Implementation Flow**:
+
+1. Parse JSON request body
+2. Validate URL format
+3. Fetch file from URL
+4. Validate response (status 200, content-type, size)
+5. Generate unique file ID (UUID)
+6. Extract filename from URL or Content-Disposition header
+7. Sanitize filename
+8. Upload to R2 with proper content type
+9. Store metadata in D1
+10. Return file ID and download URL
+
+**Error Handling**:
+
+-   400: Invalid URL, missing URL, or URL does not point to a downloadable file
+-   404: File at URL not found
+-   500: Download failure, R2 upload failure, or database error
+
 ### `GET /api/file-hosting/download/[fileId]`
 
 **Handler**: `downloadFile()`
@@ -353,14 +400,28 @@ function validateFile(file: File): { ok: boolean; error?: string } {
 
     return { ok: true };
 }
+
+function validateUrl(url: string): { ok: boolean; error?: string } {
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.protocol !== "http:" && urlObj.protocol !== "https:") {
+            return { ok: false, error: "URL must use HTTP or HTTPS" };
+        }
+        return { ok: true };
+    } catch {
+        return { ok: false, error: "Invalid URL format" };
+    }
+}
 ```
 
 ### Business Rules
 
--   File size limit: 100MB
+-   File size limit: 100MB (applies to both direct uploads and URL downloads)
 -   Filename sanitization: Remove special characters
+-   Filename extraction: From URL path or Content-Disposition header
 -   Access logging: Log every download
 -   Access count: Increment on download
+-   URL validation: Must be valid HTTP/HTTPS URL
 
 ## Security Considerations
 
@@ -397,6 +458,7 @@ function validateFile(file: File): { ok: boolean; error?: string } {
 ### API Endpoints
 
 -   [ ] POST /upload endpoint
+-   [ ] POST /upload-from-url endpoint
 -   [ ] GET /download/[fileId] endpoint
 -   [ ] GET /files endpoint (list)
 -   [ ] GET /files/[fileId] endpoint (metadata)
@@ -413,6 +475,8 @@ function validateFile(file: File): { ok: boolean; error?: string } {
 ### Business Logic
 
 -   [ ] File upload processing
+-   [ ] File download from URL processing
+-   [ ] URL validation and fetching
 -   [ ] File download with logging
 -   [ ] Filename sanitization
 -   [ ] Access count increment

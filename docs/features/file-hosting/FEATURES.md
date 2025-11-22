@@ -34,6 +34,10 @@ Files are automatically compressed in the background to save storage space and i
 
 Users can generate QR codes for their file download links, making it easy to share files by simply showing the QR code. Recipients can scan the QR code with their phone camera to instantly access the file download link.
 
+### URL-Based File Hosting
+
+Users can provide a URL to a file, and the system will download that file and host it. This allows users to host files from external sources without needing to download them locally first.
+
 ## User Workflows
 
 ### Upload and Share a File
@@ -49,6 +53,21 @@ Users can generate QR codes for their file download links, making it easy to sha
 5. Share the link or QR code with others
 
 **Result**: File is accessible to anyone with the link or QR code
+
+### Host a File from URL
+
+**Goal**: Download a file from a URL and host it
+
+**Steps**:
+
+1. Navigate to the file hosting page
+2. Enter a URL to a file in the URL input field
+3. Click "Download and Host" button
+4. Wait for the file to be downloaded and uploaded
+5. Copy the download link or generate a QR code
+6. Share the link or QR code with others
+
+**Result**: File from the external URL is downloaded, hosted, and accessible to anyone with the link or QR code
 
 ### Generate QR Code for File Link
 
@@ -93,6 +112,7 @@ Users can generate QR codes for their file download links, making it easy to sha
 ## User Capabilities
 
 -   Upload files of any type (images, documents, videos, etc.)
+-   Host files from external URLs by providing a link
 -   Share files instantly via public links
 -   Generate QR codes for download links
 -   Download QR codes as images for sharing
@@ -122,6 +142,10 @@ Track who has accessed shared files and when, useful for understanding content r
 ### File Backup
 
 Upload important files as a backup solution, with the ability to access them from anywhere via the download link.
+
+### External File Hosting
+
+Host files from external sources by providing a URL. The system downloads the file and hosts it, making it useful for creating permanent links to files that might otherwise become unavailable or for consolidating file hosting in one place.
 
 ## User Benefits
 

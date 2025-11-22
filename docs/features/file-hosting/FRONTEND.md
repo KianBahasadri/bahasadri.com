@@ -45,6 +45,7 @@ See `docs/features/file-hosting/API_CONTRACT.md` for the API contract this front
 
 -   Hero section with title and tagline
 -   Upload zone section
+-   URL upload form section
 -   File list section
 
 ### UploadZone
@@ -78,6 +79,40 @@ interface UploadZoneProps {
 
 -   CSS Modules: `UploadZone.module.css`
 -   Drag-over visual feedback
+-   Upload status indicators
+
+### UrlUploadForm
+
+**Location**: `components/UrlUploadForm/UrlUploadForm.tsx`
+
+**Purpose**: Handles file hosting from external URLs
+
+**Props**:
+
+```typescript
+interface UrlUploadFormProps {
+    // No props needed
+}
+```
+
+**State**:
+
+-   Local state: URL input value (string)
+-   Local state: Upload status (`idle` | `uploading` | `error` | `done`)
+-   Local state: Status message (string)
+
+**Interactions**:
+
+-   Enter URL in text input
+-   Click "Download and Host" button
+-   Upload progress feedback
+-   Error handling and display
+-   URL validation
+
+**Styling**:
+
+-   CSS Modules: `UrlUploadForm.module.css`
+-   Form input styling
 -   Upload status indicators
 
 ### FileList
@@ -208,6 +243,26 @@ export const uploadFile = async (file: File): Promise<UploadResponse> => {
     return response.json();
 };
 
+// Upload file from URL
+export const uploadFileFromUrl = async (
+    url: string
+): Promise<UploadResponse> => {
+    const response = await fetch("/api/file-hosting/upload-from-url", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Upload from URL failed");
+    }
+
+    return response.json();
+};
+
 // Get file list
 export const fetchFileList = async (
     cursor?: string,
@@ -307,6 +362,12 @@ export const generateQRCodeBlob = async (
     -   Flow: Validate file → Upload → Show success → Refresh file list
     -   Error handling: Show error message, allow retry
 
+-   **Upload File from URL**:
+
+    -   Trigger: Enter URL and click "Download and Host" button
+    -   Flow: Validate URL → Download file → Upload → Show success → Refresh file list
+    -   Error handling: Show error message, allow retry
+
 -   **Download File**:
 
     -   Trigger: Click download link
@@ -360,6 +421,7 @@ export const generateQRCodeBlob = async (
 
 -   [ ] FileHosting page component
 -   [ ] UploadZone component with drag-drop
+-   [ ] UrlUploadForm component
 -   [ ] FileList component
 -   [ ] QRCodeGenerator component
 -   [ ] CSS Modules for all components
