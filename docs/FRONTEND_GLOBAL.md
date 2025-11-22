@@ -77,3 +77,5 @@ frontend/src/
 -   Feature-specific frontend design: `docs/features/[feature-name]/FRONTEND.md`
 -   API contracts: `docs/features/[feature-name]/API_CONTRACT.md`
 -   Backend documentation: [BACKEND_GLOBAL.md](./BACKEND_GLOBAL.md)
+-   Content style guidelines: [CONTENT_STYLE.md](./CONTENT_STYLE.md)
+-   Design guide: [DESIGN_GUIDE.md](./DESIGN_GUIDE.md)
