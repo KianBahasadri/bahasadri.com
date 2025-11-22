@@ -1,6 +1,6 @@
 name = "bahasadri-backend"
 main = "src/index.ts"
-compatibility_date = "2025-03-25"
+compatibility_date = "2025-11-22"
 
 [[kv_namespaces]]
 binding = "SMS_MESSAGES"
@@ -15,3 +15,6 @@ bucket_name = "file-hosting-prod"
 binding = "FILE_HOSTING_DB"
 database_name = "file-hosting"
 database_id = "00822e66-3363-42df-b80a-526c0a1efc30"
+
+[placement]
+mode = "smart"
