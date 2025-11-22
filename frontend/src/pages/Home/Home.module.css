@@ -513,6 +513,154 @@ main {
     }
 }
 
+/* ----- Cute Popup ----- */
+.cutePopup {
+    position: fixed;
+    z-index: 2000;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(-100%);
+    animation: popupAppear 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.cutePopup.popupBelow {
+    transform: translateX(-50%) translateY(0);
+}
+
+.popupContent {
+    background: white;
+    border: 3px solid var(--pink-hot);
+    border-radius: 20px;
+    padding: 1.2rem 1.5rem;
+    box-shadow: 8px 8px 0 var(--pink-light),
+        0 0 30px rgba(255, 105, 180, 0.4);
+    position: relative;
+    max-width: 280px;
+    animation: popupFloat 2s ease-in-out infinite;
+}
+
+.popupContent::before {
+    content: "";
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 12px solid var(--pink-hot);
+}
+
+.popupContent::after {
+    content: "";
+    position: absolute;
+    bottom: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid white;
+}
+
+.popupBelow .popupContent::before {
+    bottom: auto;
+    top: -12px;
+    border-top: none;
+    border-bottom: 12px solid var(--pink-hot);
+}
+
+.popupBelow .popupContent::after {
+    bottom: auto;
+    top: -9px;
+    border-top: none;
+    border-bottom: 10px solid white;
+}
+
+@media (prefers-color-scheme: dark) {
+    .popupBelow .popupContent::after {
+        border-bottom-color: var(--dark-surface);
+    }
+}
+
+.popupAscii {
+    font-size: 1.8rem;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    line-height: 1;
+    animation: asciiWiggle 1.5s ease-in-out infinite;
+}
+
+.popupText {
+    font-family: "Comic Neue", sans-serif;
+    font-size: 1rem;
+    color: var(--pink-darker);
+    text-align: center;
+    line-height: 1.4;
+    font-weight: 600;
+}
+
+@keyframes popupAppear {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-100%) scale(0.5) rotate(-5deg);
+    }
+    50% {
+        transform: translateX(-50%) translateY(-100%) scale(1.1) rotate(2deg);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-100%) scale(1) rotate(0deg);
+    }
+}
+
+@keyframes popupFloat {
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+    25% {
+        transform: translateY(-5px) rotate(-1deg);
+    }
+    75% {
+        transform: translateY(-5px) rotate(1deg);
+    }
+}
+
+@keyframes asciiWiggle {
+    0%,
+    100% {
+        transform: rotate(0deg) scale(1);
+    }
+    25% {
+        transform: rotate(-8deg) scale(1.1);
+    }
+    50% {
+        transform: rotate(0deg) scale(1.05);
+    }
+    75% {
+        transform: rotate(8deg) scale(1.1);
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .popupContent {
+        background: var(--dark-surface);
+        border-color: var(--pink-hot);
+        box-shadow: 8px 8px 0 var(--pink-primary),
+            0 0 30px rgba(255, 105, 180, 0.5);
+    }
+
+    .popupContent::after {
+        border-top-color: var(--dark-surface);
+    }
+
+    .popupText {
+        color: var(--pink-light);
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

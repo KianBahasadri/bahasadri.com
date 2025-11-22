@@ -1,10 +1,48 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import styles from "./Home.module.css";
+
+interface ToolPopup {
+    text: string;
+    ascii?: string;
+}
+
+const toolPopups: Record<string, ToolPopup> = {
+    "file-hosting": {
+        text: "Coming soon~ 🥺 I'm still working on it for you! 💾✨",
+        ascii: "(⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄)",
+    },
+    "file-encryptor": {
+        text: "Not ready yet... but I'll keep your secrets safe! 🔒💖",
+        ascii: "♡( ◡‿◡ )",
+    },
+    "sms-messenger": {
+        text: "Click me, darling~ Let's talk forever! 📱💕",
+        ascii: "(♡ >ω< ♡)",
+    },
+    calculator: {
+        text: "Math time together~ I'll help you calculate! 🧮✨",
+        ascii: "☆⌒(ゝ。∂)",
+    },
+    "osint-tool": {
+        text: "Still building this one... I'm watching for you! 🔍👁️",
+        ascii: "(o_O)",
+    },
+    "video-call": {
+        text: "Soon we can see each other~ I'm waiting! 📹💖",
+        ascii: "(〜￣▽￣)〜",
+    },
+};
 
 export default function Home(): React.JSX.Element {
     const audioContextRef = useRef<AudioContext | null>(null);
     const heartbeatIntervalRef = useRef<number | null>(null);
+    const [hoveredTool, setHoveredTool] = useState<string | null>(null);
+    const [popupPosition, setPopupPosition] = useState<{
+        x: number;
+        y: number;
+        above: boolean;
+    } | null>(null);
 
     const playHeartbeatSound = (): void => {
         if (!audioContextRef.current) {
@@ -67,6 +105,45 @@ export default function Home(): React.JSX.Element {
         }
     };
 
+    const handleCardHover = (
+        toolId: string,
+        event: React.MouseEvent<HTMLElement>
+    ): void => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const topY = rect.top - 20;
+        
+        // Ensure popup stays within viewport
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const popupWidth = 280;
+        const popupHeight = 120;
+        
+        let x = centerX;
+        let y = topY;
+        
+        // Adjust if popup would go off left/right edge
+        if (x - popupWidth / 2 < 10) {
+            x = popupWidth / 2 + 10;
+        } else if (x + popupWidth / 2 > viewportWidth - 10) {
+            x = viewportWidth - popupWidth / 2 - 10;
+        }
+        
+        // Adjust if popup would go off top edge
+        const above = y - popupHeight >= 10;
+        if (!above) {
+            y = rect.bottom + 20;
+        }
+        
+        setPopupPosition({ x, y, above });
+        setHoveredTool(toolId);
+    };
+
+    const handleCardLeave = (): void => {
+        setHoveredTool(null);
+        setPopupPosition(null);
+    };
+
     return (
         <main>
             {/* Terminal Scanline Background */}
@@ -98,16 +175,39 @@ export default function Home(): React.JSX.Element {
             {/* Tools Section */}
             <section className={styles.section}>
                 <div className={styles.toolsGrid}>
-                    <button className={styles.cardMenhera} disabled>
+                    <button
+                        className={styles.cardMenhera}
+                        disabled
+                        onMouseEnter={(e) => handleCardHover("file-hosting", e)}
+                        onMouseLeave={handleCardLeave}
+                    >
                         <span className={styles.cardIcon}>💾</span>
                         <h3 className={styles.cardTitle}>File Hosting</h3>
+                    </button>
+
+                    <button
+                        className={styles.cardMenhera}
+                        disabled
+                        onMouseEnter={(e) =>
+                            handleCardHover("file-encryptor", e)
+                        }
+                        onMouseLeave={handleCardLeave}
+                    >
+                        <span className={styles.cardIcon}>🔒</span>
+                        <h3 className={styles.cardTitle}>File Encryptor</h3>
                     </button>
 
                     <Link
                         to="/sms-messenger"
                         className={styles.cardMenhera}
-                        onMouseEnter={startHeartbeat}
-                        onMouseLeave={stopHeartbeat}
+                        onMouseEnter={(e) => {
+                            handleCardHover("sms-messenger", e);
+                            startHeartbeat();
+                        }}
+                        onMouseLeave={() => {
+                            handleCardLeave();
+                            stopHeartbeat();
+                        }}
                     >
                         <span className={styles.cardIcon}>📱</span>
                         <h3 className={styles.cardTitle}>SMS Messenger</h3>
@@ -116,18 +216,63 @@ export default function Home(): React.JSX.Element {
                     <Link
                         to="/calculator"
                         className={styles.cardMenhera}
-                        onMouseEnter={startHeartbeat}
-                        onMouseLeave={stopHeartbeat}
+                        onMouseEnter={(e) => {
+                            handleCardHover("calculator", e);
+                            startHeartbeat();
+                        }}
+                        onMouseLeave={() => {
+                            handleCardLeave();
+                            stopHeartbeat();
+                        }}
                     >
                         <span className={styles.cardIcon}>🧮</span>
                         <h3 className={styles.cardTitle}>Calculator</h3>
                     </Link>
 
-                    <button className={styles.cardMenhera} disabled>
+                    <button
+                        className={styles.cardMenhera}
+                        disabled
+                        onMouseEnter={(e) => handleCardHover("osint-tool", e)}
+                        onMouseLeave={handleCardLeave}
+                    >
+                        <span className={styles.cardIcon}>🔍</span>
+                        <h3 className={styles.cardTitle}>OSINT Tool</h3>
+                    </button>
+
+                    <button
+                        className={styles.cardMenhera}
+                        disabled
+                        onMouseEnter={(e) => handleCardHover("video-call", e)}
+                        onMouseLeave={handleCardLeave}
+                    >
                         <span className={styles.cardIcon}>📹</span>
                         <h3 className={styles.cardTitle}>Video Call</h3>
                     </button>
                 </div>
+
+                {/* Cute Popup */}
+                {hoveredTool && popupPosition && toolPopups[hoveredTool] && (
+                    <div
+                        className={`${styles.cutePopup} ${
+                            !popupPosition.above ? styles.popupBelow : ""
+                        }`}
+                        style={{
+                            left: `${popupPosition.x}px`,
+                            top: `${popupPosition.y}px`,
+                        }}
+                    >
+                        <div className={styles.popupContent}>
+                            {toolPopups[hoveredTool].ascii && (
+                                <div className={styles.popupAscii}>
+                                    {toolPopups[hoveredTool].ascii}
+                                </div>
+                            )}
+                            <div className={styles.popupText}>
+                                {toolPopups[hoveredTool].text}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </section>
         </main>
     );
