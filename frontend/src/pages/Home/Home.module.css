@@ -32,23 +32,20 @@ main {
     pointer-events: none;
     z-index: 1000;
     border: 4px solid var(--pink-hot);
-    box-shadow: 
-        0 0 0 2px var(--pink-primary),
-        0 0 60px rgba(255, 105, 180, 0.5),
+    box-shadow: 0 0 0 2px var(--pink-primary), 0 0 60px rgba(255, 105, 180, 0.5),
         inset 0 0 60px rgba(255, 105, 180, 0.2);
     animation: borderGlow 3s ease-in-out infinite;
 }
 
 @keyframes borderGlow {
-    0%, 100% {
-        box-shadow: 
-            0 0 0 2px var(--pink-primary),
+    0%,
+    100% {
+        box-shadow: 0 0 0 2px var(--pink-primary),
             0 0 60px rgba(255, 105, 180, 0.5),
             inset 0 0 60px rgba(255, 105, 180, 0.2);
     }
     50% {
-        box-shadow: 
-            0 0 0 2px var(--pink-primary),
+        box-shadow: 0 0 0 2px var(--pink-primary),
             0 0 80px rgba(255, 105, 180, 0.7),
             inset 0 0 80px rgba(255, 105, 180, 0.3);
     }
@@ -61,16 +58,29 @@ main {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: 
-        radial-gradient(circle at 20% 50%, rgba(255, 105, 180, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(255, 179, 222, 0.15) 0%, transparent 50%),
-        linear-gradient(135deg, var(--pink-soft) 0%, var(--pink-light) 50%, var(--pink-primary) 100%);
+    background: radial-gradient(
+            circle at 20% 50%,
+            rgba(255, 105, 180, 0.15) 0%,
+            transparent 50%
+        ),
+        radial-gradient(
+            circle at 80% 80%,
+            rgba(255, 179, 222, 0.15) 0%,
+            transparent 50%
+        ),
+        linear-gradient(
+            135deg,
+            var(--pink-soft) 0%,
+            var(--pink-light) 50%,
+            var(--pink-primary) 100%
+        );
     z-index: -3;
     animation: bgPulse 8s ease-in-out infinite;
 }
 
 @keyframes bgPulse {
-    0%, 100% {
+    0%,
+    100% {
         opacity: 0.95;
         filter: hue-rotate(0deg);
     }
@@ -82,10 +92,21 @@ main {
 
 @media (prefers-color-scheme: dark) {
     .bgTerminal {
-        background: 
-            radial-gradient(circle at 20% 50%, rgba(255, 105, 180, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, rgba(255, 179, 222, 0.1) 0%, transparent 50%),
-            linear-gradient(135deg, var(--dark-void) 0%, var(--dark-surface) 100%);
+        background: radial-gradient(
+                circle at 20% 50%,
+                rgba(255, 105, 180, 0.1) 0%,
+                transparent 50%
+            ),
+            radial-gradient(
+                circle at 80% 80%,
+                rgba(255, 179, 222, 0.1) 0%,
+                transparent 50%
+            ),
+            linear-gradient(
+                135deg,
+                var(--dark-void) 0%,
+                var(--dark-surface) 100%
+            );
     }
 }
 
@@ -137,26 +158,86 @@ main {
     will-change: transform, opacity;
 }
 
-.particle:nth-child(1) { left: 5%; animation-delay: 0s; }
-.particle:nth-child(2) { left: 15%; animation-delay: 0.6s; }
-.particle:nth-child(3) { left: 25%; animation-delay: 1.2s; }
-.particle:nth-child(4) { left: 35%; animation-delay: 1.8s; }
-.particle:nth-child(5) { left: 45%; animation-delay: 2.4s; }
-.particle:nth-child(6) { left: 55%; animation-delay: 3s; }
-.particle:nth-child(7) { left: 65%; animation-delay: 3.6s; }
-.particle:nth-child(8) { left: 75%; animation-delay: 4.2s; }
-.particle:nth-child(9) { left: 85%; animation-delay: 4.8s; }
-.particle:nth-child(10) { left: 95%; animation-delay: 5.4s; }
-.particle:nth-child(11) { left: 10%; animation-delay: 6s; }
-.particle:nth-child(12) { left: 20%; animation-delay: 6.6s; }
-.particle:nth-child(13) { left: 30%; animation-delay: 7.2s; }
-.particle:nth-child(14) { left: 40%; animation-delay: 7.8s; }
-.particle:nth-child(15) { left: 50%; animation-delay: 8.4s; }
-.particle:nth-child(16) { left: 60%; animation-delay: 9s; }
-.particle:nth-child(17) { left: 70%; animation-delay: 9.6s; }
-.particle:nth-child(18) { left: 80%; animation-delay: 10.2s; }
-.particle:nth-child(19) { left: 90%; animation-delay: 10.8s; }
-.particle:nth-child(20) { left: 12%; animation-delay: 11.4s; }
+.particle:nth-child(1) {
+    left: 5%;
+    animation-delay: 0s;
+}
+.particle:nth-child(2) {
+    left: 15%;
+    animation-delay: 0.6s;
+}
+.particle:nth-child(3) {
+    left: 25%;
+    animation-delay: 1.2s;
+}
+.particle:nth-child(4) {
+    left: 35%;
+    animation-delay: 1.8s;
+}
+.particle:nth-child(5) {
+    left: 45%;
+    animation-delay: 2.4s;
+}
+.particle:nth-child(6) {
+    left: 55%;
+    animation-delay: 3s;
+}
+.particle:nth-child(7) {
+    left: 65%;
+    animation-delay: 3.6s;
+}
+.particle:nth-child(8) {
+    left: 75%;
+    animation-delay: 4.2s;
+}
+.particle:nth-child(9) {
+    left: 85%;
+    animation-delay: 4.8s;
+}
+.particle:nth-child(10) {
+    left: 95%;
+    animation-delay: 5.4s;
+}
+.particle:nth-child(11) {
+    left: 10%;
+    animation-delay: 6s;
+}
+.particle:nth-child(12) {
+    left: 20%;
+    animation-delay: 6.6s;
+}
+.particle:nth-child(13) {
+    left: 30%;
+    animation-delay: 7.2s;
+}
+.particle:nth-child(14) {
+    left: 40%;
+    animation-delay: 7.8s;
+}
+.particle:nth-child(15) {
+    left: 50%;
+    animation-delay: 8.4s;
+}
+.particle:nth-child(16) {
+    left: 60%;
+    animation-delay: 9s;
+}
+.particle:nth-child(17) {
+    left: 70%;
+    animation-delay: 9.6s;
+}
+.particle:nth-child(18) {
+    left: 80%;
+    animation-delay: 10.2s;
+}
+.particle:nth-child(19) {
+    left: 90%;
+    animation-delay: 10.8s;
+}
+.particle:nth-child(20) {
+    left: 12%;
+    animation-delay: 11.4s;
+}
 
 @keyframes particleFloat {
     0% {
@@ -209,14 +290,13 @@ main {
     position: relative;
     user-select: none;
     letter-spacing: 0.02em;
-    text-shadow: 
-        2px 2px 0 var(--pink-light),
-        4px 4px 0 rgba(255, 105, 180, 0.3);
+    text-shadow: 2px 2px 0 var(--pink-light), 4px 4px 0 rgba(255, 105, 180, 0.3);
     animation: titleFloat 3s ease-in-out infinite;
 }
 
 @keyframes titleFloat {
-    0%, 100% {
+    0%,
+    100% {
         transform: translateY(0) rotate(0deg);
     }
     25% {
@@ -254,7 +334,8 @@ main {
 }
 
 @keyframes glitch1 {
-    0%, 100% {
+    0%,
+    100% {
         transform: translate(0);
     }
     20% {
@@ -272,7 +353,8 @@ main {
 }
 
 @keyframes glitch2 {
-    0%, 100% {
+    0%,
+    100% {
         transform: translate(0);
     }
     20% {
@@ -288,7 +370,6 @@ main {
         transform: translate(4px, 4px) skewX(2deg);
     }
 }
-
 
 /* ----- Section Styles ----- */
 .section {
@@ -323,9 +404,7 @@ main {
     border-radius: 20px;
     padding: 3rem 2rem;
     position: relative;
-    box-shadow: 
-        6px 6px 0 var(--pink-light),
-        0 0 25px rgba(255, 179, 222, 0.25);
+    box-shadow: 6px 6px 0 var(--pink-light), 0 0 25px rgba(255, 179, 222, 0.25);
     transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     overflow: hidden;
     cursor: pointer;
@@ -360,10 +439,28 @@ main {
 
 .cardMenhera:hover:not(:disabled) {
     transform: translateY(-8px) rotate(0.5deg);
-    box-shadow: 
-        10px 10px 0 var(--pink-hot),
-        0 0 40px rgba(255, 105, 180, 0.4);
+    box-shadow: 10px 10px 0 var(--pink-hot), 0 0 40px rgba(255, 105, 180, 0.4);
     border-color: var(--pink-hot);
+    animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+    0%,
+    100% {
+        transform: translateY(-8px) rotate(0.5deg) scale(1);
+    }
+    10% {
+        transform: translateY(-8px) rotate(0.5deg) scale(1.05);
+    }
+    20% {
+        transform: translateY(-8px) rotate(0.5deg) scale(1);
+    }
+    30% {
+        transform: translateY(-8px) rotate(0.5deg) scale(1.05);
+    }
+    40% {
+        transform: translateY(-8px) rotate(0.5deg) scale(1);
+    }
 }
 
 .cardMenhera:active:not(:disabled) {
@@ -390,7 +487,8 @@ main {
 }
 
 @keyframes iconWiggle {
-    0%, 100% {
+    0%,
+    100% {
         transform: rotate(0deg);
     }
     25% {
@@ -414,7 +512,6 @@ main {
         color: var(--pink-light);
     }
 }
-
 
 @media (prefers-reduced-motion: reduce) {
     *,
