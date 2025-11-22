@@ -1,0 +1,603 @@
+.container {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    min-height: 100vh;
+}
+
+.bgYandere {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #ffe4e1 0%, #ffc0cb 50%, #ffb3de 100%);
+    z-index: -2;
+    overflow: hidden;
+}
+
+.bgYandere::before {
+    content: "♡ ✨ 💊 🩹 ♡ ✨ 💊 🩹";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 100%;
+    font-size: 3rem;
+    opacity: 0.05;
+    line-height: 4rem;
+    white-space: nowrap;
+    animation: scrollPattern 30s linear infinite;
+}
+
+@keyframes scrollPattern {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .bgYandere {
+        background: linear-gradient(
+            135deg,
+            var(--dark-void) 0%,
+            var(--dark-surface) 100%
+        );
+    }
+
+    .bgYandere::before {
+        opacity: 0.02;
+    }
+}
+
+.floatingHearts {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.heart {
+    position: absolute;
+    font-size: 2rem;
+    opacity: 0.3;
+    animation: floatUp 10s linear infinite;
+}
+
+.heart:nth-child(1) {
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.heart:nth-child(2) {
+    left: 30%;
+    animation-delay: 2s;
+}
+
+.heart:nth-child(3) {
+    left: 50%;
+    animation-delay: 4s;
+}
+
+.heart:nth-child(4) {
+    left: 70%;
+    animation-delay: 6s;
+}
+
+.heart:nth-child(5) {
+    left: 90%;
+    animation-delay: 8s;
+}
+
+@keyframes floatUp {
+    0% {
+        bottom: -10%;
+        transform: translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.3;
+    }
+    90% {
+        opacity: 0.3;
+    }
+    100% {
+        bottom: 110%;
+        transform: translateX(50px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+.hero {
+    text-align: center;
+    padding: 4rem 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.heroTitle {
+    font-size: 3rem;
+    color: var(--pink-darker);
+    font-family: "Comic Neue", sans-serif;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    animation: float 3s ease-in-out infinite;
+    position: relative;
+}
+
+.heroTitle::before,
+.heroTitle::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.heroTitle::before {
+    color: var(--blood-red);
+    animation: glitch1 0.3s infinite;
+    clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+}
+
+.heroTitle::after {
+    color: var(--pink-hot);
+    animation: glitch2 0.3s infinite;
+    clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+}
+
+@keyframes glitch1 {
+    0%,
+    100% {
+        transform: translate(0);
+    }
+    20% {
+        transform: translate(-2px, 2px);
+    }
+    40% {
+        transform: translate(-2px, -2px);
+    }
+    60% {
+        transform: translate(2px, 2px);
+    }
+    80% {
+        transform: translate(2px, -2px);
+    }
+}
+
+@keyframes glitch2 {
+    0%,
+    100% {
+        transform: translate(0);
+    }
+    20% {
+        transform: translate(2px, -2px);
+    }
+    40% {
+        transform: translate(2px, 2px);
+    }
+    60% {
+        transform: translate(-2px, -2px);
+    }
+    80% {
+        transform: translate(-2px, 2px);
+    }
+}
+
+@keyframes float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.heroSubtitle {
+    font-size: 1.5rem;
+    color: var(--pink-hot);
+    font-family: "Delius Swash Caps", cursive;
+    margin-bottom: 2rem;
+}
+
+.section {
+    margin: 4rem 0;
+}
+
+.sectionTitle {
+    color: var(--pink-darker);
+    font-family: "Comic Neue", sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+    .sectionTitle {
+        color: var(--pink-light);
+    }
+}
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.statCard {
+    background: white;
+    border: 4px dashed var(--pink-primary);
+    border-radius: 25px;
+    padding: 2rem;
+    position: relative;
+    box-shadow: 8px 8px 0 var(--pink-light), 0 0 30px rgba(255, 179, 222, 0.3);
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.statCard::before,
+.statCard::after {
+    content: "🩹";
+    position: absolute;
+    font-size: 2rem;
+}
+
+.statCard::before {
+    top: -15px;
+    left: -15px;
+    transform: rotate(-15deg);
+}
+
+.statCard::after {
+    bottom: -15px;
+    right: -15px;
+    transform: rotate(15deg);
+}
+
+.statCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 12px 12px 0 var(--pink-hot), 0 0 40px rgba(255, 105, 180, 0.5);
+    animation: cardGlitch 0.3s ease;
+}
+
+@keyframes cardGlitch {
+    0%,
+    100% {
+        border-color: var(--pink-primary);
+        filter: none;
+    }
+    50% {
+        border-color: var(--blood-red);
+        filter: hue-rotate(90deg);
+    }
+}
+
+.statValue {
+    font-family: "Comic Neue", sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--pink-darker);
+    margin-bottom: 0.5rem;
+}
+
+.statLabel {
+    font-family: "Nunito", sans-serif;
+    font-size: 1rem;
+    color: var(--pink-hot);
+}
+
+@media (prefers-color-scheme: dark) {
+    .statCard {
+        background: var(--dark-surface);
+        border-color: var(--pink-hot);
+        color: var(--pink-light);
+    }
+
+    .statValue {
+        color: var(--pink-light);
+    }
+}
+
+.toolsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.cardMenhera {
+    background: white;
+    border: 4px dashed var(--pink-primary);
+    border-radius: 25px;
+    padding: 2rem;
+    position: relative;
+    box-shadow: 8px 8px 0 var(--pink-light), 0 0 30px rgba(255, 179, 222, 0.3);
+    transition: all 0.3s ease;
+}
+
+.cardMenhera::before,
+.cardMenhera::after {
+    content: "🩹";
+    position: absolute;
+    font-size: 2rem;
+}
+
+.cardMenhera::before {
+    top: -15px;
+    left: -15px;
+    transform: rotate(-15deg);
+}
+
+.cardMenhera::after {
+    bottom: -15px;
+    right: -15px;
+    transform: rotate(15deg);
+}
+
+.cardMenhera:hover {
+    transform: translateY(-5px);
+    box-shadow: 12px 12px 0 var(--pink-hot), 0 0 40px rgba(255, 105, 180, 0.5);
+    animation: cardGlitch 0.3s ease;
+}
+
+.cardTitle {
+    color: var(--pink-darker);
+    font-family: "Comic Neue", sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cardMenhera p {
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    color: var(--pink-darker);
+}
+
+@media (prefers-color-scheme: dark) {
+    .cardMenhera {
+        background: var(--dark-surface);
+        border-color: var(--pink-hot);
+        color: var(--pink-light);
+    }
+
+    .cardTitle {
+        color: var(--pink-light);
+    }
+
+    .cardMenhera p {
+        color: var(--pink-light);
+    }
+}
+
+.btnYandere {
+    background: var(--pink-primary);
+    color: var(--dark-void);
+    border: 3px solid var(--pink-hot);
+    border-radius: 20px;
+    padding: 12px 32px;
+    font-family: "Comic Neue", sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    position: relative;
+    overflow: visible;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 105, 180, 0.4),
+        inset 0 0 10px rgba(255, 255, 255, 0.3);
+    text-decoration: none;
+    display: inline-block;
+    width: 100%;
+    text-align: center;
+    z-index: 1;
+    outline: none !important;
+}
+
+.btnYandere:focus,
+.btnYandere:focus-visible,
+.btnYandere:focus-within,
+a.btnYandere:focus,
+a.btnYandere:focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: 0 4px 15px rgba(255, 105, 180, 0.4),
+        inset 0 0 10px rgba(255, 255, 255, 0.3) !important;
+}
+
+.btnYandere::before {
+    content: "♡";
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    font-size: 3rem;
+    opacity: 0.1;
+    transition: all 0.3s ease;
+}
+
+.btnYandere:hover:not(:disabled),
+.btnYandere:focus-visible:not(:disabled) {
+    background: var(--pink-hot);
+    border-color: var(--blood-red);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 25px rgba(220, 20, 60, 0.5),
+        inset 0 0 20px rgba(255, 255, 255, 0.5) !important;
+    animation: heartbeat 0.6s infinite;
+    outline: none !important;
+    outline-offset: 0 !important;
+}
+
+.btnYandere:hover:not(:disabled)::before,
+.btnYandere:focus-visible:not(:disabled)::before {
+    animation: floatHeart 2s infinite;
+}
+
+.btnYandere:active:not(:disabled) {
+    transform: translateY(0) scale(0.95);
+    outline: none !important;
+    outline-offset: 0 !important;
+}
+
+.btnYandere:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btnYandere:disabled:hover,
+.btnYandere:disabled:focus-visible {
+    transform: none;
+    animation: none;
+}
+
+@keyframes heartbeat {
+    0%,
+    100% {
+        transform: translateY(-2px) scale(1.05);
+    }
+    50% {
+        transform: translateY(-2px) scale(1.08);
+    }
+}
+
+@keyframes floatHeart {
+    0%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.1;
+    }
+    50% {
+        transform: translateY(-10px);
+        opacity: 0.3;
+    }
+}
+
+.aboutCard {
+    background: white;
+    border: 4px dashed var(--pink-primary);
+    border-radius: 25px;
+    padding: 2rem;
+    position: relative;
+    box-shadow: 8px 8px 0 var(--pink-light), 0 0 30px rgba(255, 179, 222, 0.3);
+}
+
+.aboutCard::before,
+.aboutCard::after {
+    content: "🩹";
+    position: absolute;
+    font-size: 2rem;
+}
+
+.aboutCard::before {
+    top: -15px;
+    left: -15px;
+    transform: rotate(-15deg);
+}
+
+.aboutCard::after {
+    bottom: -15px;
+    right: -15px;
+    transform: rotate(15deg);
+}
+
+.aboutCard p {
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    color: var(--pink-darker);
+}
+
+.aboutCard code {
+    background: rgba(255, 179, 222, 0.2);
+    padding: 2px 6px;
+    border: 1px solid var(--pink-primary);
+    border-radius: 5px;
+    color: var(--pink-darker);
+    font-family: "Courier New", monospace;
+}
+
+.highlight {
+    color: var(--pink-hot);
+    font-weight: 600;
+    font-style: italic;
+}
+
+@media (prefers-color-scheme: dark) {
+    .aboutCard {
+        background: var(--dark-surface);
+        border-color: var(--pink-hot);
+        color: var(--pink-light);
+    }
+
+    .aboutCard p {
+        color: var(--pink-light);
+    }
+
+    .aboutCard code {
+        color: var(--pink-light);
+        border-color: var(--pink-hot);
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .heroTitle {
+        font-size: 2rem;
+    }
+
+    .heroSubtitle {
+        font-size: 1.2rem;
+    }
+
+    .toolsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .statsGrid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .sectionTitle {
+        font-size: 1.5rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .heroTitle::before,
+    .heroTitle::after {
+        animation: none;
+    }
+
+    .heart {
+        animation: none;
+    }
+
+    .bgYandere::before {
+        animation: none;
+    }
+
+    .btnYandere:hover:not(:disabled) {
+        animation: none;
+    }
+
+    .statCard:hover,
+    .cardMenhera:hover {
+        animation: none;
+    }
+}

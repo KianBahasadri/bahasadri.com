@@ -1,36 +1,101 @@
+@import url("https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Nunito:wght@400;600;800&family=Delius+Swash+Caps&display=swap");
+
 :root {
-  font-family: 'Inter', system-ui, sans-serif;
-  color: #0f172a;
-  background-color: #f8fafc;
+    /* Kawaii Pink Spectrum */
+    --pink-soft: #ffe4e1;
+    --pink-light: #ffc0cb;
+    --pink-primary: #ffb3de;
+    --pink-hot: #ff69b4;
+    --pink-darker: #ff1493;
+
+    /* Dark Mode (For the 3AM Coders) */
+    --dark-void: #0a0a0f;
+    --dark-surface: #1a1a2e;
+    --dark-elevated: #16213e;
+
+    /* Medical/Menhera Accents */
+    --blood-red: #dc143c;
+    --pill-white: #f8f8ff;
+    --bandage-beige: #fff5ee;
+    --syringe-metal: #c0c0c0;
+
+    /* Tech Colors */
+    --terminal-green: #00ff00;
+    --error-red: #ff0000;
+    --warning-yellow: #ffd700;
+}
+
+* {
+    box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Nunito", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    background: linear-gradient(135deg, #ffe4e1 0%, #ffc0cb 50%, #ffb3de 100%);
+    color: var(--pink-darker);
+    position: relative;
+    overflow-x: hidden;
 }
 
-.app {
-  text-align: center;
-  padding: 3rem;
-  border-radius: 1rem;
-  background: white;
-  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.1);
+@media (prefers-color-scheme: dark) {
+    body {
+        background: linear-gradient(
+            135deg,
+            var(--dark-void) 0%,
+            var(--dark-surface) 100%
+        );
+        color: var(--pink-light);
+    }
 }
 
-.app h1 {
-  margin-bottom: 0.5rem;
-  font-size: 2.5rem;
+h1,
+h2,
+h3 {
+    font-family: "Comic Neue", "Comic Sans MS", cursive;
+    font-weight: 700;
+    letter-spacing: 0.02em;
 }
 
-.app p {
-  margin: 0.5rem 0;
-  color: #475569;
+h1 {
+    font-size: 2.5rem;
 }
 
-.app ul {
-  list-style: inside;
-  padding: 0;
+h2 {
+    font-size: 2rem;
+}
+
+h3 {
+    font-size: 1.5rem;
+}
+
+code,
+pre,
+.terminal {
+    font-family: "Courier New", monospace;
+    background: rgba(0, 255, 0, 0.1);
+    color: var(--terminal-green);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+:focus-visible {
+    outline: 3px solid var(--pink-hot);
+    outline-offset: 3px;
+    border-radius: 5px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+    box-shadow: 0 0 0 4px rgba(255, 105, 180, 0.3);
 }
