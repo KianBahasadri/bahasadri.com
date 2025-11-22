@@ -1,0 +1,112 @@
+# File Hosting - User Features
+
+**User-facing feature description from the user's perspective. This document describes what users can do and what the feature provides.**
+
+## Overview
+
+A personal file hosting and sharing utility that allows users to upload files, share them via public links, and view detailed analytics about who has accessed their files.
+
+## Key Features
+
+### File Upload
+
+Users can upload files through a simple drag-and-drop interface or by clicking to select files. Files are automatically stored and made available for sharing.
+
+### Public File Sharing
+
+Users can share their uploaded files with anyone by sharing a public download link. No authentication required for download - anyone with the link can access the file.
+
+### Access Analytics
+
+Users can view detailed analytics about file access, including:
+
+-   Who accessed the file (IP address)
+-   When files were accessed (timestamp)
+-   Access count and frequency
+-   Geographic location (country, organization)
+-   User agent information
+
+### Automatic Compression
+
+Files are automatically compressed in the background to save storage space and improve download speeds, while maintaining the original file.
+
+## User Workflows
+
+### Upload and Share a File
+
+**Goal**: Upload a file and share it with others
+
+**Steps**:
+
+1. Navigate to the file hosting page
+2. Drag and drop a file into the upload zone (or click to select)
+3. Wait for upload to complete
+4. Copy the download link
+5. Share the link with others
+
+**Result**: File is accessible to anyone with the link
+
+### View File Analytics
+
+**Goal**: See who has accessed a shared file
+
+**Steps**:
+
+1. Navigate to the file hosting page
+2. View the list of uploaded files
+3. Click on a file to view its details
+4. Review access logs showing IP addresses, timestamps, and geographic data
+
+**Result**: Understanding of file access patterns and who has viewed the file
+
+### Download a Shared File
+
+**Goal**: Access a file shared via link
+
+**Steps**:
+
+1. Receive a file sharing link
+2. Click the link or paste it in a browser
+3. File downloads automatically
+
+**Result**: File is downloaded to the user's device
+
+## User Capabilities
+
+-   Upload files of any type (images, documents, videos, etc.)
+-   Share files instantly via public links
+-   Track file access with detailed analytics
+-   View access history and patterns
+-   Download files directly from shared links
+-   See file metadata (size, type, upload date)
+
+## Use Cases
+
+### Personal File Sharing
+
+Share photos, documents, or other files with friends, family, or colleagues without needing to set up accounts or deal with email attachments.
+
+### Content Distribution
+
+Distribute files to a wide audience by sharing a single link. Useful for sharing resources, media files, or documents.
+
+### Access Monitoring
+
+Track who has accessed shared files and when, useful for understanding content reach and engagement.
+
+### File Backup
+
+Upload important files as a backup solution, with the ability to access them from anywhere via the download link.
+
+## User Benefits
+
+-   **Simple**: Drag-and-drop interface makes uploading effortless
+-   **Fast**: Files are served from edge locations globally for quick downloads
+-   **Transparent**: Detailed analytics show exactly who accessed files and when
+-   **No Account Required**: Share files without requiring recipients to sign up
+-   **Automatic Optimization**: Files are compressed automatically to save space and improve performance
+-   **Reliable**: Files are stored in durable cloud storage with high availability
+
+---
+
+**Note**: This document describes features from the user's perspective. For technical implementation details, see `API_CONTRACT.md`, `FRONTEND.md`, and `BACKEND.md`.

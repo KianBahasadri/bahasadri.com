@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "target": "ES2022", // Updated from ES2020
+        "module": "ESNext",
+        "lib": ["DOM", "DOM.Iterable", "ES2022"], // Updated to match target
+        "moduleResolution": "bundler", // Better for Vite than "Node"
+        "isolatedModules": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "jsx": "react-jsx",
+        "baseUrl": ".",
+        "paths": {},
+        "types": ["vite/client"],
+
+        // === ADD THESE STRICT OPTIONS ===
+        "noUncheckedIndexedAccess": true, // arr[0] is T | undefined
+        "exactOptionalPropertyTypes": true, // undefined ≠ missing property
+        "noImplicitReturns": true, // All code paths return
+        "noImplicitOverride": true, // Require override keyword
+        "noFallthroughCasesInSwitch": true, // No missing breaks
+        "noUnusedLocals": true, // Catch unused variables
+        "noUnusedParameters": true, // Catch unused params
+        "allowUnreachableCode": false, // Error on dead code
+        "allowUnusedLabels": false, // Error on unused labels
+        "noPropertyAccessFromIndexSignature": true // obj[key] vs obj.key
+    },
+    "include": ["src"],
+    "references": []
+}

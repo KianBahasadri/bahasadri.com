@@ -1,10 +1,21 @@
 # Cursor Rules for Bahasadri.com
 
-⚠️ **MANDATORY**: All AI agents MUST read and strictly follow [docs/AI_AGENT_STANDARDS.md](./docs/AI_AGENT_STANDARDS.md) before making any code changes.
+## Project Context
 
-## 🚨 CRITICAL: Request Evaluation Required
+**This is a single-user personal application.**
 
-**BEFORE implementing ANY change, you MUST:**
+-   **Optimization and speed are NOT priorities** - Don't over-optimize or add complexity for performance gains
+-   **Cost management IS a priority** - Keep all usage within Cloudflare free tier limits (Workers, Pages, R2, KV, D1)
+-   **Maintainability IS a priority** - Write clear, simple code that's easy to understand and modify
+-   **Scale is NOT a concern** - This will never need to handle high traffic or multiple concurrent users
+
+When making decisions, prioritize:
+
+1. Staying within free tier limits
+2. Code maintainability and clarity
+3. Simplicity over optimization
+
+## BEFORE completing any task:
 
 1. **Evaluate the request** - Act like a senior developer talking to their manager
 2. **Identify concerns** - Architecture, performance, technical debt, compatibility, best practices
@@ -13,55 +24,39 @@
 
 **Do NOT blindly implement requests. Think critically and advocate for best practices.**
 
-See [docs/AI_AGENT_STANDARDS.md](./docs/AI_AGENT_STANDARDS.md#mandatory-request-evaluation-critical) for detailed evaluation process and examples.
+## WHILE completing any task
 
-## Quick Reference - Critical Rules
+Do not write any documentation for your task. You will follow exactly the documentation outlined for you. You will always be provided with a spec and you will satisfy it.
 
-1. **Critical Evaluation First** - Evaluate every request before implementing
-2. **Documentation is MANDATORY** - Every file, component, and function must be documented
-3. **TypeScript types are MANDATORY** - No `any` types without explicit justification
-4. **Server Components by default** - Only use Client Components when interactivity is required
-5. **CSS Modules required** - All component styles must use CSS Modules
-6. **Cloudflare Workers compatible** - All code must work in Cloudflare Workers runtime
-7. **No breaking changes** - Maintain backward compatibility unless explicitly requested
+**Linter Rules**:
 
-## Before Making Changes
+-   **NEVER disable linter rules** - Do not use `eslint-disable`, `eslint-disable-next-line`, `@ts-ignore`, `@ts-expect-error`, or any other linter/TypeScript suppressions
+-   **Fix the underlying issue** - If the linter complains, refactor the code to address the concern rather than suppressing it
+-   **Simplify when needed** - If a pattern is too complex for the linter, simplify it (e.g., use simpler regex patterns, break complex logic into smaller functions)
 
-1. **Evaluate the request** - Is this a good idea? What are the concerns?
-2. **Push back if needed** - Present concerns professionally with alternatives
-3. Read [docs/AI_AGENT_STANDARDS.md](./docs/AI_AGENT_STANDARDS.md) completely
-4. Read relevant documentation:
-    - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
-    - [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)
-    - [docs/COMPONENTS.md](./docs/COMPONENTS.md)
-5. Understand existing code patterns
-6. Verify Cloudflare Workers compatibility
+**For new features**: Use `docs/features/TEMPLATE/` as a starting point for creating `FEATURES.md`, `API_CONTRACT.md`, `FRONTEND.md`, and `BACKEND.md`.
 
-## Code Standards
+If working on frontend:
 
--   **TypeScript**: Strict types, no `any`, explicit return types
--   **Components**: Server Components default, Client Components only when needed
--   **Documentation**: File-level, component-level, and function-level JSDoc required
--   **Styling**: CSS Modules only, no global styles for components
--   **Naming**: PascalCase components, camelCase functions, UPPER_SNAKE_CASE constants
+1. First check `docs/FRONTEND_GLOBAL.md` for general frontend patterns
+2. Then check `docs/features/[feature-name]/FEATURES.md` for user-facing features
+3. Then check `docs/features/[feature-name]/API_CONTRACT.md` for the API contract
+4. Then check `docs/features/[feature-name]/FRONTEND.md` for frontend-specific design
 
-## Validation Required
+If working on backend:
 
-Before completing any task:
+1. First check `docs/BACKEND_GLOBAL.md` for general backend patterns
+2. Then check `docs/features/[feature-name]/FEATURES.md` for user-facing features
+3. Then check `docs/features/[feature-name]/API_CONTRACT.md` for the API contract
+4. Then check `docs/features/[feature-name]/BACKEND.md` for backend-specific design
+
+This is a very design document heavy codebase. Don't waste time looking at irrelevant documents—stick to what you need.
+
+**Note**: Frontend and backend are decoupled. The only coupling point is the API contract in `API_CONTRACT.md`. Implement each side independently according to its respective spec.
+
+## AFTER completing any task:
 
 -   [ ] TypeScript compiles: `pnpm tsc --noEmit`
 -   [ ] Linting passes: `pnpm lint`
 -   [ ] Preview works: `pnpm preview`
--   [ ] Documentation updated
 -   [ ] No breaking changes
-
-## Prohibited
-
--   ❌ `any` types without justification
--   ❌ Client Components without justification
--   ❌ Global CSS for component styles
--   ❌ Breaking changes without explicit request
--   ❌ Undocumented code
--   ❌ Node.js-specific APIs without compatibility
-
-See [docs/AI_AGENT_STANDARDS.md](./docs/AI_AGENT_STANDARDS.md) for complete standards.
