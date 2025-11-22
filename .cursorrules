@@ -13,21 +13,23 @@
 
 Do not write any documentation for your task. You will follow exactly the documentation outlined for you. You will always be provided with a spec and you will satisfy it.
 
+**For new features**: Use `docs/features/TEMPLATE/` as a starting point for creating `API_CONTRACT.md`, `FRONTEND.md`, and `BACKEND.md`.
+
 If working on frontend:
 
-1. First check `docs/frontend.md` for general frontend patterns
-2. Then check `docs/features/[feature-name]/DESIGN.md` for the API contract
+1. First check `docs/FRONTEND_GLOBAL.md` for general frontend patterns
+2. Then check `docs/features/[feature-name]/API_CONTRACT.md` for the API contract
 3. Then check `docs/features/[feature-name]/FRONTEND.md` for frontend-specific design
 
 If working on backend:
 
-1. First check `docs/backend.md` for general backend patterns
-2. Then check `docs/features/[feature-name]/DESIGN.md` for the API contract
+1. First check `docs/BACKEND_GLOBAL.md` for general backend patterns
+2. Then check `docs/features/[feature-name]/API_CONTRACT.md` for the API contract
 3. Then check `docs/features/[feature-name]/BACKEND.md` for backend-specific design
 
 This is a very design document heavy codebase. Don't waste time looking at irrelevant documents—stick to what you need.
 
-**Note**: Frontend and backend are decoupled. The only coupling point is the API contract in `DESIGN.md`. Implement each side independently according to its respective spec.
+**Note**: Frontend and backend are decoupled. The only coupling point is the API contract in `API_CONTRACT.md`. Implement each side independently according to its respective spec.
 
 ## AFTER completing any task:
 
