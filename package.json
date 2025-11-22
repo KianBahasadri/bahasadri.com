@@ -15,6 +15,7 @@
         "backend:lint": "pnpm --filter backend lint",
         "backend:typecheck": "pnpm --filter backend typecheck",
         "typecheck": "pnpm frontend:typecheck && pnpm backend:typecheck",
-        "lint": "pnpm frontend:lint && pnpm backend:lint"
+        "lint": "pnpm frontend:lint && pnpm backend:lint",
+        "deploy": "pnpm frontend:deploy && pnpm backend:deploy"
     }
 }

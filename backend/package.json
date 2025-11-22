@@ -4,9 +4,10 @@
   "scripts": {
     "dev": "wrangler dev",
     "build": "wrangler build",
-    "preview": "wrangler preview",
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+        "preview": "wrangler preview",
+        "deploy": "wrangler deploy",
+        "lint": "eslint .",
+        "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "hono": "^4.0.2"
