@@ -1,6 +1,5 @@
 name = "bahasadri-frontend"
 compatibility_date = "2025-11-22"
-preview_urls = false
 pages_build_output_dir = "./dist"
 
 # Backend bindings (same as backend/wrangler.toml)

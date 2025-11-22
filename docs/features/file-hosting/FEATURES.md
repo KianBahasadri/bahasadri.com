@@ -4,7 +4,7 @@
 
 ## Overview
 
-A personal file hosting and sharing utility that allows users to upload files, share them via public links, and view detailed analytics about who has accessed their files.
+A personal file hosting and sharing utility that allows users to upload files, compress them, share them via public links, and view detailed analytics about who has accessed their files. Users can also password protect the file.
 
 ## Key Features
 
@@ -30,6 +30,10 @@ Users can view detailed analytics about file access, including:
 
 Files are automatically compressed in the background to save storage space and improve download speeds, while maintaining the original file.
 
+### QR Code Generation
+
+Users can generate QR codes for their file download links, making it easy to share files by simply showing the QR code. Recipients can scan the QR code with their phone camera to instantly access the file download link.
+
 ## User Workflows
 
 ### Upload and Share a File
@@ -41,10 +45,25 @@ Files are automatically compressed in the background to save storage space and i
 1. Navigate to the file hosting page
 2. Drag and drop a file into the upload zone (or click to select)
 3. Wait for upload to complete
-4. Copy the download link
-5. Share the link with others
+4. Copy the download link or generate a QR code
+5. Share the link or QR code with others
 
-**Result**: File is accessible to anyone with the link
+**Result**: File is accessible to anyone with the link or QR code
+
+### Generate QR Code for File Link
+
+**Goal**: Create a QR code for a file download link to make sharing easier
+
+**Steps**:
+
+1. Navigate to the file hosting page
+2. View the list of uploaded files
+3. Click on a file to view its details
+4. Click "Generate QR Code" button
+5. View the QR code containing the download link
+6. Download the QR code as an image or display it for others to scan
+
+**Result**: QR code is generated and can be shared or downloaded for easy file access
 
 ### View File Analytics
 
@@ -75,6 +94,8 @@ Files are automatically compressed in the background to save storage space and i
 
 -   Upload files of any type (images, documents, videos, etc.)
 -   Share files instantly via public links
+-   Generate QR codes for download links
+-   Download QR codes as images for sharing
 -   Track file access with detailed analytics
 -   View access history and patterns
 -   Download files directly from shared links
@@ -88,7 +109,11 @@ Share photos, documents, or other files with friends, family, or colleagues with
 
 ### Content Distribution
 
-Distribute files to a wide audience by sharing a single link. Useful for sharing resources, media files, or documents.
+Distribute files to a wide audience by sharing a single link or QR code. Useful for sharing resources, media files, or documents. QR codes make it especially easy to share files in person or in printed materials.
+
+### QR Code Sharing
+
+Generate QR codes for file links to share files quickly in person. Recipients can scan the QR code with their phone camera to instantly access the file, eliminating the need to type or copy long URLs.
 
 ### Access Monitoring
 
@@ -102,6 +127,7 @@ Upload important files as a backup solution, with the ability to access them fro
 
 -   **Simple**: Drag-and-drop interface makes uploading effortless
 -   **Fast**: Files are served from edge locations globally for quick downloads
+-   **Convenient Sharing**: Generate QR codes for download links to make sharing easier
 -   **Transparent**: Detailed analytics show exactly who accessed files and when
 -   **No Account Required**: Share files without requiring recipients to sign up
 -   **Automatic Optimization**: Files are compressed automatically to save space and improve performance

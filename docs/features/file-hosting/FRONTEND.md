@@ -102,12 +102,45 @@ interface FileListProps {
 
 -   Click download link
 -   Display file metadata (size, type, access count)
+-   Generate QR code for download link
 
 **Styling**:
 
 -   CSS Modules: `FileList.module.css`
 -   Card-based layout
 -   Empty state display
+
+### QRCodeGenerator
+
+**Location**: `components/QRCodeGenerator/QRCodeGenerator.tsx`
+
+**Purpose**: Generates and displays QR codes for download links
+
+**Props**:
+
+```typescript
+interface QRCodeGeneratorProps {
+    url: string;
+    fileName?: string;
+}
+```
+
+**State**:
+
+-   Local state: QR code data URL (string)
+-   Local state: Loading state (boolean)
+
+**Interactions**:
+
+-   Generate QR code from URL
+-   Download QR code as PNG image
+-   Display QR code in modal or inline
+
+**Styling**:
+
+-   CSS Modules: `QRCodeGenerator.module.css`
+-   Modal overlay for QR code display
+-   Download button styling
 
 ## State Management
 
@@ -216,12 +249,53 @@ export const fetchAccessLogs = async (
 };
 ```
 
+### QR Code Generation
+
+**Location**: `lib/qrcode.ts` (utility functions)
+
+```typescript
+import QRCode from "qrcode";
+
+// Generate QR code as data URL
+export const generateQRCode = async (
+    url: string,
+    options?: QRCode.QRCodeToDataURLOptions
+): Promise<string> => {
+    return QRCode.toDataURL(url, {
+        width: 400,
+        margin: 2,
+        color: {
+            dark: "#000000",
+            light: "#FFFFFF",
+        },
+        ...options,
+    });
+};
+
+// Generate QR code as image blob for download
+export const generateQRCodeBlob = async (
+    url: string
+): Promise<Blob> => {
+    const canvas = document.createElement("canvas");
+    await QRCode.toCanvas(canvas, url, {
+        width: 400,
+        margin: 2,
+    });
+    return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+        }, "image/png");
+    });
+};
+```
+
 ### Error Handling
 
 -   Upload errors: Display inline error message
 -   API errors: Show toast notification or inline error
 -   Network errors: Retry logic (optional)
 -   Loading states: Show upload progress and loading indicators
+-   QR code generation errors: Show error message if generation fails
 
 ## User Interactions
 
@@ -238,6 +312,12 @@ export const fetchAccessLogs = async (
     -   Trigger: Click download link
     -   Flow: Navigate to download URL (opens in new tab)
     -   No error handling needed (browser handles)
+
+-   **Generate QR Code**:
+
+    -   Trigger: Click "Generate QR Code" button on file
+    -   Flow: Generate QR code from download URL → Display QR code → Allow download
+    -   Error handling: Show error message if generation fails
 
 -   **View File Details**:
     -   Trigger: Click on file
@@ -265,6 +345,7 @@ export const fetchAccessLogs = async (
 -   File list: Card-based grid layout
 -   Status indicators: Visual feedback for upload states
 -   Empty state: Friendly message when no files
+-   QR code display: Modal overlay with QR code image and download button
 
 ### User Feedback
 
@@ -280,6 +361,7 @@ export const fetchAccessLogs = async (
 -   [ ] FileHosting page component
 -   [ ] UploadZone component with drag-drop
 -   [ ] FileList component
+-   [ ] QRCodeGenerator component
 -   [ ] CSS Modules for all components
 -   [ ] Component tests
 
@@ -337,6 +419,11 @@ export const fetchAccessLogs = async (
 -   `react-router-dom`: Routing
 -   `@tanstack/react-query`: Data fetching
 -   Standard React hooks
+
+### QR Code Libraries
+
+-   `qrcode`: QR code generation library
+-   Alternative: `qrcode.react` for React component wrapper
 
 ## Performance Considerations
 
