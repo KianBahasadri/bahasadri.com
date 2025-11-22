@@ -1,0 +1,36 @@
+:root {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #0f172a;
+  background-color: #f8fafc;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.app {
+  text-align: center;
+  padding: 3rem;
+  border-radius: 1rem;
+  background: white;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.1);
+}
+
+.app h1 {
+  margin-bottom: 0.5rem;
+  font-size: 2.5rem;
+}
+
+.app p {
+  margin: 0.5rem 0;
+  color: #475569;
+}
+
+.app ul {
+  list-style: inside;
+  padding: 0;
+}

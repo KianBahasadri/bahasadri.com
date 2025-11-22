@@ -1,0 +1,11 @@
+{
+  "name": "bahasadri-com",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@8.8.0",
+  "scripts": {
+    "dev": "pnpm --filter frontend dev",
+    "build": "pnpm --filter frontend build",
+    "preview": "pnpm --filter frontend preview"
+  }
+}
