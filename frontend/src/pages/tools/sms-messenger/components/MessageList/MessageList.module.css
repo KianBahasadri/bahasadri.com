@@ -1,0 +1,96 @@
+.messageList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #64748b;
+  font-size: 0.9375rem;
+}
+
+.message {
+  display: flex;
+  margin-bottom: 0.5rem;
+}
+
+.message.sent {
+  justify-content: flex-end;
+}
+
+.message.received {
+  justify-content: flex-start;
+}
+
+.messageBubble {
+  max-width: 70%;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  word-wrap: break-word;
+}
+
+.message.sent .messageBubble {
+  background-color: #3b82f6;
+  color: white;
+  border-bottom-right-radius: 0.25rem;
+}
+
+.message.received .messageBubble {
+  background-color: white;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+  border-bottom-left-radius: 0.25rem;
+}
+
+.messageBody {
+  margin-bottom: 0.25rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.messageMeta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.message.sent .messageMeta {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.message.received .messageMeta {
+  color: #64748b;
+}
+
+.messageTime {
+  font-size: 0.75rem;
+}
+
+.messageStatus {
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.messageError {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #dc2626;
+  font-style: italic;
+}
+
+.message.sent .messageError {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+@media (max-width: 768px) {
+  .messageBubble {
+    max-width: 85%;
+  }
+}
+
