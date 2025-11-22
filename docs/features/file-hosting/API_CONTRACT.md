@@ -6,11 +6,6 @@
 
 A personal file hosting and sharing utility with automatic compression, detailed access analytics, and WHOIS tracking. Users can upload files, share them via public links, and view comprehensive analytics about file access.
 
-## Code Locations
-
--   **Frontend Code**: `frontend/src/pages/tools/file-hosting/`
--   **Backend Code**: `backend/src/routes/file-hosting/`
-
 ## API Base URL
 
 -   Development: `http://localhost:8787/api`
@@ -228,21 +223,11 @@ interface ErrorResponse {
 -   **Method**: None
 -   Public file hosting utility
 
-## Rate Limiting
-
--   **Limit**: TBD (to be configured)
--   **Headers**: Rate limit info in response headers (if implemented)
-
 ## CORS
 
 -   **Allowed Origins**: `https://bahasadri.com`
 -   **Allowed Methods**: GET, POST
 -   **Allowed Headers**: Content-Type
-
-## Versioning
-
--   **Current Version**: v1
--   **Version Header**: Not implemented
 
 ## Testing
 

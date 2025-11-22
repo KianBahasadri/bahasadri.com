@@ -6,11 +6,6 @@
 
 [Brief description of what this feature does]
 
-## Code Locations
-
--   **Frontend Code**: `frontend/src/pages/tools/[feature-name]/`
--   **Backend Code**: `backend/src/routes/[feature-name]/`
-
 ## API Base URL
 
 -   Development: `http://localhost:8787/api`
@@ -76,21 +71,11 @@ interface ErrorResponse {
 -   **Method**: [None/JWT/etc.]
 -   [Additional auth details]
 
-## Rate Limiting
-
--   **Limit**: TBD (to be configured)
--   **Headers**: Rate limit info in response headers (if implemented)
-
 ## CORS
 
 -   **Allowed Origins**: `https://bahasadri.com`
 -   **Allowed Methods**: [GET, POST, etc.]
 -   **Allowed Headers**: Content-Type
-
-## Versioning
-
--   **Current Version**: v1
--   **Version Header**: Not implemented
 
 ## Testing
 

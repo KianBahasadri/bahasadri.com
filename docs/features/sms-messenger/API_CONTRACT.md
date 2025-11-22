@@ -6,11 +6,6 @@
 
 SMS messaging utility that allows sending and receiving SMS messages via Twilio. Features include message history, threaded conversations, and contact management.
 
-## Code Locations
-
--   **Frontend Code**: `frontend/src/pages/tools/sms-messenger/`
--   **Backend Code**: `backend/src/routes/sms-messenger/`
-
 ## API Base URL
 
 -   Development: `http://localhost:8787/api`
@@ -318,21 +313,11 @@ interface ErrorResponse {
 -   **Method**: None
 -   **Webhook Security**: Twilio signature validation for webhook endpoint
 
-## Rate Limiting
-
--   **Limit**: TBD (to be configured)
--   **Headers**: Rate limit info in response headers (if implemented)
-
 ## CORS
 
 -   **Allowed Origins**: `https://bahasadri.com`
 -   **Allowed Methods**: GET, POST, PATCH
 -   **Allowed Headers**: Content-Type
-
-## Versioning
-
--   **Current Version**: v1
--   **Version Header**: Not implemented
 
 ## Testing
 
