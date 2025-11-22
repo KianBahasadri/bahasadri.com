@@ -1,22 +1,14 @@
 import React from "react";
-import type { Message, Contact } from "../../../../../types/sms-messenger";
+import type { Message } from "../../../../../types/sms-messenger";
 import styles from "./MessageList.module.css";
 
 interface MessageListProps {
   messages: Message[];
-  contacts: Contact[];
-  counterpart: string;
 }
 
 export default function MessageList({
   messages,
-  contacts,
-  counterpart,
-}: MessageListProps) {
-  const getContactName = (phoneNumber: string): string => {
-    const contact = contacts.find((c) => c.phoneNumber === phoneNumber);
-    return contact?.displayName || phoneNumber;
-  };
+}: MessageListProps): JSX.Element {
 
   const formatTimestamp = (timestamp: number): string => {
     const date = new Date(timestamp);

@@ -14,7 +14,7 @@ The backend is built with:
 ## Architecture
 
 -   **Location**: `backend/src/`
--   **Routes**: `backend/src/routes/`
+-   **Features**: `backend/src/[feature-name]/` - Each feature is self-contained
 -   **API Base**: `/api/tools/[feature-name]/`
 -   **Deployment**: Cloudflare Workers
 
@@ -40,15 +40,28 @@ The backend is built with:
 
 ## Code Organization
 
+Each feature is self-contained in its own directory:
+
 ```
 backend/src/
-├── routes/         # API route handlers
-│   └── [feature]/
-│       └── index.ts
-├── lib/           # Shared utilities
-├── types/         # TypeScript types
-└── index.ts       # Main worker entry point
+├── [feature-name]/    # Feature directory (e.g., sms-messenger)
+│   ├── index.ts       # Route handlers
+│   ├── lib/           # Feature-specific utilities
+│   │   ├── kv-helpers.ts
+│   │   ├── twilio.ts
+│   │   └── validation.ts
+│   └── types.ts       # Feature-specific types
+├── types/             # Shared types (e.g., env.ts)
+└── index.ts           # Main worker entry point
 ```
+
+**Feature Structure:**
+
+-   Each feature directory contains all code related to that feature
+-   Routes are defined in `[feature-name]/index.ts`
+-   Feature-specific utilities go in `[feature-name]/lib/`
+-   Feature-specific types go in `[feature-name]/types.ts`
+-   Shared types (like `Env`) remain in `src/types/`
 
 ## Development
 

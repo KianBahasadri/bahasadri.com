@@ -9,7 +9,7 @@ const queryKeys = {
   contacts: ["sms-messenger", "contacts"] as const,
 };
 
-export default function SMSMessenger() {
+export default function SMSMessenger(): JSX.Element {
   const { data: threadsData } = useQuery({
     queryKey: queryKeys.threads,
     queryFn: () => fetchThreads(),
@@ -20,8 +20,8 @@ export default function SMSMessenger() {
     queryFn: () => fetchContacts(),
   });
 
-  const initialThreads: ThreadSummary[] = threadsData?.threads || [];
-  const initialContacts: Contact[] = contactsData?.contacts || [];
+  const initialThreads: ThreadSummary[] = threadsData?.threads ?? [];
+  const initialContacts: Contact[] = contactsData?.contacts ?? [];
   const initialCounterpart: string | null =
     initialThreads.length > 0 ? initialThreads[0].counterpart : null;
 

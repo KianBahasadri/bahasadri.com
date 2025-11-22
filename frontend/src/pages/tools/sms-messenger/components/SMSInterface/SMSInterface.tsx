@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { sendSMS, fetchMessages, pollMessagesSince, fetchThreads, fetchContacts, createContact } from "../../../../../lib/api";
+import { sendSMS, fetchMessages, pollMessagesSince, fetchThreads, createContact } from "../../../../../lib/api";
 import MessageList from "../MessageList/MessageList";
 import type { Message, ThreadSummary, Contact } from "../../../../../types/sms-messenger";
 import styles from "./SMSInterface.module.css";
@@ -17,10 +17,9 @@ const POLL_MAX_ATTEMPTS = 1000;
 
 export default function SMSInterface({
   initialThreads,
-  initialMessages,
   initialContacts,
   initialCounterpart,
-}: SMSInterfaceProps) {
+}: SMSInterfaceProps): JSX.Element {
   const queryClient = useQueryClient();
   const [threads, setThreads] = useState<ThreadSummary[]>(initialThreads);
   const [contacts, setContacts] = useState<Contact[]>(initialContacts);
@@ -60,9 +59,10 @@ export default function SMSInterface({
   }, [messagesData, activeCounterpart]);
 
   // Get messages for active counterpart from cache
-  const activeMessages = activeCounterpart
-    ? messageCache[activeCounterpart] || []
-    : [];
+  const activeMessages = useMemo(
+    () => (activeCounterpart ? messageCache[activeCounterpart] ?? [] : []),
+    [activeCounterpart, messageCache]
+  );
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -122,8 +122,8 @@ export default function SMSInterface({
         setLastPollTimestamp(response.timestamp);
       }
       setPollCounter((prev) => prev + 1);
-    } catch (error) {
-      console.error("Polling error:", error);
+    } catch {
+      // Error handled silently - polling will continue
       setPollCounter((prev) => prev + 1);
     }
   }, [pollCounter, lastPollTimestamp]);
@@ -131,10 +131,10 @@ export default function SMSInterface({
   // Set up polling interval
   useEffect(() => {
     pollIntervalRef.current = window.setInterval(() => {
-      pollForUpdates();
+      void pollForUpdates();
     }, POLL_INTERVAL);
 
-    return () => {
+    return (): void => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
@@ -162,8 +162,8 @@ export default function SMSInterface({
         });
 
         // Refresh threads
-        queryClient.invalidateQueries({ queryKey: ["sms-messenger", "threads"] });
-        fetchThreads().then((data) => {
+        void queryClient.invalidateQueries({ queryKey: ["sms-messenger", "threads"] });
+        void fetchThreads().then((data) => {
           if (data.threads) {
             setThreads(data.threads);
           }
@@ -187,8 +187,8 @@ export default function SMSInterface({
       createContact(phoneNumber, displayName),
     onSuccess: (data) => {
       if (data.success && data.contact) {
-        setContacts((prev) => [...prev, data.contact!]);
-        queryClient.invalidateQueries({ queryKey: ["sms-messenger", "contacts"] });
+        setContacts((prev) => [...prev, data.contact]);
+        void queryClient.invalidateQueries({ queryKey: ["sms-messenger", "contacts"] });
         setShowContactForm(false);
         setContactPhoneNumber("");
         setContactDisplayName("");
@@ -200,7 +200,7 @@ export default function SMSInterface({
     },
   });
 
-  const handleCreateContact = (e: React.FormEvent) => {
+  const handleCreateContact = (e: React.FormEvent): void => {
     e.preventDefault();
     if (!contactPhoneNumber.trim() || !contactDisplayName.trim()) {
       setContactError("Please fill in all fields");
@@ -212,11 +212,11 @@ export default function SMSInterface({
     });
   };
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = (e: React.FormEvent): void => {
     e.preventDefault();
     if (!messageBody.trim() || sending) return;
 
-    const phoneNumber = activeCounterpart || draftNumber.trim();
+    const phoneNumber = activeCounterpart ?? draftNumber.trim();
     if (!phoneNumber) {
       setSendError("Please select a conversation or enter a phone number");
       return;
@@ -226,14 +226,14 @@ export default function SMSInterface({
     sendMutation.mutate({ phoneNumber, message: messageBody });
   };
 
-  const handleThreadSelect = (counterpart: string) => {
+  const handleThreadSelect = (counterpart: string): void => {
     setActiveCounterpart(counterpart);
     setDraftNumber("");
   };
 
   const getContactName = (phoneNumber: string): string => {
     const contact = contacts.find((c) => c.phoneNumber === phoneNumber);
-    return contact?.displayName || phoneNumber;
+    return contact?.displayName ?? phoneNumber;
   };
 
   const formatTimestamp = (timestamp: number): string => {
@@ -325,7 +325,7 @@ export default function SMSInterface({
                 onClick={() => handleThreadSelect(thread.counterpart)}
               >
                 <div className={styles.threadName}>
-                  {thread.contactName || thread.counterpart}
+                  {thread.contactName ?? thread.counterpart}
                 </div>
                 <div className={styles.threadPreview}>{thread.lastMessagePreview}</div>
                 <div className={styles.threadTime}>
@@ -363,8 +363,6 @@ export default function SMSInterface({
             <div className={styles.messageList} ref={messageListRef}>
               <MessageList
                 messages={activeMessages}
-                contacts={contacts}
-                counterpart={activeCounterpart}
               />
             </div>
 

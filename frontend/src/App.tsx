@@ -2,7 +2,7 @@ import React from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import SMSMessenger from './pages/tools/sms-messenger/SMSMessenger';
 
-export default function App() {
+export default function App(): JSX.Element {
   return (
     <Routes>
       <Route
@@ -14,7 +14,7 @@ export default function App() {
             <ul>
               <li>File hosting</li>
               <li>
-                <Link to="/tools/sms-messenger">SMS messenger</Link>
+                <Link to="/sms-messenger">SMS messenger</Link>
               </li>
               <li>Video call</li>
             </ul>
@@ -22,7 +22,7 @@ export default function App() {
           </main>
         }
       />
-      <Route path="/tools/sms-messenger" element={<SMSMessenger />} />
+      <Route path="/sms-messenger" element={<SMSMessenger />} />
     </Routes>
   );
 }

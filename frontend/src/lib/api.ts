@@ -19,7 +19,7 @@ export const sendSMS = async (
   phoneNumber: string,
   message: string
 ): Promise<SendSMSResponse> => {
-  const response = await fetch(`${API_BASE_URL}/tools/sms-messenger/send`, {
+  const response = await fetch(`${API_BASE_URL}/sms-messenger/send`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ phoneNumber, message } satisfies SendSMSRequest),
@@ -27,7 +27,7 @@ export const sendSMS = async (
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || "Failed to send SMS");
+    throw new Error(error.error ?? "Failed to send SMS");
   }
 
   return response.json();
@@ -43,7 +43,7 @@ export const fetchMessages = async (
   if (limit) params.append("limit", limit.toString());
 
   const response = await fetch(
-    `${API_BASE_URL}/tools/sms-messenger/messages?${params}`
+    `${API_BASE_URL}/sms-messenger/messages?${params}`
   );
   if (!response.ok) throw new Error("Failed to fetch messages");
   return response.json();
@@ -53,20 +53,20 @@ export const pollMessagesSince = async (
   since: number
 ): Promise<MessagesSinceResponse> => {
   const response = await fetch(
-    `${API_BASE_URL}/tools/sms-messenger/messages-since?since=${since}`
+    `${API_BASE_URL}/sms-messenger/messages-since?since=${since}`
   );
   if (!response.ok) throw new Error("Failed to poll messages");
   return response.json();
 };
 
 export const fetchThreads = async (): Promise<ThreadListResponse> => {
-  const response = await fetch(`${API_BASE_URL}/tools/sms-messenger/threads`);
+  const response = await fetch(`${API_BASE_URL}/sms-messenger/threads`);
   if (!response.ok) throw new Error("Failed to fetch threads");
   return response.json();
 };
 
 export const fetchContacts = async (): Promise<ContactListResponse> => {
-  const response = await fetch(`${API_BASE_URL}/tools/sms-messenger/contacts`);
+  const response = await fetch(`${API_BASE_URL}/sms-messenger/contacts`);
   if (!response.ok) throw new Error("Failed to fetch contacts");
   return response.json();
 };
@@ -75,7 +75,7 @@ export const createContact = async (
   phoneNumber: string,
   displayName: string
 ): Promise<ContactMutationResult> => {
-  const response = await fetch(`${API_BASE_URL}/tools/sms-messenger/contacts`, {
+  const response = await fetch(`${API_BASE_URL}/sms-messenger/contacts`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ phoneNumber, displayName } satisfies ContactCreatePayload),
@@ -83,7 +83,7 @@ export const createContact = async (
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || "Failed to create contact");
+    throw new Error(error.error ?? "Failed to create contact");
   }
 
   return response.json();
@@ -94,7 +94,7 @@ export const updateContact = async (
   displayName: string
 ): Promise<ContactMutationResult> => {
   const response = await fetch(
-    `${API_BASE_URL}/tools/sms-messenger/contacts/${contactId}`,
+    `${API_BASE_URL}/sms-messenger/contacts/${contactId}`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -104,7 +104,7 @@ export const updateContact = async (
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || "Failed to update contact");
+    throw new Error(error.error ?? "Failed to update contact");
   }
 
   return response.json();
