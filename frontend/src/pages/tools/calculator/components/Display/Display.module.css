@@ -1,6 +1,23 @@
+:root {
+    --pink-soft: #ffe4e1;
+    --pink-light: #ffc0cb;
+    --pink-primary: #ffb3de;
+    --pink-hot: #ff69b4;
+    --pink-darker: #ff1493;
+    --dark-void: #0a0a0f;
+    --dark-surface: #1a1a2e;
+    --blood-red: #dc143c;
+    --terminal-green: #00ff88;
+    --terminal-cyan: #00ffff;
+}
+
 .display {
-  background-color: #1c1c1e;
-  color: #fff;
+  background: linear-gradient(
+    135deg,
+    var(--dark-void) 0%,
+    var(--dark-surface) 100%
+  );
+  color: var(--terminal-green);
   padding: 20px;
   font-size: 2.5rem;
   font-weight: 300;
@@ -10,9 +27,57 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  border-radius: 8px 8px 0 0;
+  border-radius: 0;
   overflow: hidden;
   word-break: break-all;
   box-sizing: border-box;
+  position: relative;
+  border-bottom: 3px solid var(--pink-primary);
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.display::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 136, 0.05) 2px,
+    rgba(0, 255, 136, 0.05) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.display {
+  position: relative;
+  z-index: 2;
+}
+
+@media (prefers-color-scheme: dark) {
+    .display {
+        background: linear-gradient(
+            135deg,
+            var(--dark-void) 0%,
+            var(--dark-surface) 100%
+        );
+        color: var(--terminal-cyan);
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    }
+
+    .display::before {
+        background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 255, 255, 0.05) 2px,
+            rgba(0, 255, 255, 0.05) 4px
+        );
+    }
 }
 

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchThreads, fetchContacts } from "../../../lib/api";
 import SMSInterface from "./components/SMSInterface/sms-interface";
 import type { ThreadSummary, Contact } from "../../../types/sms-messenger";
+import styles from "./sms-messenger.module.css";
 
 const queryKeys = {
   threads: ["sms-messenger", "threads"] as const,
@@ -26,12 +27,30 @@ export default function SMSMessenger(): React.JSX.Element {
     initialThreads.length > 0 ? initialThreads[0]?.counterpart : undefined;
 
   return (
-    <SMSInterface
-      initialThreads={initialThreads}
-      initialMessages={[]}
-      initialContacts={initialContacts}
-      initialCounterpart={initialCounterpart}
-    />
+    <>
+      {/* Terminal Scanline Background */}
+      <div className={styles.bgTerminal} />
+      <div className={styles.scanlines} />
+
+      {/* Particle System */}
+      <div className={styles.particles}>
+        {Array.from({ length: 20 }).map((_, i) => (
+          <span key={i} className={styles.particle}>
+            {["♡", "💊", "🩹", "✨", "💕", "💉", "🔪", "💖"][i % 8]}
+          </span>
+        ))}
+      </div>
+
+      {/* Screen Border Glow */}
+      <div className={styles.screenBorder} />
+
+      <SMSInterface
+        initialThreads={initialThreads}
+        initialMessages={[]}
+        initialContacts={initialContacts}
+        initialCounterpart={initialCounterpart}
+      />
+    </>
   );
 }
 

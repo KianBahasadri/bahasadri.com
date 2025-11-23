@@ -223,6 +223,22 @@ export default function Calculator(): React.JSX.Element {
 
   return (
     <div className={styles["calculator"]}>
+      {/* Terminal Scanline Background */}
+      <div className={styles.bgTerminal} />
+      <div className={styles.scanlines} />
+
+      {/* Particle System */}
+      <div className={styles.particles}>
+        {Array.from({ length: 20 }).map((_, i) => (
+          <span key={i} className={styles.particle}>
+            {["♡", "💊", "🩹", "✨", "💕", "💉", "🔪", "💖"][i % 8]}
+          </span>
+        ))}
+      </div>
+
+      {/* Screen Border Glow */}
+      <div className={styles.screenBorder} />
+
       <div className={styles["container"]}>
         <Display value={display} isOn={isOn} />
         <ButtonGrid

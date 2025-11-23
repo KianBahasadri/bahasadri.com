@@ -1,90 +1,159 @@
+:root {
+    --pink-soft: #ffe4e1;
+    --pink-light: #ffc0cb;
+    --pink-primary: #ffb3de;
+    --pink-hot: #ff69b4;
+    --pink-darker: #ff1493;
+    --dark-void: #0a0a0f;
+    --dark-surface: #1a1a2e;
+    --blood-red: #dc143c;
+    --terminal-green: #00ff88;
+    --terminal-cyan: #00ffff;
+}
+
 .button {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1.2rem;
-  font-weight: 500;
+  border: 3px solid var(--pink-primary);
+  border-radius: 12px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-family: "Comic Neue", cursive, sans-serif;
   cursor: pointer;
-  transition: all 0.1s ease;
-  min-height: 50px;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
   user-select: none;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 3px 3px 0 var(--pink-light), 0 0 10px rgba(255, 179, 222, 0.2);
+}
+
+.button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 105, 180, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.button:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 .button:hover:not(:disabled) {
-  background-color: #f0f0f0;
+  transform: translateY(-4px) rotate(0.5deg);
+  box-shadow: 5px 5px 0 var(--pink-hot), 0 0 20px rgba(255, 105, 180, 0.4);
+  border-color: var(--pink-hot);
 }
 
 .button:active:not(:disabled) {
-  transform: scale(0.95);
-  background-color: #e0e0e0;
+  transform: translateY(-2px) scale(0.98);
 }
 
 .button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  filter: grayscale(0.5);
 }
 
 .number {
-  background-color: #fff;
-  color: #333;
+  background-color: white;
+  color: var(--pink-darker);
+  border-color: var(--pink-primary);
+}
+
+.number:hover:not(:disabled) {
+  background-color: var(--pink-soft);
+}
+
+@media (prefers-color-scheme: dark) {
+    .number {
+        background-color: var(--dark-surface);
+        color: var(--pink-light);
+        border-color: var(--pink-hot);
+    }
+
+    .number:hover:not(:disabled) {
+        background-color: var(--dark-void);
+    }
 }
 
 .operator {
-  background-color: #ff9500;
-  color: #fff;
-  border-color: #ff9500;
+  background-color: var(--pink-hot);
+  color: white;
+  border-color: var(--pink-hot);
+  box-shadow: 3px 3px 0 var(--pink-primary), 0 0 10px rgba(255, 105, 180, 0.3);
 }
 
 .operator:hover:not(:disabled) {
-  background-color: #ff8500;
+  background-color: var(--pink-darker);
+  box-shadow: 5px 5px 0 var(--pink-darker), 0 0 20px rgba(255, 20, 147, 0.5);
 }
 
 .operator:active:not(:disabled) {
-  background-color: #ff7500;
+  background-color: var(--pink-darker);
 }
 
 .equals {
-  background-color: #007aff;
-  color: #fff;
-  border-color: #007aff;
+  background-color: var(--terminal-cyan);
+  color: var(--dark-void);
+  border-color: var(--terminal-cyan);
+  box-shadow: 3px 3px 0 var(--pink-darker), 0 0 10px rgba(0, 255, 255, 0.3);
   grid-column: span 2;
+  font-weight: 900;
 }
 
 .equals:hover:not(:disabled) {
-  background-color: #0066cc;
+  background-color: var(--pink-darker);
+  border-color: var(--pink-darker);
+  box-shadow: 5px 5px 0 var(--pink-darker), 0 0 20px rgba(255, 20, 147, 0.5);
+  color: white;
 }
 
 .equals:active:not(:disabled) {
-  background-color: #0052a3;
+  background-color: var(--pink-darker);
 }
 
 .clear {
-  background-color: #ff3b30;
-  color: #fff;
-  border-color: #ff3b30;
+  background-color: var(--blood-red);
+  color: white;
+  border-color: var(--blood-red);
+  box-shadow: 3px 3px 0 var(--pink-darker), 0 0 10px rgba(220, 20, 60, 0.3);
 }
 
 .clear:hover:not(:disabled) {
-  background-color: #ff2d20;
+  background-color: #c0112f;
+  box-shadow: 5px 5px 0 var(--pink-darker), 0 0 20px rgba(220, 20, 60, 0.5);
 }
 
 .clear:active:not(:disabled) {
-  background-color: #ff1f10;
+  background-color: #a00e28;
 }
 
 .power {
-  background-color: #34c759;
-  color: #fff;
-  border-color: #34c759;
+  background-color: var(--pink-hot);
+  color: white;
+  border-color: var(--pink-hot);
+  box-shadow: 3px 3px 0 var(--pink-primary), 0 0 10px rgba(255, 105, 180, 0.3);
+  font-weight: 900;
 }
 
 .power:hover:not(:disabled) {
-  background-color: #2fb04a;
+  background-color: var(--pink-darker);
+  border-color: var(--pink-darker);
+  box-shadow: 5px 5px 0 var(--pink-darker), 0 0 20px rgba(255, 20, 147, 0.5);
 }
 
 .power:active:not(:disabled) {
-  background-color: #2a9d42;
+  background-color: var(--pink-darker);
 }
 

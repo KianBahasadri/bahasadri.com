@@ -21,6 +21,7 @@
 
     /* Tech Colors */
     --terminal-green: #00ff00;
+    --terminal-cyan: #00ffff;
     --error-red: #ff0000;
     --warning-yellow: #ffd700;
 }
