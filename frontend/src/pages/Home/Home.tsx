@@ -1,5 +1,8 @@
 import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { fetchWelcomeMessage } from "../../lib/api";
+import Chatbox from "./components/Chatbox/Chatbox";
 import styles from "./Home.module.css";
 
 interface ToolPopup {
@@ -43,6 +46,14 @@ export default function Home(): React.JSX.Element {
         y: number;
         above: boolean;
     } | null>(null);
+    const [isChatOpen, setIsChatOpen] = useState(false);
+
+    const { data: welcomeData, isLoading: isLoadingWelcome } = useQuery({
+        queryKey: ["welcome"],
+        queryFn: fetchWelcomeMessage,
+    });
+
+    const welcomeMessage = welcomeData?.message ?? "Welcome~ ♡";
 
     const playHeartbeatSound = (): void => {
         if (!audioContextRef.current) {
@@ -162,18 +173,29 @@ export default function Home(): React.JSX.Element {
             {/* Screen Border Glow */}
             <div className={styles.screenBorder} />
 
-            {/* Hero with Terminal Vibes */}
-            <section className={styles.hero}>
-                <h1
-                    className={styles.heroTitle}
-                    data-text="You entered my domain~ ♡"
+            <div
+                className={`${styles.contentWrapper} ${
+                    isChatOpen ? styles.chatOpen : ""
+                }`}
+            >
+                {/* Left section - Hero + Tools Grid */}
+                <div
+                    className={
+                        isChatOpen ? styles.leftSection : styles.fullWidth
+                    }
                 >
-                    You entered my domain~ ♡
-                </h1>
-            </section>
+                    {/* Hero with Terminal Vibes */}
+                    <section className={styles.hero}>
+                        <h1
+                            className={styles.heroTitle}
+                            data-text={welcomeMessage}
+                        >
+                            {isLoadingWelcome ? "Loading~ ♡" : welcomeMessage}
+                        </h1>
+                    </section>
 
-            {/* Tools Section */}
-            <section className={styles.section}>
+                    {/* Tools Section */}
+                    <section className={styles.section}>
                 <div className={styles.toolsGrid}>
                     <button
                         className={styles.cardMenhera}
@@ -273,7 +295,28 @@ export default function Home(): React.JSX.Element {
                         </div>
                     </div>
                 )}
-            </section>
+                    </section>
+                </div>
+
+                {/* Right section - Chat Panel (conditionally rendered) */}
+                {isChatOpen && (
+                    <div className={styles.chatSection}>
+                        <Chatbox onClose={() => setIsChatOpen(false)} />
+                    </div>
+                )}
+            </div>
+
+            {/* Toggle button (only visible when chat closed) */}
+            {!isChatOpen && (
+                <button
+                    className={styles.chatToggle}
+                    onClick={() => setIsChatOpen(true)}
+                    aria-label="Open chat with agent"
+                    aria-expanded="false"
+                >
+                    ❤️
+                </button>
+            )}
         </main>
     );
 }

@@ -14,6 +14,11 @@ import type {
   CalculateResponse,
   ErrorResponse,
 } from "../types/calculator";
+import type {
+  WelcomeResponse,
+  ChatRequest,
+  ChatResponse,
+} from "../types/home";
 
 const API_BASE_URL =
   import.meta.env.MODE === "production"
@@ -130,5 +135,36 @@ export const calculateExpression = async (
   }
 
   return response.json() as Promise<CalculateResponse>;
+};
+
+export const fetchWelcomeMessage = async (): Promise<WelcomeResponse> => {
+  const response = await fetch(`${API_BASE_URL}/home/welcome`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch welcome message");
+  }
+  return response.json() as Promise<WelcomeResponse>;
+};
+
+export const sendChatMessage = async (
+  message: string,
+  conversationId?: string
+): Promise<ChatResponse> => {
+  const body: ChatRequest = { message };
+  if (conversationId) {
+    body.conversationId = conversationId;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/home/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const error = (await response.json()) as { error?: string };
+    throw new Error(error.error ?? "Failed to send message");
+  }
+
+  return response.json() as Promise<ChatResponse>;
 };
 

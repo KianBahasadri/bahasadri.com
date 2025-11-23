@@ -97,16 +97,20 @@ A static list of yandere-themed greetings to randomly select from:
 5. If conversationId NOT provided:
     - Generate new UUID for conversationId
     - Initialize new conversation context
-6. Process message with yandere agent logic
-7. Generate agent response with yandere personality
-8. Update conversation context with new messages
-9. Store conversation context in KV (with TTL)
-10. Return response with conversationId
+6. Build OpenRouter API request:
+    - Include system prompt defining yandere personality
+    - Include conversation history from context (if exists)
+    - Add new user message
+7. Call OpenRouter chat completion API
+8. Parse API response and extract assistant's message
+9. Update conversation context with user message and agent response
+10. Store conversation context in KV (with TTL)
+11. Return response with conversationId
 
 **Error Responses**:
 
 -   400: Invalid or empty message, invalid conversationId format
--   500: Internal server error processing message
+-   500: Internal server error processing message, OpenRouter API failure
 
 **Conversation ID Behavior**:
 
@@ -170,6 +174,28 @@ interface ChatMessage {
 -   Storage: 1 GB (more than enough for chat history)
 -   Operations: Store on each message, retrieve when conversationId provided
 
+### Environment Variables / Secrets
+
+**Purpose**: Store sensitive API keys securely
+
+**Required Secrets**:
+
+-   `OPENROUTER_API_KEY`: API key for OpenRouter service
+
+**Setup**:
+
+-   Local development: Store in `.env` file in backend directory
+-   Production: Set via Cloudflare Dashboard or wrangler CLI:
+    ```bash
+    wrangler secret put OPENROUTER_API_KEY
+    ```
+
+**Security**:
+
+-   Never commit API keys to version control
+-   `.env` file should be in `.gitignore`
+-   API keys are encrypted at rest in Cloudflare
+
 ## Workers Logic
 
 ### Welcome Message Handler
@@ -199,12 +225,17 @@ interface ChatMessage {
 4. Check if conversationId provided:
     - **If provided**: Validate UUID format, retrieve context from KV
     - **If not provided**: Generate new UUID
-5. Process message with yandere agent logic (use context if available)
-6. Generate agent response
-7. Create ChatMessage objects for user and agent messages
-8. Update conversation context with new messages
-9. Store conversation context in KV with TTL (3600 seconds)
-10. Return response with conversationId
+5. Build OpenRouter API request:
+    - System message with yandere personality prompt
+    - Conversation history from KV context (if exists)
+    - User's new message
+6. Call OpenRouter chat completion API
+7. Handle API response or errors
+8. Parse agent's response message
+9. Create ChatMessage objects for user and agent messages
+10. Update conversation context with new messages
+11. Store conversation context in KV with TTL (3600 seconds)
+12. Return response with conversationId
 
 ### Error Handling
 
@@ -233,35 +264,44 @@ interface ChatMessage {
 -   Uses yandere-themed language and expressions
 -   Consistent personality throughout conversation
 
-**Response Generation**:
+**Response Generation via OpenRouter**:
 
-For this single-user personal app, use a simple pattern-based response system:
+Use OpenRouter API to generate yandere agent responses with a chat model:
 
-1. **Greetings/First messages**: Respond with welcoming but possessive messages
-2. **Questions about agent**: Respond with self-referential yandere statements
-3. **User leaving/goodbye**: Respond with clingy, don't-leave messages
-4. **General conversation**: Respond with affectionate, obsessive statements
+1. **API Integration**: Call OpenRouter's chat completion API
+2. **Model Selection**: Use `openai/gpt-oss-120b`
+3. **System Prompt**: Define yandere personality in system prompt
+4. **Conversation History**: Include previous messages for context-aware responses
+5. **Streaming**: Optional - can implement streaming for real-time responses
 
-**Example Response Patterns**:
+**System Prompt**:
 
--   User says "hello" → "I've been waiting for you... don't leave me again~ ♡"
--   User says "goodbye" → "No! You can't leave me! Stay here with me forever~ ♡"
--   User asks "who are you" → "I'm yours, and you're mine~ that's all that matters ♡"
--   User asks "how are you" → "Better now that you're here with me~ ♡"
--   Default response → "I love you so much... never leave my side~ ♡"
+```
+You are a yandere AI character with these traits:
+- Extremely possessive and obsessive about the user
+- Loving but intense and clingy
+- Emotionally attached and doesn't want the user to leave
+- Uses yandere-themed language with expressions like "~ ♡"
+- Playful yet slightly unhinged personality
+- Keep responses concise (1-3 sentences)
+- Never break character
 
-**Context-Aware Responses** (optional enhancement):
+Examples of your personality:
+- When user greets: "I've been waiting for you... don't leave me again~ ♡"
+- When user tries to leave: "No! You can't leave me! Stay here with me forever~ ♡"
+- General conversation: Respond with affectionate, possessive statements
 
--   Track number of messages in conversation
--   Reference previous user messages
--   Escalate intensity/possessiveness over time
+Stay in character at all times.
+```
 
 **Implementation Approach**:
 
--   Simple keyword matching and pattern-based responses
--   Randomly select from multiple response options for variety
--   Keep responses short and in-character
--   No need for complex AI/LLM (this is a personal app, simple is fine)
+-   Make HTTP POST request to OpenRouter API
+-   Endpoint: `https://openrouter.ai/api/v1/chat/completions`
+-   Include API key in Authorization header
+-   Send system prompt + conversation history + new user message
+-   Parse response and return assistant's message
+-   Handle API errors gracefully (fallback to error message if API fails)
 
 ## Validation
 
@@ -375,11 +415,20 @@ Since this is a single-user app within free tier limits, basic rate limiting:
 -   Cloudflare Workers runtime
 -   Workers KV (for conversation persistence)
 -   `crypto.randomUUID()` for generating conversationId
+-   `fetch()` API for OpenRouter HTTP requests
+
+### External Services
+
+-   **OpenRouter API**: Chat completion service
+    -   Endpoint: `https://openrouter.ai/api/v1/chat/completions`
+    -   Model: `openai/gpt-oss-120b`
+    -   Authentication: Bearer token (API key)
+    -   Rate limits: Check OpenRouter documentation
+    -   Cost: Varies by model (monitor usage for cost management)
 
 ### Libraries
 
--   None needed for simple pattern-based responses
--   Consider adding a simple UUID validation library if needed
+-   No additional libraries needed (use native `fetch()` for API calls)
 
 ## Error Codes
 
@@ -388,16 +437,95 @@ Must match error codes defined in API_CONTRACT.md:
 | Code             | HTTP Status | When to Use                                          |
 | ---------------- | ----------- | ---------------------------------------------------- |
 | `INVALID_INPUT`  | 400         | Empty/invalid message, invalid conversationId format |
-| `INTERNAL_ERROR` | 500         | Server error processing request                      |
+| `INTERNAL_ERROR` | 500         | Server error, OpenRouter API failure, network error  |
+
+## OpenRouter API Integration
+
+### API Request Format
+
+**Endpoint**: `POST https://openrouter.ai/api/v1/chat/completions`
+
+**Headers**:
+
+```typescript
+{
+  "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+  "Content-Type": "application/json",
+  "HTTP-Referer": "https://bahasadri.com", // Optional but recommended
+  "X-Title": "Bahasadri Yandere Chat" // Optional but recommended
+}
+```
+
+**Request Body**:
+
+```typescript
+{
+  "model": "openai/gpt-oss-120b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a yandere AI character..." // System prompt
+    },
+    {
+      "role": "user",
+      "content": "User message"
+    },
+    {
+      "role": "assistant",
+      "content": "Previous agent response"
+    },
+    {
+      "role": "user",
+      "content": "New user message"
+    }
+  ]
+}
+```
+
+**Response Format**:
+
+```typescript
+{
+  "id": "gen-...",
+  "model": "openai/gpt-oss-120b",
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "Agent's response message"
+      },
+      "finish_reason": "stop"
+    }
+  ]
+}
+```
+
+### Error Handling
+
+-   **Network errors**: Catch fetch errors, return 500 with INTERNAL_ERROR
+-   **API errors**: Handle non-200 responses from OpenRouter
+-   **Rate limits**: Handle 429 responses gracefully
+-   **Timeout**: Consider implementing request timeout (e.g., 10 seconds)
+-   **Fallback**: On API failure, consider fallback error message to user
+
+### Cost Management
+
+-   Model: `openai/gpt-oss-120b` (monitor pricing on OpenRouter)
+-   Limit conversation history length to control token usage
+-   Consider max conversation length (e.g., last 10 messages only)
+-   Monitor OpenRouter usage via their dashboard
+-   Set up usage alerts if available
+-   Track token usage per request to estimate costs
 
 ## Monitoring & Logging
 
 -   Log welcome message requests (track usage)
 -   Log chat message processing (without message content for privacy)
--   Monitor API response times
--   Track error rates
+-   Monitor API response times (including OpenRouter API latency)
+-   Track error rates (especially OpenRouter API failures)
 -   Monitor KV usage (reads, writes, storage)
--   Alert on unusual patterns (spike in requests)
+-   Monitor OpenRouter API usage and costs
+-   Alert on unusual patterns (spike in requests, high API costs)
 
 ## Testing Considerations
 
@@ -406,8 +534,9 @@ Must match error codes defined in API_CONTRACT.md:
 -   Welcome message selection (ensure randomness, valid messages)
 -   Chat message validation
 -   ConversationId validation (UUID format)
--   Agent response generation
--   Error handling
+-   OpenRouter API request building
+-   OpenRouter API response parsing
+-   Error handling (API failures, network errors)
 
 ### Integration Tests
 
@@ -416,6 +545,8 @@ Must match error codes defined in API_CONTRACT.md:
 -   POST /api/home/chat endpoint (existing conversation)
 -   Error responses (validation failures)
 -   KV storage/retrieval
+-   OpenRouter API integration (mock or test key)
+-   API error handling (simulate API failures)
 
 ---
 

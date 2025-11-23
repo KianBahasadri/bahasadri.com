@@ -22,6 +22,67 @@ main {
     z-index: 2;
 }
 
+.contentWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    transition: all 400ms ease-out;
+}
+
+.contentWrapper.chatOpen {
+    gap: 1.5rem;
+}
+
+.leftSection {
+    width: 100%;
+    transition: all 400ms ease-out;
+}
+
+.fullWidth {
+    width: 100%;
+}
+
+.chatSection {
+    width: 100%;
+    height: 70vh;
+    min-height: 400px;
+    animation: slideIn 400ms ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@media (min-width: 1025px) {
+    .contentWrapper.chatOpen {
+        flex-direction: row;
+    }
+
+    .leftSection {
+        flex: 0 0 65%;
+    }
+
+    .chatSection {
+        flex: 0 0 35%;
+        min-width: 300px;
+        height: auto;
+        min-height: 500px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .chatSection {
+        max-height: 50vh;
+    }
+}
+
 /* ----- Screen Border Glow ----- */
 .screenBorder {
     position: fixed;
@@ -290,8 +351,10 @@ main {
     position: relative;
     user-select: none;
     letter-spacing: 0.02em;
-    text-shadow: 2px 2px 0 var(--pink-light), 4px 4px 0 rgba(255, 105, 180, 0.3);
-    animation: titleFloat 3s ease-in-out infinite;
+    text-shadow: 2px 2px 0 var(--pink-light), 4px 4px 0 rgba(255, 105, 180, 0.3),
+        0 0 20px rgba(255, 105, 180, 0.5), 0 0 40px rgba(255, 105, 180, 0.3);
+    animation: titleFloat 3s ease-in-out infinite,
+        glowPulse 3s ease-in-out infinite;
 }
 
 @keyframes titleFloat {
@@ -304,6 +367,20 @@ main {
     }
     75% {
         transform: translateY(-8px) rotate(0.5deg);
+    }
+}
+
+@keyframes glowPulse {
+    0%,
+    100% {
+        text-shadow: 2px 2px 0 var(--pink-light),
+            4px 4px 0 rgba(255, 105, 180, 0.3),
+            0 0 20px rgba(255, 105, 180, 0.5), 0 0 40px rgba(255, 105, 180, 0.3);
+    }
+    50% {
+        text-shadow: 2px 2px 0 var(--pink-light),
+            4px 4px 0 rgba(255, 105, 180, 0.3),
+            0 0 30px rgba(255, 105, 180, 0.7), 0 0 60px rgba(255, 105, 180, 0.5);
     }
 }
 
@@ -531,8 +608,7 @@ main {
     border: 3px solid var(--pink-hot);
     border-radius: 20px;
     padding: 1.2rem 1.5rem;
-    box-shadow: 8px 8px 0 var(--pink-light),
-        0 0 30px rgba(255, 105, 180, 0.4);
+    box-shadow: 8px 8px 0 var(--pink-light), 0 0 30px rgba(255, 105, 180, 0.4);
     position: relative;
     max-width: 280px;
     animation: popupFloat 2s ease-in-out infinite;
@@ -661,6 +737,46 @@ main {
     }
 }
 
+/* ----- Chat Toggle Button ----- */
+.chatToggle {
+    position: fixed;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    border: none;
+    background: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    transition: all 0.3s ease;
+    animation: fadeIn 200ms ease-in;
+    padding: 0;
+}
+
+.chatToggle:hover {
+    transform: scale(1.1);
+}
+
+.chatToggle:active {
+    transform: scale(0.95);
+}
+
+.chatToggle:focus {
+    outline: 1px solid var(--pink-hot);
+    outline-offset: 2px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -668,5 +784,9 @@ main {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+
+    .chatSection {
+        animation: none;
     }
 }

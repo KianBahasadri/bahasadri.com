@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import smsMessengerRoutes from "./sms-messenger";
 import calculatorRoutes from "./calculator";
+import homeRoutes from "./home";
 
 const app = new Hono();
 
@@ -33,6 +34,7 @@ app.use(
 // API routes
 app.route("/api/sms-messenger", smsMessengerRoutes);
 app.route("/api/calculator", calculatorRoutes);
+app.route("/api/home", homeRoutes);
 
 // Health check
 app.get("/", (c) => c.json({ success: true, message: "bahasadri.com API" }));

@@ -158,6 +158,18 @@ See `docs/features/home/API_CONTRACT.md` for the API contract this frontend cons
 -   Message appearance animations (fade in, slide up, or similar)
 -   Heartbreak close button (💔) positioned prominently (top corner of chat panel)
 
+**Message Animation Details**:
+
+-   Each message should animate in individually
+-   Suggested animation: Fade in + slide up from below (translateY)
+-   Animation duration: 250-350ms
+-   Easing: ease-out or cubic-bezier for smooth feel
+-   If multiple messages appear in quick succession, stagger them slightly (50-100ms delay between each)
+-   User messages: Animate from right side (align-right)
+-   Agent messages: Animate from left side (align-left)
+-   Alternative animation ideas: Scale up from center, fade in with slight bounce
+-   Loading indicator for agent thinking: Pulsing dots or typing animation
+
 ### Chat Toggle Button
 
 **Location**: Part of `Home.tsx` or separate component
@@ -167,14 +179,15 @@ See `docs/features/home/API_CONTRACT.md` for the API contract this frontend cons
 **Visual Design**:
 
 -   **When chat is closed**: Heart emoji (❤️) button
--   **Position**: Fixed in bottom-right corner of viewport
+-   **Position**: Fixed in bottom-right corner of viewport (e.g., `bottom: 2rem; right: 2rem`)
 -   **Size**: Large enough to be easily clickable (~60-80px diameter)
--   **Styling**: 
+-   **Styling**:
     -   Circular button with terminal/cyberpunk aesthetic
-    -   Glowing border matching theme colors
-    -   Pulsing animation to draw attention
+    -   Glowing border matching theme colors (pink/cyan)
+    -   Pulsing animation to draw attention (scale or glow intensity)
     -   Semi-transparent background
-    -   Hover effect: Enlarged scale, brighter glow
+    -   Hover effect: Enlarged scale (1.1x), brighter glow
+    -   Z-index high enough to stay above content
 
 **Behavior**:
 
@@ -182,12 +195,210 @@ See `docs/features/home/API_CONTRACT.md` for the API contract this frontend cons
 -   Hidden when chat is open (heartbreak emoji takes over as close button)
 -   Click toggles chat open
 -   Smooth fade-in when chat closes
+-   Pulsing animation runs continuously when visible
 
 **Accessibility**:
 
--   Aria label: "Open chat" or "Chat with agent"
+-   Aria label: "Open chat with agent"
+-   Aria expanded: "false" when closed
 -   Keyboard accessible (focusable, Enter/Space to activate)
 -   Screen reader friendly
+
+### Responsive Layout Details
+
+**Desktop Layout (>1024px) - Chat Open**:
+
+-   Container uses flexbox or grid layout
+-   Left section: ~65-70% width
+    -   Hero section
+    -   Tools grid (left-justified)
+-   Right section: ~30-35% width
+    -   Chat panel (full height of container)
+-   No overlap between sections
+-   Smooth width transitions (300-500ms)
+
+**Mobile/Tablet Layout (≤1024px) - Chat Open**:
+
+-   Container uses vertical stacking (flexbox column or block layout)
+-   Top section: Full width
+    -   Hero section
+    -   Tools grid (centered or full width)
+-   Bottom section: Full width
+    -   Chat panel (fixed height or flexible, e.g., 50vh)
+-   Sections stack vertically with no horizontal split
+
+**Chat Closed (All Screen Sizes)**:
+
+-   Single centered layout
+-   Hero section full width
+-   Tools grid centered
+-   Heart toggle button in bottom-right corner
+
+## Implementation Patterns
+
+### Chat Toggle State Example
+
+```typescript
+const [isChatOpen, setIsChatOpen] = useState(false);
+
+const toggleChat = () => {
+    setIsChatOpen((prev) => !prev);
+};
+```
+
+### Layout Structure Example
+
+```tsx
+<div className={styles.mainContainer}>
+    <div className={styles.contentWrapper}>
+        {/* Left section - Hero + Tools Grid */}
+        <div className={isChatOpen ? styles.leftSection : styles.fullWidth}>
+            <section className={styles.hero}>{/* Hero content */}</section>
+            <section className={styles.toolsGrid}>{/* Tools grid */}</section>
+        </div>
+
+        {/* Right section - Chat Panel (conditionally rendered) */}
+        {isChatOpen && (
+            <div className={styles.chatSection}>
+                <Chatbox onClose={() => setIsChatOpen(false)} />
+            </div>
+        )}
+    </div>
+
+    {/* Toggle button (only visible when chat closed) */}
+    {!isChatOpen && (
+        <button
+            className={styles.chatToggle}
+            onClick={() => setIsChatOpen(true)}
+            aria-label="Open chat with agent"
+            aria-expanded="false"
+        >
+            ❤️
+        </button>
+    )}
+</div>
+```
+
+### Animation CSS Example
+
+```css
+/* Chat panel slide-in animation */
+.chatSection {
+    animation: slideIn 400ms ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Heart button fade animation */
+.chatToggle {
+    animation: fadeIn 200ms ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Pulsing glow for heart button */
+.chatToggle {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 10px var(--pink-hot);
+    }
+    50% {
+        box-shadow: 0 0 20px var(--pink-hot);
+    }
+}
+
+/* Message appearance animation */
+.message {
+    animation: messageAppear 300ms ease-out;
+}
+
+@keyframes messageAppear {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .chatSection,
+    .chatToggle,
+    .message {
+        animation-duration: 0.01ms !important;
+    }
+}
+```
+
+### Responsive Layout CSS Example
+
+```css
+/* Base layout - chat closed */
+.contentWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    transition: all 400ms ease-out;
+}
+
+/* Desktop - chat open */
+@media (min-width: 1025px) {
+    .contentWrapper {
+        flex-direction: row;
+        gap: 1.5rem;
+    }
+
+    .leftSection {
+        flex: 0 0 65%;
+        transition: flex 400ms ease-out;
+    }
+
+    .chatSection {
+        flex: 0 0 35%;
+        min-width: 300px;
+    }
+}
+
+/* Mobile/Tablet - chat open */
+@media (max-width: 1024px) {
+    .contentWrapper {
+        flex-direction: column;
+    }
+
+    .leftSection,
+    .fullWidth {
+        width: 100%;
+    }
+
+    .chatSection {
+        width: 100%;
+        max-height: 50vh;
+    }
+}
+```
 
 ## State Management
 
@@ -401,10 +612,28 @@ const mutation = useMutation({
 
 ### Layout
 
--   Centered main container with max-width: 1200px
--   Responsive padding: 3rem 2rem
--   Full viewport height minimum
--   Tools grid with responsive card layout
+-   **Chat closed**:
+    -   Centered main container with max-width: 1200px
+    -   Responsive padding: 3rem 2rem
+    -   Full viewport height minimum
+    -   Tools grid with responsive card layout, centered
+-   **Chat open (desktop/large screens)**:
+    -   Split layout with no overlap
+    -   Left side (~65-70% width): Tools grid, left-justified
+    -   Right side (~30-35% width): Chat panel
+    -   Smooth reflow animation when transitioning
+-   **Chat open (mobile/tablet)**:
+    -   Stacked vertical layout
+    -   Tools grid on top (full width)
+    -   Chat panel below (full width)
+    -   No horizontal split
+
+### Responsive Breakpoints
+
+-   **Desktop (>1024px)**: Side-by-side split layout when chat is open
+-   **Tablet/Mobile (≤1024px)**: Stacked vertical layout when chat is open
+-   Smooth transitions between breakpoints
+-   Heart toggle button always visible in bottom-right corner when chat is closed
 
 ### Visual Design
 
@@ -415,6 +644,26 @@ const mutation = useMutation({
     -   Glowing borders
 -   Particle system with emoji animations
 -   Pulsing screen border glow animation
+-   Heart toggle button with pulsing glow animation
+
+### Animations
+
+-   **Chat panel**:
+    -   Slide in from right: 300-500ms ease-in-out
+    -   Slide out to right: 300-500ms ease-in-out
+-   **Heart toggle button**:
+    -   Fade out when chat opens: 200ms
+    -   Fade in when chat closes: 200ms
+    -   Pulsing glow animation (continuous)
+    -   Scale up on hover: 1.1x transform
+-   **Chat messages**:
+    -   User message: Fade in + slide up animation (200-300ms)
+    -   Agent message: Fade in + slide up animation (200-300ms)
+    -   Stagger animations if multiple messages appear
+-   **Layout reflow**:
+    -   Tools grid position change: 300-500ms ease-in-out
+    -   Smooth width transitions
+-   All animations should use CSS transitions or animations for GPU acceleration
 
 ### User Feedback
 
@@ -427,17 +676,19 @@ const mutation = useMutation({
     -   Display error message if chat API call fails
 -   Success feedback:
     -   Visual hover effects on enabled cards
-    -   Message appears in chat history immediately
-    -   Agent response appears after processing
+    -   Message appears in chat history immediately with animation
+    -   Agent response appears after processing with animation
 -   Empty states: Show placeholder text in chatbox when no messages
 -   Disabled state: Disabled tool cards are visually distinct and non-interactive
+-   Chat toggle feedback: Clear visual indication of open/closed state
 
 ## Implementation Checklist
 
 ### Components
 
 -   [x] Home page component
--   [ ] Chatbox component
+-   [ ] Chatbox component with collapsible behavior
+-   [ ] Chat toggle button (heart emoji ❤️)
 -   [x] CSS Modules for styling
 
 ### Pages
@@ -449,6 +700,7 @@ const mutation = useMutation({
 -   [x] Audio context management
 -   [x] Sound effect interval management
 -   [x] Error handling for missing AudioContext
+-   [ ] Chat open/closed state management
 -   [ ] TanStack Query setup for welcome message
 -   [ ] TanStack Query setup for chat
 -   [ ] API client functions (welcome, chat)
@@ -459,12 +711,25 @@ const mutation = useMutation({
 ### Styling
 
 -   [x] CSS Modules for components
--   [x] Responsive design
+-   [x] Responsive design (basic)
+-   [ ] Responsive design for chat (split layout desktop, stacked mobile)
 -   [x] Visual effects (scanlines, particles, border glow)
 -   [ ] Glitch animation for hero title
 -   [ ] Glowing text shadows for hero title
 -   [x] Hover states for enabled tools
 -   [x] Disabled states for coming soon tools
+-   [ ] Chat toggle button styling (heart emoji, pulsing glow, hover effects)
+-   [ ] Heartbreak close button styling (💔)
+
+### Animations
+
+-   [ ] Chat panel slide in/out animations (300-500ms)
+-   [ ] Heart toggle button fade in/out (200ms)
+-   [ ] Heart toggle button pulsing glow
+-   [ ] Heart toggle button hover scale effect
+-   [ ] Chat message appearance animations (fade + slide)
+-   [ ] Layout reflow animations (tools grid repositioning)
+-   [ ] Smooth scrolling for new messages
 
 ### Integration
 
@@ -474,6 +739,8 @@ const mutation = useMutation({
 -   [ ] Connect to backend welcome API (per API_CONTRACT.md)
 -   [ ] Connect to backend chat API (per API_CONTRACT.md)
 -   [ ] Handle errors gracefully
+-   [ ] Chat toggle functionality
+-   [ ] Layout reflow logic when chat opens/closes
 
 ## Dependencies
 
@@ -491,21 +758,44 @@ const mutation = useMutation({
 
 -   Particle system should render reasonable number of particles (20)
 -   Sound effects use Web Audio API
--   CSS animations use GPU-accelerated properties
+-   CSS animations use GPU-accelerated properties (transform, opacity)
 -   Minimize unnecessary re-renders
 -   Chat message history: Consider limiting displayed messages or virtual scrolling for long conversations
 -   API calls: Cache welcome message, persist conversationId in component state
 -   Welcome message: Cache with TanStack Query to avoid refetching on remount
+-   Chat panel: Use `transform: translateX()` for slide animations (GPU-accelerated)
+-   Layout reflow: Use CSS transitions for smooth repositioning
+-   Message animations: Stagger animations to avoid jank with many messages
+-   Toggle button: Simple pulsing animation, low overhead
 
 ## Accessibility
 
--   Semantic HTML: Uses `<main>`, `<section>`, `<h1>`, `<h3>` elements, proper form elements for chat input
--   ARIA labels: Tool cards should have descriptive labels, chatbox should have proper labels, welcome message loading state announced
--   Keyboard navigation: Link components are keyboard accessible, chat input supports Enter to send
--   Screen reader support: Disabled buttons should indicate "coming soon" status, chat messages should be announced, welcome message announced when loaded
+-   Semantic HTML: Uses `<main>`, `<section>`, `<h1>`, `<h3>` elements, proper form elements for chat input, `<button>` for toggle
+-   ARIA labels:
+    -   Tool cards should have descriptive labels
+    -   Chatbox should have proper labels
+    -   Welcome message loading state announced
+    -   Chat toggle button: `aria-label="Open chat with agent"` when closed
+    -   Close button: `aria-label="Close chat"`
+-   ARIA states:
+    -   Chat panel: `aria-hidden="true"` when closed, `aria-hidden="false"` when open
+    -   Toggle button: `aria-expanded="false"` when closed, `aria-expanded="true"` when open
+-   Keyboard navigation:
+    -   Link components are keyboard accessible
+    -   Chat input supports Enter to send
+    -   Toggle button is focusable and activatable with Enter/Space
+    -   Close button (💔) is keyboard accessible
+    -   Focus management: Move focus to chat input when opened, restore focus to toggle when closed
+-   Screen reader support:
+    -   Disabled buttons should indicate "coming soon" status
+    -   Chat messages should be announced as they appear
+    -   Welcome message announced when loaded
+    -   Chat open/close state changes announced
 -   Sound effects: Optional enhancement, doesn't block core functionality
 -   Chat accessibility: Ensure chat messages are readable by screen readers, proper focus management
 -   Loading states: Properly announced to screen readers
+-   Animations: Respect `prefers-reduced-motion` media query for users who prefer minimal animations
+-   Color contrast: Ensure all text meets WCAG AA standards against backgrounds
 
 ---
 
