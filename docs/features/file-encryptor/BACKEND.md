@@ -336,30 +336,6 @@ function validateFileId(fileId: string): { ok: boolean; error?: string } {
 -   [ ] Expiration timestamp calculation
 -   [ ] Error handling
 
-### Testing
-
--   [ ] Unit tests for handlers
--   [ ] Integration tests for R2 operations
--   [ ] Error scenario testing
--   [ ] Expiration testing
-
-## Testing Considerations
-
-### Unit Tests
-
--   Handler function testing
--   Validation logic testing
--   Error handling testing
--   File ID generation testing
-
-### Integration Tests
-
--   API endpoint testing (must match API_CONTRACT.md contract)
--   R2 integration testing
--   File upload/download flow
--   Expiration handling
--   Error scenarios
-
 ## Dependencies
 
 ### Workers Libraries

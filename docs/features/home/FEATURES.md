@@ -37,6 +37,10 @@ Users can interact with the yandere agent through a chatbox interface:
 -   Agent responds with yandere personality traits
 -   Conversation persists during the session
 
+### Randomly Generated Welcome Message
+
+The hero section displays a randomly selected welcome message from a pre-generated list of yandere-themed greetings. Each time a user visits or refreshes the home page, they see a different message, adding variety and personality to the landing experience. Messages are styled with terminal/cyberpunk effects including glitch animations and glowing text shadows, matching the overall aesthetic of the page.
+
 ## User Workflows
 
 ### Browsing Available Tools

@@ -297,35 +297,6 @@ interface ContactUpdatePayload {
 -   `403 Forbidden`: invalid signature (`UNAUTHORIZED`)
 -   `500 Internal Server Error`
 
-## Testing
-
-### Example requests
-
-```bash
-# Send WhatsApp message
-curl -X POST "http://localhost:8787/api/whatsapp-messenger/send" \
-  -H "Content-Type: application/json" \
-  -d '{"phoneNumber":"+1234567890","message":"Hello"}'
-
-# Fetch paginated conversation
-curl -X GET "http://localhost:8787/api/whatsapp-messenger/messages?counterpart=+1234567890&limit=50"
-
-# Poll for updates
-curl -X GET "http://localhost:8787/api/whatsapp-messenger/messages-since?since=1698259200000"
-
-# List threads
-curl -X GET "http://localhost:8787/api/whatsapp-messenger/threads"
-
-# Manage contacts
-curl -X POST "http://localhost:8787/api/whatsapp-messenger/contacts" \
-  -H "Content-Type: application/json" \
-  -d '{"phoneNumber":"+1234567890","displayName":"John Doe"}'
-
-curl -X PATCH "http://localhost:8787/api/whatsapp-messenger/contacts/abc-123" \
-  -H "Content-Type: application/json" \
-  -d '{"displayName":"John Updated"}'
-```
-
 ---
 
 **Note**: This document defines the frontend/backend contract. Implementation guidance is in `FRONTEND.md` and `BACKEND.md`.

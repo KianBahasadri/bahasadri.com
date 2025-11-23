@@ -1,5 +1,6 @@
 import React from "react";
 import styles from "./CalculatorButton.module.css";
+import { playClickSound } from "../../lib/sound";
 
 interface CalculatorButtonProps {
   readonly label: string;
@@ -23,11 +24,18 @@ export default function CalculatorButton({
   }
   const combinedClassName = parts.join(" ").trim();
 
+  const handleClick = (): void => {
+    if (!disabled) {
+      playClickSound();
+    }
+    onClick();
+  };
+
   return (
     <button
       type="button"
       className={combinedClassName}
-      onClick={onClick}
+      onClick={handleClick}
       disabled={disabled}
       aria-label={getAriaLabel(label, variant)}
     >

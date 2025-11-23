@@ -209,35 +209,12 @@ function parseExpression(expression: string): {
 -   Expression must follow format: `number operator number` with optional whitespace
 -   Results are returned as numbers (JavaScript number type)
 
-## Security Considerations
-
-### Authentication
-
--   No authentication required - calculator is a public utility
-
-### Authorization
-
--   No authorization required - all users can use the calculator
-
 ### Input Sanitization
 
 -   Expression string is validated against a strict regex pattern to prevent code injection
 -   Only numeric operands and basic arithmetic operators are allowed
 -   No evaluation of arbitrary JavaScript code - only parsing and arithmetic operations
 -   Input length should be reasonable (e.g., max 100 characters) to prevent abuse
-
-## Performance Optimization
-
-### Caching Strategy
-
--   No caching required - calculations are fast and stateless
--   Each request is independent and doesn't benefit from caching
-
-### Edge Computing Benefits
-
--   Low latency - calculations happen at the edge close to users
--   No database queries - pure computation reduces response time
--   Stateless operations allow for easy horizontal scaling
 
 ## Implementation Checklist
 
@@ -258,30 +235,6 @@ function parseExpression(expression: string): {
 -   [ ] Arithmetic evaluation function
 -   [ ] Division by zero detection
 -   [ ] Error handling for invalid inputs
-
-### Testing
-
--   [ ] Unit tests for expression validation
--   [ ] Unit tests for expression parsing
--   [ ] Unit tests for arithmetic operations
--   [ ] Unit tests for error cases (division by zero, invalid format)
--   [ ] Integration tests for API endpoint
--   [ ] Error scenario testing (all error codes from API_CONTRACT.md)
-
-## Testing Considerations
-
-### Unit Tests
-
--   Handler function testing
--   Validation logic testing
--   Error handling testing
-
-### Integration Tests
-
--   API endpoint testing (must match API_CONTRACT.md contract)
--   Test all supported operations (+, -, \*, /)
--   Test error scenarios (invalid input, division by zero)
--   Test response format matches API_CONTRACT.md
 
 ## Dependencies
 

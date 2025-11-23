@@ -223,37 +223,6 @@ interface ErrorResponse {
 -   **Per Endpoint**: Varies by external API limits
 -   **Response Headers**: Include rate limit information in response headers
 
-## Testing
-
-### Test Endpoints
-
--   Development: Use localhost endpoints
--   Production: Use production API URL
-
-### Example Requests
-
-```bash
-# Username search
-curl -X POST "http://localhost:8787/api/osint-tool/username-search" \
-  -H "Content-Type: application/json" \
-  -d '{"username": "example_user"}'
-
-# Email lookup
-curl -X POST "http://localhost:8787/api/osint-tool/email-lookup" \
-  -H "Content-Type: application/json" \
-  -d '{"email": "example@example.com"}'
-
-# Domain info
-curl -X POST "http://localhost:8787/api/osint-tool/domain-info" \
-  -H "Content-Type: application/json" \
-  -d '{"domain": "example.com"}'
-
-# Breach check
-curl -X POST "http://localhost:8787/api/osint-tool/breach-check" \
-  -H "Content-Type: application/json" \
-  -d '{"email": "example@example.com"}'
-```
-
 ---
 
 **Note**: This document defines the contract between frontend and backend. Implementation details are in FRONTEND.md and BACKEND.md respectively.

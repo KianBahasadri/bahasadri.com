@@ -321,12 +321,10 @@ meeting.on("participantLeft", (participantId) => {
 -   [ ] ParticipantGrid component
 -   [ ] Controls component
 -   [ ] CSS Modules for all components
--   [ ] Component tests
 
 ### Pages
 
 -   [ ] Main page route configuration
--   [ ] Page tests
 
 ### State Management
 
@@ -350,24 +348,7 @@ meeting.on("participantLeft", (participantId) => {
 -   [ ] Connect to backend API (per API_CONTRACT.md)
 -   [ ] Integrate RealtimeKit SDK
 -   [ ] Handle media permissions
--   [ ] Test video/audio functionality
 -   [ ] Handle errors gracefully
-
-## Testing Considerations
-
-### Unit Tests
-
--   Component rendering
--   State management
--   API client functions
--   Error handling
-
-### Integration Tests
-
--   API integration
--   RealtimeKit SDK integration (mocked)
--   Media stream handling
--   Participant management
 
 ## Dependencies
 

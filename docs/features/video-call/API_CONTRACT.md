@@ -142,30 +142,6 @@ interface ErrorResponse {
 -   **Allowed Methods**: GET, POST
 -   **Allowed Headers**: Content-Type
 
-## Testing
-
-### Test Endpoints
-
--   Development: Use localhost endpoints
--   Production: Use production API URL
-
-### Example Requests
-
-```bash
-# Get global room ID
-curl -X GET "http://localhost:8787/api/video-call/global-room"
-
-# Create session
-curl -X POST "http://localhost:8787/api/video-call/session" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "My Meeting"}'
-
-# Generate token
-curl -X POST "http://localhost:8787/api/video-call/token" \
-  -H "Content-Type: application/json" \
-  -d '{"meeting_id": "meeting-id-here", "name": "John Doe"}'
-```
-
 ---
 
 **Note**: This document defines the contract between frontend and backend. Implementation details are in FRONTEND.md and BACKEND.md respectively.

@@ -77,22 +77,6 @@ interface ErrorResponse {
 -   **Allowed Methods**: [GET, POST, etc.]
 -   **Allowed Headers**: Content-Type
 
-## Testing
-
-### Test Endpoints
-
--   Development: Use localhost endpoints
--   Production: Use production API URL
-
-### Example Requests
-
-```bash
-# [Example curl command]
-curl -X [METHOD] "http://localhost:8787/api/[feature-name]/[endpoint]" \
-  -H "Content-Type: application/json" \
-  -d '[request body]'
-```
-
 ---
 
 **Note**: This document defines the contract between frontend and backend. Implementation details are in FRONTEND.md and BACKEND.md respectively.

@@ -325,12 +325,10 @@ export const calculateExpression = async (
 -   [ ] ButtonGrid component
 -   [ ] CalculatorButton component
 -   [ ] CSS Modules for all components
--   [ ] Component tests
 
 ### Pages
 
 -   [ ] Main page route configuration (`/calculator`)
--   [ ] Page tests
 
 ### State Management
 
@@ -354,30 +352,7 @@ export const calculateExpression = async (
 ### Integration
 
 -   [ ] Connect to backend API (per API_CONTRACT.md)
--   [ ] Test API calls (all operations: +, -, \*, /)
 -   [ ] Handle errors gracefully (all error codes)
--   [ ] Test error scenarios (division by zero, invalid input)
--   [ ] Test power on/off functionality
--   [ ] Test button interactions (numbers, operators, equals, clear, decimal)
-
-## Testing Considerations
-
-### Unit Tests
-
--   Component rendering
--   User interactions
--   State management
--   API client functions
--   Error handling
-
-### Integration Tests
-
--   API integration (test calculation API calls)
--   Full calculation flow (number → operator → number → equals)
--   Error scenarios (division by zero, API errors)
--   Loading states (button disabled during calculation)
--   Power on/off flow
--   Multiple operations chaining
 
 ## Dependencies
 

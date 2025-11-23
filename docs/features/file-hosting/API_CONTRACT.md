@@ -285,38 +285,6 @@ interface ErrorResponse {
 -   **Allowed Methods**: GET, POST
 -   **Allowed Headers**: Content-Type
 
-## Testing
-
-### Test Endpoints
-
--   Development: Use localhost endpoints
--   Production: Use production API URL
-
-### Example Requests
-
-```bash
-# Upload file
-curl -X POST "http://localhost:8787/api/file-hosting/upload" \
-  -F "file=@example.pdf"
-
-# Upload file from URL
-curl -X POST "http://localhost:8787/api/file-hosting/upload-from-url" \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://example.com/file.pdf"}'
-
-# Download file
-curl -X GET "http://localhost:8787/api/file-hosting/download/[fileId]"
-
-# List files
-curl -X GET "http://localhost:8787/api/file-hosting/files"
-
-# Get file metadata
-curl -X GET "http://localhost:8787/api/file-hosting/files/[fileId]"
-
-# Get access logs
-curl -X GET "http://localhost:8787/api/file-hosting/access-logs/[fileId]"
-```
-
 ---
 
 **Note**: This document defines the contract between frontend and backend. Implementation details are in FRONTEND.md and BACKEND.md respectively.

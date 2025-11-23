@@ -2,6 +2,8 @@
 
 ### TODO
 - finalize homepage, sms messenger, and calculator
+- turn the homepage into a cyebrpunk themed workshop where each utility is a different object in the workshop
+- add anime girl voice tts to yandere chat
 
 # Feature Construction Status
 These steps are in sequential order

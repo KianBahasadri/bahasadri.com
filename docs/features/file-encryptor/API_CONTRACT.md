@@ -136,27 +136,6 @@ interface ErrorResponse {
 
 **Security**: No encryption keys, passwords, or unencrypted file data should ever be sent to the backend. All sensitive operations are performed client-side.
 
-## Testing
-
-### Test Endpoints
-
--   Development: Use localhost endpoints
--   Production: Use production API URL
-
-### Example Requests
-
-```bash
-# Upload a temporary file
-curl -X POST "http://localhost:8787/api/file-encryptor/upload-temp" \
-  -F "file=@example.txt"
-
-# Download a temporary file
-curl -X GET "http://localhost:8787/api/file-encryptor/download-temp/{fileId}"
-
-# Delete a temporary file
-curl -X DELETE "http://localhost:8787/api/file-encryptor/temp/{fileId}"
-```
-
 ---
 
 **Note**: This document defines the contract between frontend and backend. Implementation details are in FRONTEND.md and BACKEND.md respectively. Note that most encryption/decryption operations are client-side only and don't require backend interaction.

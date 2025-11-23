@@ -342,12 +342,10 @@ export const checkBreach = async (email: string): Promise<BreachCheckResponse> =
 -   [ ] SearchForm component
 -   [ ] ResultsDisplay component
 -   [ ] CSS Modules for all components
--   [ ] Component tests
 
 ### Pages
 
 -   [ ] Main page route configuration
--   [ ] Page tests
 
 ### State Management
 
@@ -368,28 +366,8 @@ export const checkBreach = async (email: string): Promise<BreachCheckResponse> =
 ### Integration
 
 -   [ ] Connect to backend API (per API_CONTRACT.md)
--   [ ] Test API calls
 -   [ ] Handle errors gracefully
--   [ ] Test error scenarios
 -   [ ] Handle rate limiting
-
-## Testing Considerations
-
-### Unit Tests
-
--   Component rendering
--   User interactions (mode switching, form submission)
--   State management
--   API client functions
--   Error handling
--   Input validation
-
-### Integration Tests
-
--   API integration for each search type
--   Error scenarios (network errors, rate limits, invalid input)
--   Loading states
--   Results display
 
 ## Dependencies
 

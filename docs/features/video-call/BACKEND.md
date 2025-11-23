@@ -302,27 +302,6 @@ function validateGenerateTokenRequest(body: unknown): {
 -   [ ] Config validation
 -   [ ] Response formatting
 
-### Testing
-
--   [ ] Unit tests for handlers
--   [ ] RealtimeKit API mocking
--   [ ] Error scenario testing
-
-## Testing Considerations
-
-### Unit Tests
-
--   Handler function testing
--   Validation logic testing
--   Error handling testing
--   Config validation
-
-### Integration Tests
-
--   API endpoint testing (must match API_CONTRACT.md contract)
--   RealtimeKit API integration (mocked)
--   Environment variable handling
-
 ## Dependencies
 
 ### Workers Libraries

@@ -425,12 +425,10 @@ export const generateQRCodeBlob = async (
 -   [ ] FileList component
 -   [ ] QRCodeGenerator component
 -   [ ] CSS Modules for all components
--   [ ] Component tests
 
 ### Pages
 
 -   [ ] Main page route configuration
--   [ ] Page tests
 
 ### State Management
 
@@ -451,28 +449,8 @@ export const generateQRCodeBlob = async (
 ### Integration
 
 -   [ ] Connect to backend API (per API_CONTRACT.md)
--   [ ] Test API calls
 -   [ ] Handle errors gracefully
--   [ ] Test error scenarios
 -   [ ] File upload with progress
-
-## Testing Considerations
-
-### Unit Tests
-
--   Component rendering
--   User interactions (drag-drop, click)
--   State management
--   API client functions
--   Error handling
-
-### Integration Tests
-
--   API integration
--   Upload flow
--   File list display
--   Error scenarios
--   Loading states
 
 ## Dependencies
 

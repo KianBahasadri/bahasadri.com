@@ -482,29 +482,6 @@ function validateMessage(message: string): { ok: boolean; error?: string } {
 -   [ ] Contact management
 -   [ ] Webhook processing
 
-### Testing
-
--   [ ] Unit tests for handlers
--   [ ] Integration tests with KV
--   [ ] Twilio API mocking
--   [ ] Error scenario testing
-
-## Testing Considerations
-
-### Unit Tests
-
--   Handler function testing
--   Validation logic testing
--   Error handling testing
--   KV operations testing
-
-### Integration Tests
-
--   API endpoint testing (must match API_CONTRACT.md contract)
--   KV storage testing
--   Twilio API integration (mocked)
--   Webhook signature validation
-
 ## Dependencies
 
 ### Workers Libraries

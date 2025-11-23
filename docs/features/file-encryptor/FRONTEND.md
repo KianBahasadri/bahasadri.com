@@ -327,12 +327,10 @@ export const deleteTempFile = async (fileId: string): Promise<void> => {
 -   [ ] FileUpload component
 -   [ ] EncryptionControls component
 -   [ ] CSS Modules for all components
--   [ ] Component tests
 
 ### Pages
 
 -   [ ] Main page route configuration
--   [ ] Page tests
 
 ### Encryption Logic
 
@@ -361,26 +359,6 @@ export const deleteTempFile = async (fileId: string): Promise<void> => {
 -   [ ] Web Crypto API integration
 -   [ ] File download functionality
 -   [ ] Error handling gracefully
--   [ ] Test encryption/decryption flow
-
-## Testing Considerations
-
-### Unit Tests
-
--   Component rendering
--   User interactions
--   State management
--   Encryption/decryption functions
--   Error handling
-
-### Integration Tests
-
--   End-to-end encryption flow
--   End-to-end decryption flow
--   Password-based encryption/decryption
--   Keyfile-based encryption/decryption
--   Error scenarios (wrong password, invalid file, etc.)
--   File download functionality
 
 ## Dependencies
 

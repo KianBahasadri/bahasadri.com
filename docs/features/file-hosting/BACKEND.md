@@ -482,27 +482,6 @@ function validateUrl(url: string): { ok: boolean; error?: string } {
 -   [ ] Access count increment
 -   [ ] Pagination logic
 
-### Testing
-
--   [ ] Unit tests for handlers
--   [ ] Integration tests with R2/D1
--   [ ] Error scenario testing
-
-## Testing Considerations
-
-### Unit Tests
-
--   Handler function testing
--   Validation logic testing
--   Error handling testing
-
-### Integration Tests
-
--   API endpoint testing (must match API_CONTRACT.md contract)
--   R2 upload/download testing
--   D1 query testing
--   End-to-end flow testing
-
 ## Dependencies
 
 ### Workers Libraries
