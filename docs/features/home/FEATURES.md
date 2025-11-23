@@ -19,14 +19,7 @@ The page features a terminal/cyberpunk design with:
 
 ### Tool Discovery
 
-Users can view all available tools in a grid layout:
-
--   **File Hosting** - File hosting utility (disabled)
--   **File Encryptor** - File encryption utility (disabled)
--   **SMS Messenger** - SMS messaging tool (enabled)
--   **Calculator** - Calculator utility (enabled)
--   **OSINT Tool** - OSINT investigation tool (disabled)
--   **Video Call** - Video calling utility (disabled)
+Users can view all available tools at /docs/features in a grid layout
 
 ### Interactive Feedback
 
@@ -53,10 +46,9 @@ Users can interact with the yandere agent through a chatbox interface:
 **Steps**:
 
 1. User lands on the home page
-2. User views the hero section with "You entered my domain~ ♡" message
-3. User scrolls to the tools section
-4. User hovers over enabled tool cards to hear heartbeat sound
-5. User clicks on an enabled tool card to navigate to that tool
+2. User views the hero section with a randomly selected message from a pre-generated list, e.g. "You entered my domain~ ♡"
+3. User hovers over enabled tool cards to hear heartbeat sound
+4. User clicks on an enabled tool card to navigate to that tool
 
 **Result**: User navigates to the selected tool page
 
@@ -99,14 +91,6 @@ Users can interact with the yandere agent through a chatbox interface:
 -   Send messages and receive responses in real-time
 
 ## Use Cases
-
-### First-Time Visitor
-
-A new user visits the site and is greeted by the distinctive home page design. They can explore available tools and understand what the application offers.
-
-### Returning User
-
-A returning user navigates directly to a specific tool from the home page, using it as a navigation hub.
 
 ### Tool Discovery
 
