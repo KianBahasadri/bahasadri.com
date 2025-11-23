@@ -1,16 +1,21 @@
 let audioContext: AudioContext | null = null;
 
 function getAudioContext(): AudioContext | null {
-  if (!audioContext) {
-    const AudioContextClass =
-      globalThis.AudioContext ||
-      (globalThis as { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
-    if (AudioContextClass) {
-      audioContext = new AudioContextClass();
-    }
+  if (audioContext) {
+    return audioContext;
   }
-  return audioContext;
+  
+  const globalObj = globalThis as Record<string, unknown>;
+  const standardAudioContext = "AudioContext" in globalObj ? globalObj["AudioContext"] as typeof AudioContext : undefined;
+  const webkitAudioContext = "webkitAudioContext" in globalObj ? globalObj["webkitAudioContext"] as typeof AudioContext : undefined;
+  const AudioContextClass = standardAudioContext ?? webkitAudioContext;
+  
+  if (AudioContextClass) {
+    audioContext = new AudioContextClass();
+    return audioContext;
+  }
+  
+  return null;
 }
 
 export function playClickSound(): void {

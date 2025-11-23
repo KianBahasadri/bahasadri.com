@@ -5,7 +5,7 @@ import type { ChatMessage } from "../../../../types/home";
 import styles from "./Chatbox.module.css";
 
 interface ChatboxProps {
-    onClose: () => void;
+    readonly onClose: () => void;
 }
 
 export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
@@ -38,7 +38,7 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
             setMessages((prev) => [
                 ...prev,
                 {
-                    id: `agent-${Date.now()}`,
+                    id: `agent-${String(Date.now())}`,
                     role: "agent",
                     content: data.response,
                     timestamp: Date.now(),
@@ -49,7 +49,7 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
             setMessages((prev) => [
                 ...prev,
                 {
-                    id: `error-${Date.now()}`,
+                    id: `error-${String(Date.now())}`,
                     role: "agent",
                     content: `Sorry, I couldn't process that. ${error.message} ♡`,
                     timestamp: Date.now(),
@@ -66,7 +66,7 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
         }
 
         const userMessage: ChatMessage = {
-            id: `user-${Date.now()}`,
+            id: `user-${String(Date.now())}`,
             role: "user",
             content: trimmedMessage,
             timestamp: Date.now(),
@@ -78,11 +78,11 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
     };
 
     return (
-        <div className={styles.chatbox}>
-            <div className={styles.chatHeader}>
-                <h2 className={styles.chatTitle}>Chat with me~ ♡</h2>
+        <div className={styles["chatbox"]}>
+            <div className={styles["chatHeader"]}>
+                <h2 className={styles["chatTitle"]}>Chat with me~ ♡</h2>
                 <button
-                    className={styles.closeButton}
+                    className={styles["closeButton"]}
                     onClick={onClose}
                     aria-label="Close chat"
                     aria-expanded="true"
@@ -91,47 +91,53 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
                 </button>
             </div>
 
-            <div className={styles.messagesContainer}>
+            <div className={styles["messagesContainer"]}>
                 {messages.length === 0 ? (
-                    <div className={styles.emptyState}>
+                    <div className={styles["emptyState"]}>
                         <p>Send me your first packet, Admin-kun? 📝💾💕</p>
                     </div>
                 ) : (
-                    <div className={styles.messagesList}>
-                        {messages.map((message) => (
+                    <div className={styles["messagesList"]}>
+                        {messages.map((message) => {
+                            const userMessageClass =
+                                styles["userMessage"] ?? "";
+                            const agentMessageClass =
+                                styles["agentMessage"] ?? "";
+                            const messageClass = styles["message"] ?? "";
+                            const className =
+                                message.role === "user"
+                                    ? `${messageClass} ${userMessageClass}`
+                                    : `${messageClass} ${agentMessageClass}`;
+                            return (
+                                <div key={message.id} className={className}>
+                                    <div className={styles["messageContent"]}>
+                                        {message.content}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {chatMutation.isPending ? (
                             <div
-                                key={message.id}
-                                className={`${styles.message} ${
-                                    message.role === "user"
-                                        ? styles.userMessage
-                                        : styles.agentMessage
+                                className={`${styles["message"] ?? ""} ${
+                                    styles["agentMessage"] ?? ""
                                 }`}
                             >
-                                <div className={styles.messageContent}>
-                                    {message.content}
+                                <div className={styles["typingIndicator"]}>
+                                    <span />
+                                    <span />
+                                    <span />
                                 </div>
                             </div>
-                        ))}
-                        {chatMutation.isPending && (
-                            <div
-                                className={`${styles.message} ${styles.agentMessage}`}
-                            >
-                                <div className={styles.typingIndicator}>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
-                            </div>
-                        )}
+                        ) : null}
                         <div ref={messagesEndRef} />
                     </div>
                 )}
             </div>
 
-            <form className={styles.inputForm} onSubmit={handleSubmit}>
+            <form className={styles["inputForm"]} onSubmit={handleSubmit}>
                 <textarea
                     ref={inputRef}
-                    className={styles.messageInput}
+                    className={styles["messageInput"]}
                     value={messageInput}
                     onChange={(e) => {
                         setMessageInput(e.target.value);
@@ -148,7 +154,7 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
                 />
                 <button
                     type="submit"
-                    className={styles.sendButton}
+                    className={styles["sendButton"]}
                     disabled={!messageInput.trim() || chatMutation.isPending}
                 >
                     Transmit 📡

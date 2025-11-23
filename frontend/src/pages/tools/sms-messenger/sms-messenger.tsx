@@ -29,20 +29,26 @@ export default function SMSMessenger(): React.JSX.Element {
     return (
         <>
             {/* Terminal Scanline Background */}
-            <div className={styles.bgTerminal} />
-            <div className={styles.scanlines} />
+            <div className={styles["bgTerminal"]} />
+            <div className={styles["scanlines"]} />
 
             {/* Particle System */}
-            <div className={styles.particles}>
-                {Array.from({ length: 20 }).map((_, i) => (
-                    <span key={i} className={styles.particle}>
-                        {["♡", "💊", "🩹", "✨", "💕", "💉", "🔪", "💖"][i % 8]}
+            <div className={styles["particles"]}>
+                {Array.from({ length: 20 }, (_, i) => {
+                    const emojis = ["♡", "💊", "🩹", "✨", "💕", "💉", "🔪", "💖"] as const;
+                    const emojiIndex = i % 8;
+                    const emoji = emojis[emojiIndex] ?? "♡";
+                    const uniqueId = `particle-${String(i)}-${emoji}`;
+                    return { id: uniqueId, emoji };
+                }).map((particle) => (
+                    <span key={particle.id} className={styles["particle"]}>
+                        {particle.emoji}
                     </span>
                 ))}
             </div>
 
             {/* Screen Border Glow */}
-            <div className={styles.screenBorder} />
+            <div className={styles["screenBorder"]} />
 
             <SMSInterface
                 initialThreads={initialThreads}

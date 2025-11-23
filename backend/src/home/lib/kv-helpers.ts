@@ -11,18 +11,18 @@ export function getConversationKey(conversationId: string): string {
 export async function getConversationContext(
     kv: KVNamespace,
     conversationId: string
-): Promise<ConversationContext | null> {
+): Promise<ConversationContext | undefined> {
     const key = getConversationKey(conversationId);
     const value = await kv.get(key);
 
     if (!value) {
-        return null;
+        return undefined;
     }
 
     try {
         return JSON.parse(value) as ConversationContext;
     } catch {
-        return null;
+        return undefined;
     }
 }
 

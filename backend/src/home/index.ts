@@ -32,10 +32,14 @@ const WELCOME_MESSAGES = [
 ];
 
 // GET /api/home/welcome
-app.get("/welcome", async (c) => {
+app.get("/welcome", (c) => {
     try {
         // Select random message from the list
-        const randomIndex = Math.floor(Math.random() * WELCOME_MESSAGES.length);
+        // Use crypto.getRandomValues to satisfy linter
+        const array = new Uint32Array(1);
+        crypto.getRandomValues(array);
+        const randomValue = array[0];
+        const randomIndex = randomValue % WELCOME_MESSAGES.length;
         const message = WELCOME_MESSAGES[randomIndex];
 
         return c.json<WelcomeResponse>(
@@ -44,7 +48,7 @@ app.get("/welcome", async (c) => {
             },
             200
         );
-    } catch (error) {
+    } catch {
         return c.json<ErrorResponse>(
             {
                 success: false,
@@ -68,7 +72,7 @@ app.post("/chat", async (c) => {
             return c.json<ErrorResponse>(
                 {
                     success: false,
-                    error: messageValidation.error || "Invalid message",
+                    error: messageValidation.error ?? "Invalid message",
                     code: "INVALID_INPUT",
                 },
                 400
@@ -83,7 +87,7 @@ app.post("/chat", async (c) => {
                 return c.json<ErrorResponse>(
                     {
                         success: false,
-                        error: idValidation.error || "Invalid conversation ID",
+                        error: idValidation.error ?? "Invalid conversation ID",
                         code: "INVALID_INPUT",
                     },
                     400
@@ -92,12 +96,10 @@ app.post("/chat", async (c) => {
         }
 
         // Generate new conversationId if not provided
-        if (!conversationId) {
-            conversationId = crypto.randomUUID();
-        }
+        conversationId ??= crypto.randomUUID();
 
         // Retrieve conversation context from KV
-        let context: ConversationContext | null = null;
+        let context: ConversationContext | undefined;
         if (conversationId) {
             context = await getConversationContext(
                 env.HOME_CONVERSATIONS,
@@ -107,14 +109,12 @@ app.post("/chat", async (c) => {
 
         // Initialize or update conversation context
         const now = Date.now();
-        if (!context) {
-            context = {
-                conversationId,
-                messages: [],
-                createdAt: now,
-                updatedAt: now,
-            };
-        }
+        context ??= {
+            conversationId,
+            messages: [],
+            createdAt: now,
+            updatedAt: now,
+        };
 
         // Create user message
         const userMessage: ChatMessage = {
