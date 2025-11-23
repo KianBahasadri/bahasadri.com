@@ -57,12 +57,15 @@ export default function Home(): React.JSX.Element {
 
     const playHeartbeatSound = (): void => {
         if (!audioContextRef.current) {
-            const AudioContextClass =
-                globalThis.AudioContext ||
-                (globalThis as { webkitAudioContext?: typeof AudioContext })
-                    .webkitAudioContext;
-            if (AudioContextClass) {
+            try {
+                const webkitAudioContext = (
+                    globalThis as { webkitAudioContext?: typeof AudioContext }
+                ).webkitAudioContext;
+                const AudioContextClass =
+                    webkitAudioContext ?? globalThis.AudioContext;
                 audioContextRef.current = new AudioContextClass();
+            } catch {
+                // AudioContext not available
             }
         }
 
@@ -123,29 +126,28 @@ export default function Home(): React.JSX.Element {
         const rect = event.currentTarget.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const topY = rect.top - 20;
-        
+
         // Ensure popup stays within viewport
         const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
         const popupWidth = 280;
         const popupHeight = 120;
-        
+
         let x = centerX;
         let y = topY;
-        
+
         // Adjust if popup would go off left/right edge
         if (x - popupWidth / 2 < 10) {
             x = popupWidth / 2 + 10;
         } else if (x + popupWidth / 2 > viewportWidth - 10) {
             x = viewportWidth - popupWidth / 2 - 10;
         }
-        
+
         // Adjust if popup would go off top edge
         const above = y - popupHeight >= 10;
         if (!above) {
             y = rect.bottom + 20;
         }
-        
+
         setPopupPosition({ x, y, above });
         setHoveredTool(toolId);
     };
@@ -155,162 +157,216 @@ export default function Home(): React.JSX.Element {
         setPopupPosition(null);
     };
 
+    const renderPopup = (): React.JSX.Element | null => {
+        if (hoveredTool === null || popupPosition === null) {
+            return null;
+        }
+        const popup = toolPopups[hoveredTool];
+        if (popup === undefined) {
+            return null;
+        }
+        return (
+            <div
+                className={`${String(styles["cutePopup"])} ${
+                    popupPosition.above ? "" : String(styles["popupBelow"])
+                }`}
+                style={{
+                    left: `${String(popupPosition.x)}px`,
+                    top: `${String(popupPosition.y)}px`,
+                }}
+            >
+                <div className={styles["popupContent"]}>
+                    {popup.ascii !== undefined && (
+                        <div className={styles["popupAscii"]}>
+                            {popup.ascii}
+                        </div>
+                    )}
+                    <div className={styles["popupText"]}>{popup.text}</div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <main>
-            {/* Terminal Scanline Background */}
-            <div className={styles.bgTerminal} />
-            <div className={styles.scanlines} />
+            {/* Content wrapper with screen border */}
+            <div className={styles["screenBorder"]}>
+                {/* Terminal Scanline Background */}
+                <div className={styles["bgTerminal"]} />
+                <div className={styles["scanlines"]} />
 
-            {/* Particle System */}
-            <div className={styles.particles}>
-                {Array.from({ length: 20 }).map((_, i) => (
-                    <span key={i} className={styles.particle}>
-                        {["♡", "💊", "🩹", "✨", "💕", "💉", "🔪", "💖"][i % 8]}
-                    </span>
-                ))}
-            </div>
-
-            {/* Screen Border Glow */}
-            <div className={styles.screenBorder} />
-
-            <div
-                className={`${styles.contentWrapper} ${
-                    isChatOpen ? styles.chatOpen : ""
-                }`}
-            >
-                {/* Left section - Hero + Tools Grid */}
-                <div
-                    className={
-                        isChatOpen ? styles.leftSection : styles.fullWidth
-                    }
-                >
-                    {/* Hero with Terminal Vibes */}
-                    <section className={styles.hero}>
-                        <h1
-                            className={styles.heroTitle}
-                            data-text={welcomeMessage}
-                        >
-                            {isLoadingWelcome ? "Loading~ ♡" : welcomeMessage}
-                        </h1>
-                    </section>
-
-                    {/* Tools Section */}
-                    <section className={styles.section}>
-                <div className={styles.toolsGrid}>
-                    <button
-                        className={styles.cardMenhera}
-                        disabled
-                        onMouseEnter={(e) => handleCardHover("file-hosting", e)}
-                        onMouseLeave={handleCardLeave}
-                    >
-                        <span className={styles.cardIcon}>💾</span>
-                        <h3 className={styles.cardTitle}>File Hosting</h3>
-                    </button>
-
-                    <button
-                        className={styles.cardMenhera}
-                        disabled
-                        onMouseEnter={(e) =>
-                            handleCardHover("file-encryptor", e)
-                        }
-                        onMouseLeave={handleCardLeave}
-                    >
-                        <span className={styles.cardIcon}>🔒</span>
-                        <h3 className={styles.cardTitle}>File Encryptor</h3>
-                    </button>
-
-                    <Link
-                        to="/sms-messenger"
-                        className={styles.cardMenhera}
-                        onMouseEnter={(e) => {
-                            handleCardHover("sms-messenger", e);
-                            startHeartbeat();
-                        }}
-                        onMouseLeave={() => {
-                            handleCardLeave();
-                            stopHeartbeat();
-                        }}
-                    >
-                        <span className={styles.cardIcon}>📱</span>
-                        <h3 className={styles.cardTitle}>SMS Messenger</h3>
-                    </Link>
-
-                    <Link
-                        to="/calculator"
-                        className={styles.cardMenhera}
-                        onMouseEnter={(e) => {
-                            handleCardHover("calculator", e);
-                            startHeartbeat();
-                        }}
-                        onMouseLeave={() => {
-                            handleCardLeave();
-                            stopHeartbeat();
-                        }}
-                    >
-                        <span className={styles.cardIcon}>🧮</span>
-                        <h3 className={styles.cardTitle}>Calculator</h3>
-                    </Link>
-
-                    <button
-                        className={styles.cardMenhera}
-                        disabled
-                        onMouseEnter={(e) => handleCardHover("osint-tool", e)}
-                        onMouseLeave={handleCardLeave}
-                    >
-                        <span className={styles.cardIcon}>🔍</span>
-                        <h3 className={styles.cardTitle}>OSINT Tool</h3>
-                    </button>
-
-                    <button
-                        className={styles.cardMenhera}
-                        disabled
-                        onMouseEnter={(e) => handleCardHover("video-call", e)}
-                        onMouseLeave={handleCardLeave}
-                    >
-                        <span className={styles.cardIcon}>📹</span>
-                        <h3 className={styles.cardTitle}>Video Call</h3>
-                    </button>
+                {/* Particle System */}
+                <div className={styles["particles"]}>
+                    {Array.from({ length: 20 }).map((_, i) => {
+                        const emojis = [
+                            "♡",
+                            "💊",
+                            "🩹",
+                            "✨",
+                            "💕",
+                            "💉",
+                            "🔪",
+                            "💖",
+                        ];
+                        const emoji = emojis[i % 8] ?? "";
+                        return (
+                            <span
+                                key={`particle-${String(i)}-${emoji}`}
+                                className={styles["particle"]}
+                            >
+                                {emoji}
+                            </span>
+                        );
+                    })}
                 </div>
 
-                {/* Cute Popup */}
-                {hoveredTool && popupPosition && toolPopups[hoveredTool] && (
-                    <div
-                        className={`${styles.cutePopup} ${
-                            !popupPosition.above ? styles.popupBelow : ""
-                        }`}
-                        style={{
-                            left: `${popupPosition.x}px`,
-                            top: `${popupPosition.y}px`,
-                        }}
-                    >
-                        <div className={styles.popupContent}>
-                            {toolPopups[hoveredTool].ascii && (
-                                <div className={styles.popupAscii}>
-                                    {toolPopups[hoveredTool].ascii}
-                                </div>
-                            )}
-                            <div className={styles.popupText}>
-                                {toolPopups[hoveredTool].text}
+                <div className={styles["contentWrapper"]}>
+                    {/* Left section - Hero + Tools Grid */}
+                    <div className={styles["fullWidth"]}>
+                        {/* Hero with Terminal Vibes */}
+                        <section className={styles["hero"]}>
+                            <h1
+                                className={styles["heroTitle"]}
+                                data-text={welcomeMessage}
+                            >
+                                {isLoadingWelcome
+                                    ? "Loading~ ♡"
+                                    : welcomeMessage}
+                            </h1>
+                        </section>
+
+                        {/* Tools Section */}
+                        <section className={styles["section"]}>
+                            <div className={styles["toolsGrid"]}>
+                                <button
+                                    className={styles["cardMenhera"]}
+                                    disabled
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("file-hosting", e);
+                                    }}
+                                    onMouseLeave={handleCardLeave}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        💾
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        File Hosting
+                                    </h3>
+                                </button>
+
+                                <button
+                                    className={styles["cardMenhera"]}
+                                    disabled
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("file-encryptor", e);
+                                    }}
+                                    onMouseLeave={handleCardLeave}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        🔒
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        File Encryptor
+                                    </h3>
+                                </button>
+
+                                <Link
+                                    to="/sms-messenger"
+                                    className={styles["cardMenhera"]}
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("sms-messenger", e);
+                                        startHeartbeat();
+                                    }}
+                                    onMouseLeave={() => {
+                                        handleCardLeave();
+                                        stopHeartbeat();
+                                    }}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        📱
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        SMS Messenger
+                                    </h3>
+                                </Link>
+
+                                <Link
+                                    to="/calculator"
+                                    className={styles["cardMenhera"]}
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("calculator", e);
+                                        startHeartbeat();
+                                    }}
+                                    onMouseLeave={() => {
+                                        handleCardLeave();
+                                        stopHeartbeat();
+                                    }}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        🧮
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        Calculator
+                                    </h3>
+                                </Link>
+
+                                <button
+                                    className={styles["cardMenhera"]}
+                                    disabled
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("osint-tool", e);
+                                    }}
+                                    onMouseLeave={handleCardLeave}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        🔍
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        OSINT Tool
+                                    </h3>
+                                </button>
+
+                                <button
+                                    className={styles["cardMenhera"]}
+                                    disabled
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("video-call", e);
+                                    }}
+                                    onMouseLeave={handleCardLeave}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        📹
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        Video Call
+                                    </h3>
+                                </button>
                             </div>
-                        </div>
-                    </div>
-                )}
-                    </section>
-                </div>
 
-                {/* Right section - Chat Panel (conditionally rendered) */}
-                {isChatOpen && (
-                    <div className={styles.chatSection}>
-                        <Chatbox onClose={() => setIsChatOpen(false)} />
+                            {/* Cute Popup */}
+                            {renderPopup()}
+                        </section>
                     </div>
-                )}
+                </div>
             </div>
 
+            {/* Chat Panel - Fixed position, conditionally rendered */}
+            {isChatOpen ? (
+                <div className={styles["chatSection"]}>
+                    <Chatbox
+                        onClose={() => {
+                            setIsChatOpen(false);
+                        }}
+                    />
+                </div>
+            ) : null}
             {/* Toggle button (only visible when chat closed) */}
             {!isChatOpen && (
                 <button
-                    className={styles.chatToggle}
-                    onClick={() => setIsChatOpen(true)}
+                    className={styles["chatToggle"]}
+                    onClick={() => {
+                        setIsChatOpen(true);
+                    }}
                     aria-label="Open chat with agent"
                     aria-expanded="false"
                 >

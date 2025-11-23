@@ -82,6 +82,7 @@ backend/src/
 -   [Cloudflare KV](https://developers.cloudflare.com/kv/llms-full.txt)
 -   [Cloudflare R2](https://developers.cloudflare.com/r2/llms-full.txt)
 -   [Cloudflare D1](https://developers.cloudflare.com/d1/llms-full.txt)
+-   [OpenRouter](https://openrouter.ai/docs/llms.txt)
 -   [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/commands/)
 -   [TypeScript](https://www.typescriptlang.org/docs/handbook/intro.html)
 

@@ -1,82 +1,196 @@
-# [Feature Name] - API Contract
+openapi: 3.1.0
+info:
+title: Feature API
+description: >-
+API contract document defining the interface between frontend and backend.
+This serves as the single source of truth for coupling.
+version: 1.0.0
+servers:
 
-**API contract document defining the interface between frontend and backend. This is the ONLY coupling point between frontend and backend.**
+-   url: http://localhost:8787/api
+    description: Development Server
+-   url: https://bahasadri.com/api
+    description: Production Server
 
-## Purpose
+components:
+securitySchemes: # EDIT THIS: Choose your actual auth method (e.g., JWT Bearer)
+BearerAuth:
+type: http
+scheme: bearer
+bearerFormat: JWT
 
-[Brief description of what this feature does]
+schemas: # ------------------------------------------------------------------------- # SHARED DATA MODELS # -------------------------------------------------------------------------
+ErrorResponse:
+type: object
+required: - error
+properties:
+error:
+type: string
+description: A descriptive error message.
+example: "Invalid input provided."
+code:
+type: string
+description: Machine-readable error code.
+enum: [INVALID_INPUT, NOT_FOUND, INTERNAL_ERROR]
+example: INVALID_INPUT
 
-## API Base URL
+    # Replace [ModelName] with your actual data model (e.g., Slide, User)
+    FeatureModel:
+      type: object
+      required:
+        - id
+        - name
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the resource.
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          description: Name of the feature item.
+          example: "My Awesome Feature"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp of creation.
+          example: "2023-10-27T10:00:00Z"
 
--   Development: `http://localhost:8787/api`
--   Production: `https://bahasadri.com/api`
+# ---------------------------------------------------------------------------
 
-## Endpoints
+# STANDARD RESPONSES (Reusable)
 
-### `[METHOD] /api/[feature-name]/[endpoint]`
+# ---------------------------------------------------------------------------
 
-**Description**: [What this endpoint does]
+responses:
+BadRequest:
+description: Invalid input provided (400).
+content:
+application/json:
+schema:
+$ref: '#/components/schemas/ErrorResponse'
+examples:
+invalid_input:
+value:
+error: "Field 'name' is required."
+code: "INVALID_INPUT"
 
-**Request**:
+    Unauthorized:
+      description: Authentication required (401).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
 
--   [Request details: headers, body, query params, path params]
+    NotFound:
+      description: Resource not found (404).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            not_found:
+              value:
+                error: "Feature with ID 123 not found."
+                code: "NOT_FOUND"
 
-**Response**:
+    InternalError:
+      description: Server error (500).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            server_error:
+              value:
+                error: "Unexpected database error."
+                code: "INTERNAL_ERROR"
 
-```typescript
-interface [ResponseName] {
-    // Response fields
-}
-```
+paths:
 
-**Status Codes**:
+# ---------------------------------------------------------------------------
 
--   `200 OK`: [Success case]
--   `400 Bad Request`: [Error case]
--   `500 Internal Server Error`: [Error case]
+# ENDPOINTS
 
-## Shared Data Models
+# ---------------------------------------------------------------------------
 
-### TypeScript Types
+# EDIT THIS: Replace [feature-name] and [endpoint] with actual paths
 
-```typescript
-interface [ModelName] {
-    // Model fields
-}
-```
+/feature-name/items:
+get:
+operationId: getFeatureItems
+summary: Retrieve a list of feature items
+description: Fetches all available items for this feature.
+security: - BearerAuth: [] # Remove if auth is not required
+responses:
+'200':
+description: A list of feature items.
+content:
+application/json:
+schema:
+type: array
+items:
+$ref: '#/components/schemas/FeatureModel'
+'401':
+$ref: '#/components/responses/Unauthorized'
+'500':
+$ref: '#/components/responses/InternalError'
 
-## Error Handling
+    post:
+      operationId: createFeatureItem
+      summary: Create a new feature item
+      description: Adds a new item to the collection.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "New Item Name"
+      responses:
+        '201':
+          description: Item successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureModel'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
 
-### Standard Error Response
+/feature-name/items/{id}:
+parameters: - name: id
+in: path
+required: true
+description: The ID of the item to manipulate.
+schema:
+type: string
+format: uuid
 
-All errors follow this format:
-
-```typescript
-interface ErrorResponse {
-    error: string;
-}
-```
-
-### Error Codes
-
-| Code             | HTTP Status | When to Use   |
-| ---------------- | ----------- | ------------- |
-| `INVALID_INPUT`  | 400         | [Description] |
-| `NOT_FOUND`      | 404         | [Description] |
-| `INTERNAL_ERROR` | 500         | [Description] |
-
-## Authentication/Authorization
-
--   **Required**: [Yes/No]
--   **Method**: [None/JWT/etc.]
--   [Additional auth details]
-
-## CORS
-
--   **Allowed Origins**: `https://bahasadri.com`
--   **Allowed Methods**: [GET, POST, etc.]
--   **Allowed Headers**: Content-Type
-
----
-
-**Note**: This document defines the contract between frontend and backend. Implementation details are in FRONTEND.md and BACKEND.md respectively.
+    get:
+      operationId: getFeatureItemById
+      summary: Get a specific item
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: The requested item details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureModel'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'

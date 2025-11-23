@@ -12,6 +12,11 @@ binding = "SMS_MESSAGES"
 id = "e1c31d9857df45d49f00c03daa8b9602"
 preview_id = "e1c31d9857df45d49f00c03daa8b9602"
 
+[[kv_namespaces]]
+binding = "HOME_CONVERSATIONS"
+id = "placeholder"
+preview_id = "placeholder"
+
 [[r2_buckets]]
 binding = "file_hosting_prod"
 bucket_name = "file-hosting-prod"

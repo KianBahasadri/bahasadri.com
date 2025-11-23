@@ -20,7 +20,9 @@ A personal file hosting and sharing utility with automatic compression, detailed
 **Request**:
 
 -   Content-Type: `multipart/form-data`
--   Body: Form data with `file` field containing the file
+-   Body: Form data with:
+    -   `file` field containing the file (required)
+    -   `isPublic` field (optional, boolean, default: `true`): Whether the file should be publicly accessible via direct link
 
 **Response**:
 
@@ -42,7 +44,7 @@ interface UploadResponse {
 
 ```typescript
 interface ErrorResponse {
-  error: string;
+    error: string;
 }
 ```
 
@@ -53,11 +55,12 @@ interface ErrorResponse {
 **Request**:
 
 -   Content-Type: `application/json`
--   Body: JSON with `url` field containing the file URL
+-   Body: JSON with `url` field containing the file URL and optional `isPublic` field
 
 ```typescript
 interface UploadFromUrlRequest {
     url: string;
+    isPublic?: boolean; // Optional, default: true
 }
 ```
 
@@ -82,7 +85,7 @@ interface UploadResponse {
 
 ```typescript
 interface ErrorResponse {
-  error: string;
+    error: string;
 }
 ```
 
@@ -93,17 +96,19 @@ interface ErrorResponse {
 **Request**:
 
 -   Path parameter: `fileId` (string, UUID)
+-   Query parameter: `uiAccess` (optional, boolean): Set to `true` when accessing from the UI
 
 **Response**:
 
 -   Content-Type: Based on file mime type
 -   Body: File content (binary stream)
 -   Headers:
-  - `Content-Disposition`: Attachment with filename
+-   `Content-Disposition`: Attachment with filename
 
 **Status Codes**:
 
--   `200 OK`: File found and returned
+-   `200 OK`: File found and returned (public file, or private file accessed with `uiAccess=true`)
+-   `403 Forbidden`: Private file accessed without UI access (direct link access denied)
 -   `404 Not Found`: File not found or deleted
 -   `500 Internal Server Error`: Server error
 
@@ -112,33 +117,36 @@ interface ErrorResponse {
 **Description**: List all uploaded files with metadata
 
 **Request**:
-- Query parameters:
-  - `cursor` (optional, string): Pagination cursor
-  - `limit` (optional, number): Number of files to return
+
+-   Query parameters:
+    -   `cursor` (optional, string): Pagination cursor
+    -   `limit` (optional, number): Number of files to return
 
 **Response**:
+
 ```typescript
 interface FileListResponse {
-  files: FileMetadata[];
-  nextCursor?: string;
+    files: FileMetadata[];
+    nextCursor?: string;
 }
 
 interface FileMetadata {
-  id: string;
-  name: string;
-  originalSize: number;
-  compressedSize?: number | null;
-  mimeType: string;
-  uploadTime: string;
-  compressionStatus: "pending" | "processing" | "done" | "failed";
-  originalUrl: string;
-  compressedUrl?: string | null;
-  compressionRatio?: number | null;
-  accessCount: number;
-  lastAccessed?: string | null;
-  deleted: boolean;
+    id: string;
+    name: string;
+    originalSize: number;
+    compressedSize?: number | null;
+    mimeType: string;
+    uploadTime: string;
+    compressionStatus: "pending" | "processing" | "done" | "failed";
+    originalUrl: string;
+    compressedUrl?: string | null;
+    compressionRatio?: number | null;
+    accessCount: number;
+    lastAccessed?: string | null;
+    deleted: boolean;
+    isPublic: boolean;
 }
-````
+```
 
 **Status Codes**:
 
@@ -170,6 +178,7 @@ interface FileMetadata {
     accessCount: number;
     lastAccessed?: string | null;
     deleted: boolean;
+    isPublic: boolean;
 }
 ```
 
@@ -238,6 +247,7 @@ interface FileMetadata {
     accessCount: number;
     lastAccessed?: string | null;
     deleted: boolean;
+    isPublic: boolean;
 }
 
 interface AccessLogEntry {
@@ -270,6 +280,7 @@ interface ErrorResponse {
 | Code             | HTTP Status | When to Use                             |
 | ---------------- | ----------- | --------------------------------------- |
 | `INVALID_INPUT`  | 400         | Invalid file or missing required fields |
+| `FORBIDDEN`      | 403         | Private file accessed without UI access |
 | `NOT_FOUND`      | 404         | File doesn't exist                      |
 | `INTERNAL_ERROR` | 500         | Server error                            |
 

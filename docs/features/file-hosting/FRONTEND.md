@@ -67,11 +67,13 @@ interface UploadZoneProps {
 -   Local state: Upload status (`idle` | `uploading` | `error` | `done`)
 -   Local state: Status message (string)
 -   Local state: Dragging state (boolean)
+-   Local state: Is public toggle (boolean, default: `true`)
 
 **Interactions**:
 
 -   Drag and drop file upload
 -   Click to select file
+-   Toggle public/private file sharing
 -   Upload progress feedback
 -   Error handling and display
 
@@ -100,10 +102,12 @@ interface UrlUploadFormProps {
 -   Local state: URL input value (string)
 -   Local state: Upload status (`idle` | `uploading` | `error` | `done`)
 -   Local state: Status message (string)
+-   Local state: Is public toggle (boolean, default: `true`)
 
 **Interactions**:
 
 -   Enter URL in text input
+-   Toggle public/private file sharing
 -   Click "Download and Host" button
 -   Upload progress feedback
 -   Error handling and display
@@ -135,9 +139,10 @@ interface FileListProps {
 
 **Interactions**:
 
--   Click download link
--   Display file metadata (size, type, access count)
--   Generate QR code for download link
+-   Click download link (with `uiAccess=true` query parameter for UI access)
+-   Display file metadata (size, type, access count, sharing status)
+-   Generate QR code for download link (only for public files)
+-   Display sharing status indicator (public/private)
 
 **Styling**:
 
@@ -216,6 +221,7 @@ const [uploadStatus, setUploadStatus] = useState<
 >("idle");
 const [uploadMessage, setUploadMessage] = useState<string>("");
 const [isDragging, setIsDragging] = useState(false);
+const [isPublic, setIsPublic] = useState<boolean>(true);
 ```
 
 ## API Integration
@@ -226,9 +232,13 @@ const [isDragging, setIsDragging] = useState(false);
 
 ```typescript
 // Upload file
-export const uploadFile = async (file: File): Promise<UploadResponse> => {
+export const uploadFile = async (
+    file: File,
+    isPublic: boolean = true
+): Promise<UploadResponse> => {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("isPublic", isPublic.toString());
 
     const response = await fetch("/api/file-hosting/upload", {
         method: "POST",
@@ -245,14 +255,15 @@ export const uploadFile = async (file: File): Promise<UploadResponse> => {
 
 // Upload file from URL
 export const uploadFileFromUrl = async (
-    url: string
+    url: string,
+    isPublic: boolean = true
 ): Promise<UploadResponse> => {
     const response = await fetch("/api/file-hosting/upload-from-url", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, isPublic }),
     });
 
     if (!response.ok) {
@@ -328,9 +339,7 @@ export const generateQRCode = async (
 };
 
 // Generate QR code as image blob for download
-export const generateQRCodeBlob = async (
-    url: string
-): Promise<Blob> => {
+export const generateQRCodeBlob = async (url: string): Promise<Blob> => {
     const canvas = document.createElement("canvas");
     await QRCode.toCanvas(canvas, url, {
         width: 400,
@@ -359,26 +368,28 @@ export const generateQRCodeBlob = async (
 -   **Upload File**:
 
     -   Trigger: Drag-drop or click to select
-    -   Flow: Validate file → Upload → Show success → Refresh file list
+    -   Flow: Set public/private toggle → Validate file → Upload with `isPublic` flag → Show success → Refresh file list
     -   Error handling: Show error message, allow retry
 
 -   **Upload File from URL**:
 
     -   Trigger: Enter URL and click "Download and Host" button
-    -   Flow: Validate URL → Download file → Upload → Show success → Refresh file list
+    -   Flow: Set public/private toggle → Validate URL → Download file → Upload with `isPublic` flag → Show success → Refresh file list
     -   Error handling: Show error message, allow retry
 
 -   **Download File**:
 
     -   Trigger: Click download link
-    -   Flow: Navigate to download URL (opens in new tab)
-    -   No error handling needed (browser handles)
+    -   Flow:
+        -   **Public files**: Navigate to download URL (opens in new tab)
+        -   **Private files**: Navigate to download URL with `uiAccess=true` query parameter
+    -   Error handling: Handle 403 Forbidden for private files accessed directly
 
 -   **Generate QR Code**:
 
     -   Trigger: Click "Generate QR Code" button on file
-    -   Flow: Generate QR code from download URL → Display QR code → Allow download
-    -   Error handling: Show error message if generation fails
+    -   Flow: Check if file is public → Generate QR code from download URL → Display QR code → Allow download
+    -   Error handling: Show error message if generation fails or if file is private (QR codes only for public files)
 
 -   **View File Details**:
     -   Trigger: Click on file
@@ -403,10 +414,11 @@ export const generateQRCodeBlob = async (
 ### Visual Design
 
 -   Upload zone: Large drop area with drag-over feedback
+-   Public/private toggle: Toggle switch or checkbox near upload area
 -   File list: Card-based grid layout
--   Status indicators: Visual feedback for upload states
+-   Status indicators: Visual feedback for upload states and sharing status (public/private badge)
 -   Empty state: Friendly message when no files
--   QR code display: Modal overlay with QR code image and download button
+-   QR code display: Modal overlay with QR code image and download button (only for public files)
 
 ### User Feedback
 
@@ -420,10 +432,10 @@ export const generateQRCodeBlob = async (
 ### Components
 
 -   [ ] FileHosting page component
--   [ ] UploadZone component with drag-drop
--   [ ] UrlUploadForm component
--   [ ] FileList component
--   [ ] QRCodeGenerator component
+-   [ ] UploadZone component with drag-drop and public/private toggle
+-   [ ] UrlUploadForm component with public/private toggle
+-   [ ] FileList component with sharing status display
+-   [ ] QRCodeGenerator component (only for public files)
 -   [ ] CSS Modules for all components
 
 ### Pages

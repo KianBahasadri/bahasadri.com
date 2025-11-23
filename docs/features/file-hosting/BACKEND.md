@@ -25,13 +25,16 @@ See `docs/features/file-hosting/API_CONTRACT.md` for the API contract this backe
 **Request**:
 
 -   Content-Type: `multipart/form-data`
--   Body: Form data with `file` field
+-   Body: Form data with:
+    -   `file` field (required)
+    -   `isPublic` field (optional, boolean, default: `true`)
 
 **Validation**:
 
 -   File size limit: 100MB (configurable)
 -   File type: Any (no restrictions)
 -   Required: File field must be present
+-   `isPublic`: Parse as boolean (default to `true` if not provided)
 
 **Response**:
 
@@ -47,11 +50,12 @@ interface UploadResponse {
 
 1. Parse multipart form data
 2. Validate file (size, presence)
-3. Generate unique file ID (UUID)
-4. Sanitize filename
-5. Upload to R2 with proper content type
-6. Store metadata in D1
-7. Return file ID and download URL
+3. Extract `isPublic` field (default to `true` if not provided)
+4. Generate unique file ID (UUID)
+5. Sanitize filename
+6. Upload to R2 with proper content type
+7. Store metadata in D1 (including `isPublic` field)
+8. Return file ID and download URL
 
 **Error Handling**:
 
@@ -67,7 +71,7 @@ interface UploadResponse {
 **Request**:
 
 -   Content-Type: `application/json`
--   Body: JSON with `url` field
+-   Body: JSON with `url` field and optional `isPublic` field
 
 **Validation**:
 
@@ -75,6 +79,7 @@ interface UploadResponse {
 -   File size limit: 100MB (configurable, same as regular upload)
 -   Required: URL field must be present and valid
 -   URL accessibility: Must return a downloadable file (status 200)
+-   `isPublic`: Optional boolean (default to `true` if not provided)
 
 **Response**:
 
@@ -90,14 +95,15 @@ interface UploadResponse {
 
 1. Parse JSON request body
 2. Validate URL format
-3. Fetch file from URL
-4. Validate response (status 200, content-type, size)
-5. Generate unique file ID (UUID)
-6. Extract filename from URL or Content-Disposition header
-7. Sanitize filename
-8. Upload to R2 with proper content type
-9. Store metadata in D1
-10. Return file ID and download URL
+3. Extract `isPublic` field (default to `true` if not provided)
+4. Fetch file from URL
+5. Validate response (status 200, content-type, size)
+6. Generate unique file ID (UUID)
+7. Extract filename from URL or Content-Disposition header
+8. Sanitize filename
+9. Upload to R2 with proper content type
+10. Store metadata in D1 (including `isPublic` field)
+11. Return file ID and download URL
 
 **Error Handling**:
 
@@ -109,11 +115,12 @@ interface UploadResponse {
 
 **Handler**: `downloadFile()`
 
-**Description**: Retrieves file from R2, logs access, returns file content
+**Description**: Retrieves file from R2, logs access, returns file content. Enforces access control for private files.
 
 **Request**:
 
 -   Path parameter: `fileId` (UUID)
+-   Query parameter: `uiAccess` (optional, boolean): Set to `true` when accessing from the UI
 
 **Response**:
 
@@ -126,13 +133,18 @@ interface UploadResponse {
 1. Validate fileId format
 2. Query D1 for file metadata
 3. Check if file exists and not deleted
-4. Increment access count in D1
-5. Log access entry (IP, timestamp, user agent, referrer)
-6. Retrieve file from R2
-7. Return file with proper headers
+4. Check access permissions:
+    -   If file is public (`isPublic = true`): Allow access
+    -   If file is private (`isPublic = false`): Only allow if `uiAccess=true` query parameter is present
+5. If access denied, return 403 Forbidden
+6. Increment access count in D1
+7. Log access entry (IP, timestamp, user agent, referrer)
+8. Retrieve file from R2
+9. Return file with proper headers
 
 **Error Handling**:
 
+-   403: Private file accessed without UI access (direct link access denied)
 -   404: File not found or deleted
 -   500: R2 retrieval failure or database error
 
@@ -235,7 +247,8 @@ CREATE TABLE files (
     compression_ratio REAL,
     access_count INTEGER NOT NULL DEFAULT 0,
     last_accessed DATETIME,
-    deleted INTEGER NOT NULL DEFAULT 0
+    deleted INTEGER NOT NULL DEFAULT 0,
+    is_public INTEGER NOT NULL DEFAULT 1
 );
 
 -- Access logs table
@@ -274,6 +287,7 @@ interface FileMetadata {
     accessCount: number;
     lastAccessed?: string | null;
     deleted: boolean;
+    isPublic: boolean;
 }
 
 interface AccessLogEntry {
@@ -328,9 +342,9 @@ const object = await env.file_hosting_prod.get(r2Key);
 ```typescript
 // Insert file
 await env.FILE_HOSTING_DB.prepare(
-    "INSERT INTO files (id, name, original_size, mime_type, original_url) VALUES (?, ?, ?, ?, ?)"
+    "INSERT INTO files (id, name, original_size, mime_type, original_url, is_public) VALUES (?, ?, ?, ?, ?, ?)"
 )
-    .bind(id, name, size, mimeType, r2Key)
+    .bind(id, name, size, mimeType, r2Key, isPublic ? 1 : 0)
     .run();
 
 // Query files
@@ -422,6 +436,10 @@ function validateUrl(url: string): { ok: boolean; error?: string } {
 -   Access logging: Log every download
 -   Access count: Increment on download
 -   URL validation: Must be valid HTTP/HTTPS URL
+-   Public/private access control:
+    -   Public files (`isPublic = true`): Accessible via direct link
+    -   Private files (`isPublic = false`): Only accessible with `uiAccess=true` query parameter
+    -   Default to public (`isPublic = true`) if not specified during upload
 
 ## Security Considerations
 
@@ -431,7 +449,9 @@ function validateUrl(url: string): { ok: boolean; error?: string } {
 
 ### Authorization
 
--   None (all files are public)
+-   **Public files**: Accessible to anyone with the download link
+-   **Private files**: Only accessible when `uiAccess=true` query parameter is present (UI access)
+-   Access control is enforced in the download endpoint based on `isPublic` field and `uiAccess` query parameter
 
 ### Input Sanitization
 
@@ -496,6 +516,7 @@ Must match error codes defined in API_CONTRACT.md:
 | Code             | HTTP Status | When to Use                    |
 | ---------------- | ----------- | ------------------------------ |
 | `INVALID_INPUT`  | 400         | Invalid file or missing fields |
+| `FORBIDDEN`      | 403         | Private file accessed without UI access |
 | `NOT_FOUND`      | 404         | File doesn't exist             |
 | `INTERNAL_ERROR` | 500         | Server error                   |
 

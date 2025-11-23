@@ -29,7 +29,7 @@ All input is done through clicking buttons on the calculator interface, mimickin
 
 ### Sound effects
 
-All button presses make satisfying *click* sounds.
+All button presses make satisfying _click_ sounds.
 
 ## User Workflows
 
