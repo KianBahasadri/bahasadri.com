@@ -28,6 +28,26 @@ describe("video-call API Contract Tests", () => {
         expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
+    it("listSessions satisfies OpenAPI spec", async () => {
+        
+        const res = await app.request("/api/video-call/sessions", {
+            method: "GET",
+        });
+        expect([200, 500]).toContain(res.status);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/sessions", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
+    });
+
+    it("listAllMeetings satisfies OpenAPI spec", async () => {
+        
+        const res = await app.request("/api/video-call/meetings", {
+            method: "GET",
+        });
+        expect([200, 500]).toContain(res.status);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/meetings", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
+    });
+
     it("generateToken satisfies OpenAPI spec", async () => {
         
         const res = await app.request("/api/video-call/token", {

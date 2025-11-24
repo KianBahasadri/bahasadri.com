@@ -6,6 +6,7 @@ import { createSession, generateToken } from "../../../../lib/api";
 import ParticipantGrid from "../ParticipantGrid/ParticipantGrid";
 import Controls from "../Controls/Controls";
 import SessionList from "../SessionList/SessionList";
+import MeetingsDropdown from "../MeetingsDropdown/MeetingsDropdown";
 import styles from "./VideoRoom.module.css";
 
 interface VideoRoomProps {
@@ -32,42 +33,41 @@ export default function VideoRoom({
     });
 
     const generateTokenMutation = useMutation({
-        mutationFn: async (params: {
-            meetingId: string;
-            name?: string;
-        }) => await generateToken(params.meetingId, params.name),
+        mutationFn: async (params: { meetingId: string; name?: string }) =>
+            await generateToken(params.meetingId, params.name),
     });
 
     const getRealtimeKitConfig = useCallback(() => {
         const accountId = import.meta.env["VITE_CLOUDFLARE_ACCOUNT_ID"];
-        const appId = import.meta.env["VITE_CLOUDFLARE_REALTIME_APP_ID"];
+        const orgId = import.meta.env["VITE_CLOUDFLARE_REALTIME_ORG_ID"];
 
-        if (!accountId || !appId) {
+        if (!accountId || !orgId) {
             throw new Error(
-                "RealtimeKit configuration missing. Please set VITE_CLOUDFLARE_ACCOUNT_ID and VITE_CLOUDFLARE_REALTIME_APP_ID environment variables."
+                "RealtimeKit configuration missing. Please set VITE_CLOUDFLARE_ACCOUNT_ID and VITE_CLOUDFLARE_REALTIME_ORG_ID environment variables."
             );
         }
 
-        return { accountId, appId };
+        return { accountId, appId: orgId };
     }, []);
 
-    const requestMediaPermissions = useCallback(async (): Promise<MediaStream> => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: videoEnabled,
-                audio: audioEnabled,
-            });
-            return stream;
-        } catch (error_) {
-            const errorMessage =
-                error_ instanceof Error
-                    ? error_.message
-                    : "Failed to access camera/microphone";
-            throw new Error(
-                `Permission denied: ${errorMessage}. Please allow camera and microphone access.`
-            );
-        }
-    }, [videoEnabled, audioEnabled]);
+    const requestMediaPermissions =
+        useCallback(async (): Promise<MediaStream> => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: videoEnabled,
+                    audio: audioEnabled,
+                });
+                return stream;
+            } catch (error_) {
+                const errorMessage =
+                    error_ instanceof Error
+                        ? error_.message
+                        : "Failed to access camera/microphone";
+                throw new Error(
+                    `Permission denied: ${errorMessage}. Please allow camera and microphone access.`
+                );
+            }
+        }, [videoEnabled, audioEnabled]);
 
     const cleanupMedia = useCallback(() => {
         if (localVideoTrackRef.current) {
@@ -86,26 +86,30 @@ export default function VideoRoom({
         }
     }, [localStream]);
 
-    const addParticipant = useCallback((remoteParticipant: Participant): void => {
-        setParticipants((prev) => {
-            if (prev.some((prevP) => prevP.id === remoteParticipant.id)) {
-                return prev;
-            }
-            return [...prev, remoteParticipant];
-        });
-    }, []);
+    const addParticipant = useCallback(
+        (remoteParticipant: Participant): void => {
+            setParticipants((prev) => {
+                if (prev.some((prevP) => prevP.id === remoteParticipant.id)) {
+                    return prev;
+                }
+                return [...prev, remoteParticipant];
+            });
+        },
+        []
+    );
 
     const removeParticipant = useCallback((id: string): void => {
         setParticipants((prev) => prev.filter((p) => p.id !== id));
     }, []);
 
     const setupEventHandlers = useCallback(
-        (
-            client: {
-                on?: (event: string, handler: (...args: unknown[]) => void) => void;
-                addEventListener?: (event: string, handler: (e: Event) => void) => void;
-            }
-        ): void => {
+        (client: {
+            on?: (event: string, handler: (...args: unknown[]) => void) => void;
+            addEventListener?: (
+                event: string,
+                handler: (e: Event) => void
+            ) => void;
+        }): void => {
             const handleParticipantJoined = (participant: unknown): void => {
                 const p = participant as {
                     id?: string;
@@ -113,7 +117,8 @@ export default function VideoRoom({
                     videoTrack?: MediaStreamTrack;
                     audioTrack?: MediaStreamTrack;
                 };
-                const participantId = p.id ?? `participant-${String(Date.now())}`;
+                const participantId =
+                    p.id ?? `participant-${String(Date.now())}`;
                 const remoteParticipant: Participant = {
                     id: participantId,
                     name: p.name ?? "Participant",
@@ -134,7 +139,10 @@ export default function VideoRoom({
             };
 
             const handleParticipantLeft = (participantId: unknown): void => {
-                const id = typeof participantId === "string" ? participantId : String(participantId);
+                const id =
+                    typeof participantId === "string"
+                        ? participantId
+                        : String(participantId);
                 removeParticipant(id);
             };
 
@@ -168,20 +176,24 @@ export default function VideoRoom({
         [addParticipant, removeParticipant]
     );
 
-    const initializeMediaStream = useCallback(async (): Promise<MediaStream> => {
-        const stream = await requestMediaPermissions();
-        setLocalStream(stream);
+    const initializeMediaStream =
+        useCallback(async (): Promise<MediaStream> => {
+            const stream = await requestMediaPermissions();
+            setLocalStream(stream);
 
-        const videoTrack = stream.getVideoTracks()[0];
-        const audioTrack = stream.getAudioTracks()[0];
-        if (videoTrack) localVideoTrackRef.current = videoTrack;
-        if (audioTrack) localAudioTrackRef.current = audioTrack;
+            const videoTrack = stream.getVideoTracks()[0];
+            const audioTrack = stream.getAudioTracks()[0];
+            if (videoTrack) localVideoTrackRef.current = videoTrack;
+            if (audioTrack) localAudioTrackRef.current = audioTrack;
 
-        return stream;
-    }, [requestMediaPermissions]);
+            return stream;
+        }, [requestMediaPermissions]);
 
     const joinMeetingClient = useCallback(
-        async (client: { join: (meetingId?: string) => Promise<void> | void }, meetingId: string): Promise<void> => {
+        async (
+            client: { join: (meetingId?: string) => Promise<void> | void },
+            meetingId: string
+        ): Promise<void> => {
             if (typeof client.join === "function") {
                 const joinResult = client.join(meetingId);
                 if (joinResult instanceof Promise) {
@@ -208,22 +220,27 @@ export default function VideoRoom({
                 });
 
                 const config = getRealtimeKitConfig();
-                const meeting = (RealtimeKit as {
-                    init: (config: {
-                        accountId: string;
-                        appId: string;
-                        authToken: string;
-                    }) => Promise<object> | object;
-                }).init({
+                const meeting = (
+                    RealtimeKit as {
+                        init: (config: {
+                            accountId: string;
+                            appId: string;
+                            authToken: string;
+                        }) => Promise<object> | object;
+                    }
+                ).init({
                     accountId: config.accountId,
                     appId: config.appId,
                     authToken: tokenResponse.auth_token,
                 });
 
-                const meetingClient = meeting instanceof Promise ? await meeting : meeting;
+                const meetingClient =
+                    meeting instanceof Promise ? await meeting : meeting;
                 meetingRef.current = meetingClient;
 
-                const client = meetingClient as { join: (meetingId?: string) => Promise<void> | void };
+                const client = meetingClient as {
+                    join: (meetingId?: string) => Promise<void> | void;
+                };
                 await joinMeetingClient(client, targetMeetingId);
 
                 const localParticipant: Participant = {
@@ -238,14 +255,22 @@ export default function VideoRoom({
                 setRoomState("connected");
 
                 const eventClient = meetingClient as {
-                    on?: (event: string, handler: (...args: unknown[]) => void) => void;
-                    addEventListener?: (event: string, handler: (e: Event) => void) => void;
+                    on?: (
+                        event: string,
+                        handler: (...args: unknown[]) => void
+                    ) => void;
+                    addEventListener?: (
+                        event: string,
+                        handler: (e: Event) => void
+                    ) => void;
                 };
                 setupEventHandlers(eventClient);
             } catch (error_) {
                 cleanupMedia();
                 const errorMessage =
-                    error_ instanceof Error ? error_.message : "Failed to join meeting";
+                    error_ instanceof Error
+                        ? error_.message
+                        : "Failed to join meeting";
                 setError(errorMessage);
                 setRoomState("error");
             }
@@ -266,11 +291,15 @@ export default function VideoRoom({
             setRoomState("connecting");
             setError(null);
 
-            const sessionResponse = await createSessionMutation.mutateAsync(undefined);
+            const sessionResponse = await createSessionMutation.mutateAsync(
+                undefined
+            );
             await handleJoinMeeting(sessionResponse.meeting_id);
         } catch (error_) {
             const errorMessage =
-                error_ instanceof Error ? error_.message : "Failed to create call";
+                error_ instanceof Error
+                    ? error_.message
+                    : "Failed to create call";
             setError(errorMessage);
             setRoomState("error");
         }
@@ -278,12 +307,17 @@ export default function VideoRoom({
 
     const handleToggleVideo = useCallback(() => {
         if (localVideoTrackRef.current) {
-            localVideoTrackRef.current.enabled = !localVideoTrackRef.current.enabled;
+            localVideoTrackRef.current.enabled =
+                !localVideoTrackRef.current.enabled;
             setVideoEnabled(localVideoTrackRef.current.enabled);
             setParticipants((prev) =>
                 prev.map((p) =>
                     p.id === "local"
-                        ? { ...p, videoEnabled: localVideoTrackRef.current?.enabled ?? false }
+                        ? {
+                              ...p,
+                              videoEnabled:
+                                  localVideoTrackRef.current?.enabled ?? false,
+                          }
                         : p
                 )
             );
@@ -292,12 +326,17 @@ export default function VideoRoom({
 
     const handleToggleAudio = useCallback(() => {
         if (localAudioTrackRef.current) {
-            localAudioTrackRef.current.enabled = !localAudioTrackRef.current.enabled;
+            localAudioTrackRef.current.enabled =
+                !localAudioTrackRef.current.enabled;
             setAudioEnabled(localAudioTrackRef.current.enabled);
             setParticipants((prev) =>
                 prev.map((p) =>
                     p.id === "local"
-                        ? { ...p, audioEnabled: localAudioTrackRef.current?.enabled ?? false }
+                        ? {
+                              ...p,
+                              audioEnabled:
+                                  localAudioTrackRef.current?.enabled ?? false,
+                          }
                         : p
                 )
             );
@@ -306,7 +345,9 @@ export default function VideoRoom({
 
     const handleLeave = useCallback(() => {
         if (meetingRef.current) {
-            const client = meetingRef.current as { leave?: () => void | Promise<void> };
+            const client = meetingRef.current as {
+                leave?: () => void | Promise<void>;
+            };
             if (typeof client.leave === "function") {
                 const result = client.leave();
                 if (result instanceof Promise) {
@@ -333,25 +374,29 @@ export default function VideoRoom({
         return (
             <div className={styles["container"]}>
                 <div className={styles["idleState"]}>
-                    <h2 className={styles["title"]}>
-                        Video Call Interface 💾📹
-                    </h2>
-                    <p className={styles["description"]}>
-                        Initialize connection protocol... 🔌
-                    </p>
-                    <button
-                        type="button"
-                        className={styles["createButton"]}
-                        onClick={() => {
-                            void handleCreateCall();
-                        }}
-                        disabled={createSessionMutation.isPending}
-                    >
-                        {createSessionMutation.isPending
-                            ? "Connecting..."
-                            : "Create New Call"}
-                    </button>
-                    {error === null ? null : <div className={styles["error"]}>{error}</div>}
+                    <h2 className={styles["title"]}>Video Call Interface</h2>
+                    <div className={styles["buttonGroup"]}>
+                        <button
+                            type="button"
+                            className={styles["createButton"]}
+                            onClick={() => {
+                                void handleCreateCall();
+                            }}
+                            disabled={createSessionMutation.isPending}
+                        >
+                            {createSessionMutation.isPending
+                                ? "Connecting..."
+                                : "Create New Call"}
+                        </button>
+                        <MeetingsDropdown
+                            onSelectMeeting={(meetingId) => {
+                                void handleJoinMeeting(meetingId);
+                            }}
+                        />
+                    </div>
+                    {error === null ? null : (
+                        <div className={styles["error"]}>{error}</div>
+                    )}
                     <SessionList
                         onJoinSession={(meetingId) => {
                             void handleJoinMeeting(meetingId);
@@ -377,8 +422,12 @@ export default function VideoRoom({
         return (
             <div className={styles["container"]}>
                 <div className={styles["errorState"]}>
-                    <h2 className={styles["errorTitle"]}>Connection Error 💔</h2>
-                    <p className={styles["errorMessage"]}>{error ?? "Unknown error"}</p>
+                    <h2 className={styles["errorTitle"]}>
+                        Connection Error 💔
+                    </h2>
+                    <p className={styles["errorMessage"]}>
+                        {error ?? "Unknown error"}
+                    </p>
                     <button
                         type="button"
                         className={styles["retryButton"]}
@@ -416,4 +465,3 @@ export default function VideoRoom({
         </div>
     );
 }
-

@@ -11,12 +11,14 @@ import type {
     GenerateTokenRequest,
     GenerateTokenResponse,
     ListSessionsResponse,
+    ListMeetingsResponse,
     Session,
     ErrorResponse,
     RealtimeKitConfig,
     RealtimeKitMeetingResponse,
     RealtimeKitTokenResponse,
-    RealtimeKitListMeetingsResponse,
+    RealtimeKitListAllMeetingsResponse,
+    RealtimeKitListSessionsResponse,
 } from "./types";
 
 type HttpStatusCode = 400 | 404 | 500;
@@ -31,22 +33,39 @@ const app = new Hono<{ Bindings: Env }>();
 function getRealtimeKitConfig(env: Env): RealtimeKitConfig {
     return {
         accountId: env.CLOUDFLARE_ACCOUNT_ID,
-        appId: env.CLOUDFLARE_REALTIME_APP_ID,
+        orgId: env.CLOUDFLARE_REALTIME_ORG_ID,
         apiToken: env.CLOUDFLARE_REALTIME_API_TOKEN,
     };
 }
 
+function getRealtimeKitV2Credentials(env: Env): {
+    orgId: string;
+    apiKey: string;
+} {
+    const orgId = env.CLOUDFLARE_REALTIME_ORG_ID;
+    const apiKey =
+        (env as { CLOUDFLARE_REALTIME_API_KEY?: string })
+            .CLOUDFLARE_REALTIME_API_KEY ?? env.CLOUDFLARE_REALTIME_API_TOKEN;
+
+    return { orgId, apiKey };
+}
+
 async function createRealtimeKitMeeting(
-    config: RealtimeKitConfig,
+    orgId: string,
+    apiKey: string,
     name?: string
 ): Promise<string> {
-    const url = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/realtime/kit/${config.appId}/meetings`;
+    const url = "https://api.realtime.cloudflare.com/v2/meetings";
+
+    const credentials = `${orgId}:${apiKey}`;
+    const base64Credentials = btoa(credentials);
 
     const response = await fetch(url, {
         method: "POST",
         headers: {
-            Authorization: `Bearer ${config.apiToken}`,
+            Authorization: `Basic ${base64Credentials}`,
             "Content-Type": "application/json",
+            Accept: "application/json",
         },
         body: JSON.stringify(name ? { title: name } : {}),
     });
@@ -70,11 +89,15 @@ async function createRealtimeKitMeeting(
 }
 
 async function generateRealtimeKitToken(
-    config: RealtimeKitConfig,
+    orgId: string,
+    apiKey: string,
     meetingId: string,
     request: GenerateTokenRequest
 ): Promise<string> {
-    const url = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/realtime/kit/${config.appId}/meetings/${meetingId}/tokens`;
+    const url = `https://api.realtime.cloudflare.com/v2/meetings/${meetingId}/tokens`;
+
+    const credentials = `${orgId}:${apiKey}`;
+    const base64Credentials = btoa(credentials);
 
     const body: Record<string, unknown> = {};
 
@@ -91,8 +114,9 @@ async function generateRealtimeKitToken(
     const response = await fetch(url, {
         method: "POST",
         headers: {
-            Authorization: `Bearer ${config.apiToken}`,
+            Authorization: `Basic ${base64Credentials}`,
             "Content-Type": "application/json",
+            Accept: "application/json",
         },
         body: JSON.stringify(body),
     });
@@ -125,15 +149,19 @@ async function generateRealtimeKitToken(
 }
 
 async function listRealtimeKitMeetings(
-    config: RealtimeKitConfig
+    orgId: string,
+    apiKey: string
 ): Promise<Session[]> {
-    const url = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/realtime/kit/${config.appId}/meetings`;
+    const url = new URL("https://api.realtime.cloudflare.com/v2/sessions");
 
-    const response = await fetch(url, {
+    const credentials = `${orgId}:${apiKey}`;
+    const base64Credentials = btoa(credentials);
+
+    const response = await fetch(url.toString(), {
         method: "GET",
         headers: {
-            Authorization: `Bearer ${config.apiToken}`,
-            "Content-Type": "application/json",
+            Authorization: `Basic ${base64Credentials}`,
+            Accept: "application/json",
         },
     });
 
@@ -144,7 +172,80 @@ async function listRealtimeKitMeetings(
         );
     }
 
-    const data = (await response.json()) as RealtimeKitListMeetingsResponse;
+    const data = (await response.json()) as RealtimeKitListSessionsResponse;
+
+    if (!data.success) {
+        throw new Error(
+            `RealtimeKit API error: ${JSON.stringify(data.errors)}`
+        );
+    }
+
+    const sessionsData = data.data?.sessions ?? [];
+
+    const sessions: Session[] = [];
+    for (const session of sessionsData) {
+        if (session.id) {
+            sessions.push({
+                meeting_id: session.id,
+                name: session.meeting_display_name,
+                created_at: session.created_at,
+            });
+        }
+    }
+
+    return sessions;
+}
+
+async function listAllRealtimeKitMeetings(
+    orgId: string,
+    apiKey: string,
+    queryParams?: {
+        end_time?: string;
+        page_no?: number;
+        per_page?: number;
+        search?: string;
+        start_time?: string;
+    }
+): Promise<ListMeetingsResponse> {
+    const url = new URL("https://api.realtime.cloudflare.com/v2/meetings");
+
+    if (queryParams) {
+        if (queryParams.end_time) {
+            url.searchParams.set("end_time", queryParams.end_time);
+        }
+        if (queryParams.page_no !== undefined) {
+            url.searchParams.set("page_no", String(queryParams.page_no));
+        }
+        if (queryParams.per_page !== undefined) {
+            url.searchParams.set("per_page", String(queryParams.per_page));
+        }
+        if (queryParams.search) {
+            url.searchParams.set("search", queryParams.search);
+        }
+        if (queryParams.start_time) {
+            url.searchParams.set("start_time", queryParams.start_time);
+        }
+    }
+
+    const credentials = `${orgId}:${apiKey}`;
+    const base64Credentials = btoa(credentials);
+
+    const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+            Authorization: `Basic ${base64Credentials}`,
+            Accept: "application/json",
+        },
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+            `RealtimeKit API error: ${String(response.status)} ${errorText}`
+        );
+    }
+
+    const data = (await response.json()) as RealtimeKitListAllMeetingsResponse;
 
     if (!data.success) {
         throw new Error(
@@ -153,19 +254,17 @@ async function listRealtimeKitMeetings(
     }
 
     const meetings = data.data ?? [];
+    const paging = data.paging ?? {
+        total_count: meetings.length,
+        start_offset: 0,
+        end_offset: meetings.length,
+    };
 
-    const sessions: Session[] = [];
-    for (const meeting of meetings) {
-        if (meeting.id) {
-            sessions.push({
-                meeting_id: meeting.id,
-                name: meeting.title,
-                created_at: meeting.created_at,
-            });
-        }
-    }
-
-    return sessions;
+    return {
+        success: true,
+        data: meetings,
+        paging,
+    };
 }
 
 app.post("/session", async (c) => {
@@ -176,7 +275,7 @@ app.post("/session", async (c) => {
 
         const config = getRealtimeKitConfig(c.env);
 
-        if (!config.accountId || !config.appId || !config.apiToken) {
+        if (!config.accountId || !config.orgId || !config.apiToken) {
             const { response, status } = handleError(
                 new Error("RealtimeKit configuration missing"),
                 {
@@ -185,7 +284,7 @@ app.post("/session", async (c) => {
                     defaultMessage: "RealtimeKit configuration missing",
                     additionalInfo: {
                         hasAccountId: !!config.accountId,
-                        hasAppId: !!config.appId,
+                        hasOrgId: !!config.orgId,
                         hasApiToken: !!config.apiToken,
                     },
                 }
@@ -199,7 +298,12 @@ app.post("/session", async (c) => {
             );
         }
 
-        const meetingId = await createRealtimeKitMeeting(config, body.name);
+        const v2Credentials = getRealtimeKitV2Credentials(c.env);
+        const meetingId = await createRealtimeKitMeeting(
+            v2Credentials.orgId,
+            v2Credentials.apiKey,
+            body.name
+        );
 
         return c.json<CreateSessionResponse>({ meeting_id: meetingId }, 200);
     } catch (error) {
@@ -244,7 +348,7 @@ app.post("/token", async (c) => {
 
         const config = getRealtimeKitConfig(c.env);
 
-        if (!config.accountId || !config.appId || !config.apiToken) {
+        if (!config.accountId || !config.orgId || !config.apiToken) {
             const { response, status } = handleError(
                 new Error("RealtimeKit configuration missing"),
                 {
@@ -253,7 +357,7 @@ app.post("/token", async (c) => {
                     defaultMessage: "RealtimeKit configuration missing",
                     additionalInfo: {
                         hasAccountId: !!config.accountId,
-                        hasAppId: !!config.appId,
+                        hasOrgId: !!config.orgId,
                         hasApiToken: !!config.apiToken,
                     },
                 }
@@ -267,9 +371,11 @@ app.post("/token", async (c) => {
             );
         }
 
+        const v2Credentials = getRealtimeKitV2Credentials(c.env);
         const validatedBody = body as GenerateTokenRequest;
         const authToken = await generateRealtimeKitToken(
-            config,
+            v2Credentials.orgId,
+            v2Credentials.apiKey,
             validatedBody.meeting_id,
             validatedBody
         );
@@ -294,7 +400,7 @@ app.get("/sessions", async (c) => {
     try {
         const config = getRealtimeKitConfig(c.env);
 
-        if (!config.accountId || !config.appId || !config.apiToken) {
+        if (!config.accountId || !config.orgId || !config.apiToken) {
             const { response, status } = handleError(
                 new Error("RealtimeKit configuration missing"),
                 {
@@ -303,7 +409,7 @@ app.get("/sessions", async (c) => {
                     defaultMessage: "RealtimeKit configuration missing",
                     additionalInfo: {
                         hasAccountId: !!config.accountId,
-                        hasAppId: !!config.appId,
+                        hasOrgId: !!config.orgId,
                         hasApiToken: !!config.apiToken,
                     },
                 }
@@ -317,12 +423,106 @@ app.get("/sessions", async (c) => {
             );
         }
 
-        const sessions = await listRealtimeKitMeetings(config);
+        const v2Credentials = getRealtimeKitV2Credentials(c.env);
+        const sessions = await listRealtimeKitMeetings(
+            v2Credentials.orgId,
+            v2Credentials.apiKey
+        );
 
         return c.json<ListSessionsResponse>({ sessions }, 200);
     } catch (error) {
         const { response, status } = handleError(error, {
             endpoint: "/api/video-call/sessions",
+            method: "GET",
+        });
+        return c.json<ErrorResponse>(
+            {
+                error: response.error,
+                code: response.code as VideoCallErrorCode,
+            },
+            status as HttpStatusCode
+        );
+    }
+});
+
+app.get("/meetings", async (c) => {
+    try {
+        const config = getRealtimeKitConfig(c.env);
+
+        if (!config.accountId || !config.orgId || !config.apiToken) {
+            const { response, status } = handleError(
+                new Error("RealtimeKit configuration missing"),
+                {
+                    endpoint: "/api/video-call/meetings",
+                    method: "GET",
+                    defaultMessage: "RealtimeKit configuration missing",
+                    additionalInfo: {
+                        hasAccountId: !!config.accountId,
+                        hasOrgId: !!config.orgId,
+                        hasApiToken: !!config.apiToken,
+                    },
+                }
+            );
+            return c.json<ErrorResponse>(
+                {
+                    error: response.error,
+                    code: response.code as VideoCallErrorCode,
+                },
+                status as HttpStatusCode
+            );
+        }
+
+        const queryParams: {
+            end_time?: string;
+            page_no?: number;
+            per_page?: number;
+            search?: string;
+            start_time?: string;
+        } = {};
+
+        const endTime = c.req.query("end_time");
+        if (endTime) {
+            queryParams.end_time = endTime;
+        }
+
+        const pageNo = c.req.query("page_no");
+        if (pageNo) {
+            const pageNoNum = Number.parseInt(pageNo, 10);
+            if (!Number.isNaN(pageNoNum) && pageNoNum >= 0) {
+                queryParams.page_no = pageNoNum;
+            }
+        }
+
+        const perPage = c.req.query("per_page");
+        if (perPage) {
+            const perPageNum = Number.parseInt(perPage, 10);
+            if (!Number.isNaN(perPageNum) && perPageNum >= 0) {
+                queryParams.per_page = perPageNum;
+            }
+        }
+
+        const search = c.req.query("search");
+        if (search) {
+            queryParams.search = search;
+        }
+
+        const startTime = c.req.query("start_time");
+        if (startTime) {
+            queryParams.start_time = startTime;
+        }
+
+        const v2Credentials = getRealtimeKitV2Credentials(c.env);
+
+        const result = await listAllRealtimeKitMeetings(
+            v2Credentials.orgId,
+            v2Credentials.apiKey,
+            Object.keys(queryParams).length > 0 ? queryParams : undefined
+        );
+
+        return c.json<ListMeetingsResponse>(result, 200);
+    } catch (error) {
+        const { response, status } = handleError(error, {
+            endpoint: "/api/video-call/meetings",
             method: "GET",
         });
         return c.json<ErrorResponse>(

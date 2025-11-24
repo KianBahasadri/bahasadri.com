@@ -48,6 +48,60 @@ This document focuses solely on backend implementation details not covered in th
 -   RealtimeKit API errors → `REALTIMEKIT_ERROR` (500)
 -   Missing config → `INTERNAL_ERROR` (500)
 
+### `GET /api/video-call/sessions`
+
+**Handler**: `listSessions()`
+
+**Description**: Retrieves a list of ongoing/active video call sessions from RealtimeKit. This corresponds to RealtimeKit's "List Sessions" endpoint.
+
+**Implementation Flow**:
+
+1. Get RealtimeKit config from environment
+2. Call RealtimeKit API v2 `/sessions` endpoint
+3. Extract sessions from nested `data.sessions` response
+4. Map RealtimeKit session fields to API contract format:
+   - `id` → `meeting_id`
+   - `meeting_display_name` → `name`
+   - `created_at` → `created_at`
+5. Return formatted sessions array
+
+**Implementation Notes**:
+
+-   Uses RealtimeKit API v2: `GET https://api.realtime.cloudflare.com/v2/sessions`
+-   Response structure: `{ success: true, data: { sessions: [...] } }`
+-   Returns only active/ongoing sessions
+
+**Error Handling**:
+
+-   RealtimeKit API errors → `REALTIMEKIT_ERROR` (500)
+-   Missing config → `INTERNAL_ERROR` (500)
+
+### `GET /api/video-call/meetings`
+
+**Handler**: `listAllMeetings()`
+
+**Description**: Retrieves a list of all meetings for the organization from RealtimeKit. This corresponds to RealtimeKit's "Get All Meetings" endpoint.
+
+**Implementation Flow**:
+
+1. Get RealtimeKit config from environment
+2. Parse optional query parameters (end_time, page_no, per_page, search, start_time)
+3. Call RealtimeKit API v2 `/meetings` endpoint with query params
+4. Extract meetings and pagination info from response
+5. Return formatted response with meetings array and paging info
+
+**Implementation Notes**:
+
+-   Uses RealtimeKit API v2: `GET https://api.realtime.cloudflare.com/v2/meetings`
+-   Supports query parameters for filtering and pagination
+-   Returns all meetings regardless of state (active/inactive)
+-   Includes pagination metadata in response
+
+**Error Handling**:
+
+-   RealtimeKit API errors → `REALTIMEKIT_ERROR` (500)
+-   Missing config → `INTERNAL_ERROR` (500)
+
 ### `POST /api/video-call/token`
 
 **Handler**: `generateToken()`
@@ -86,7 +140,7 @@ This document focuses solely on backend implementation details not covered in th
 // RealtimeKit configuration (from environment)
 interface RealtimeKitConfig {
     accountId: string;
-    appId: string;
+    orgId: string;
     apiToken: string;
 }
 
@@ -110,6 +164,39 @@ interface RealtimeKitTokenResponse {
     };
     errors?: unknown[];
 }
+
+interface RealtimeKitSession {
+    id: string;
+    associated_id?: string;
+    meeting_display_name?: string;
+    type?: string;
+    status?: string;
+    live_participants?: number;
+    max_concurrent_participants?: number;
+    minutes_consumed?: number;
+    organization_id?: string;
+    started_at?: string;
+    created_at?: string;
+    updated_at?: string;
+    ended_at?: string;
+    meta?: Record<string, unknown>;
+    breakout_rooms?: unknown[];
+}
+
+interface RealtimeKitListSessionsResponse {
+    success: boolean;
+    data?: {
+        sessions?: RealtimeKitSession[];
+    };
+    errors?: unknown[];
+}
+
+interface RealtimeKitListAllMeetingsResponse {
+    success: boolean;
+    data?: Meeting[];
+    paging?: Paging;
+    errors?: unknown[];
+}
 ```
 
 ## Cloudflare Services
@@ -126,14 +213,16 @@ interface RealtimeKitTokenResponse {
 
 **API Endpoints**:
 
--   `POST https://api.cloudflare.com/client/v4/accounts/{accountId}/realtime/kit/{appId}/meetings` - Create Meeting
--   `POST https://api.cloudflare.com/client/v4/accounts/{accountId}/realtime/kit/{appId}/meetings/{meetingId}/tokens` - Add Participant (returns authToken)
+-   `POST https://api.realtime.cloudflare.com/v2/meetings` - Create Meeting
+-   `GET https://api.realtime.cloudflare.com/v2/sessions` - List Sessions (active/ongoing)
+-   `GET https://api.realtime.cloudflare.com/v2/meetings` - List All Meetings (with filtering/pagination)
+-   `POST https://api.realtime.cloudflare.com/v2/meetings/{meetingId}/tokens` - Generate Participant Token
 
 **Configuration**:
 
--   `CLOUDFLARE_ACCOUNT_ID`: Cloudflare account ID
--   `CLOUDFLARE_REALTIME_APP_ID`: RealtimeKit app ID
--   `CLOUDFLARE_REALTIME_API_TOKEN`: API authentication token
+-   `CLOUDFLARE_ACCOUNT_ID`: Cloudflare account ID (legacy, may not be used in v2 API)
+-   `CLOUDFLARE_REALTIME_ORG_ID`: RealtimeKit organization ID
+-   `CLOUDFLARE_REALTIME_API_TOKEN`: API authentication token (or `CLOUDFLARE_REALTIME_API_KEY` for v2 API)
 
 ## Workers Logic
 
@@ -146,6 +235,8 @@ interface RealtimeKitTokenResponse {
 4. Get RealtimeKit config from environment
 5. Call RealtimeKit API:
    - Create meeting (POST /session)
+   - List sessions (GET /sessions)
+   - List all meetings (GET /meetings)
    - Generate token (POST /token)
 6. Parse RealtimeKit response
 7. Format response per API contract
@@ -240,6 +331,8 @@ function validateMeetingId(meetingId: string): { ok: boolean; error?: string } {
 ### API Endpoints
 
 -   [ ] POST /session endpoint
+-   [ ] GET /sessions endpoint
+-   [ ] GET /meetings endpoint
 -   [ ] POST /token endpoint
 -   [ ] Error handling (per API_CONTRACT.yml)
 
@@ -252,6 +345,8 @@ function validateMeetingId(meetingId: string): { ok: boolean; error?: string } {
 ### Business Logic
 
 -   [ ] Meeting creation logic
+-   [ ] Session listing logic (with field mapping)
+-   [ ] Meeting listing logic (with query parameter handling)
 -   [ ] Token generation logic
 -   [ ] Config validation
 -   [ ] Response formatting

@@ -21,7 +21,7 @@ beforeEach(() => {
         TWILIO_AUTH_TOKEN: "test-auth-token",
         TWILIO_PHONE_NUMBER: "test-phone-number",
         CLOUDFLARE_ACCOUNT_ID: "test-account-id",
-        CLOUDFLARE_REALTIME_APP_ID: "test-app-id",
+        CLOUDFLARE_REALTIME_ORG_ID: "test-org-id",
         CLOUDFLARE_REALTIME_API_TOKEN: "test-api-token",
     };
 });

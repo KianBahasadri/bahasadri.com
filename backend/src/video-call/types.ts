@@ -34,7 +34,7 @@ export interface ErrorResponse {
 
 export interface RealtimeKitConfig {
     accountId: string;
-    appId: string;
+    orgId: string;
     apiToken: string;
 }
 
@@ -64,6 +64,64 @@ export interface RealtimeKitListMeetingsResponse {
         title?: string;
         created_at?: string;
     }[];
+    errors?: unknown[];
+}
+
+export interface Meeting {
+    id: string;
+    title?: string;
+    preferred_region?: string | null;
+    created_at: string;
+    record_on_start?: boolean;
+    updated_at: string;
+    live_stream_on_start?: boolean;
+    persist_chat?: boolean;
+    summarize_on_end?: boolean;
+    status?: "ACTIVE" | "INACTIVE";
+}
+
+export interface Paging {
+    total_count: number;
+    start_offset: number;
+    end_offset: number;
+}
+
+export interface ListMeetingsResponse {
+    success: boolean;
+    data: Meeting[];
+    paging: Paging;
+}
+
+export interface RealtimeKitListAllMeetingsResponse {
+    success: boolean;
+    data?: Meeting[];
+    paging?: Paging;
+    errors?: unknown[];
+}
+
+export interface RealtimeKitSession {
+    id: string;
+    associated_id?: string;
+    meeting_display_name?: string;
+    type?: string;
+    status?: string;
+    live_participants?: number;
+    max_concurrent_participants?: number;
+    minutes_consumed?: number;
+    organization_id?: string;
+    started_at?: string;
+    created_at?: string;
+    updated_at?: string;
+    ended_at?: string;
+    meta?: Record<string, unknown>;
+    breakout_rooms?: unknown[];
+}
+
+export interface RealtimeKitListSessionsResponse {
+    success: boolean;
+    data?: {
+        sessions?: RealtimeKitSession[];
+    };
     errors?: unknown[];
 }
 

@@ -42,3 +42,28 @@ export interface ListSessionsResponse {
     sessions: Session[];
 }
 
+export interface Meeting {
+    id: string;
+    title?: string;
+    preferred_region?: string;
+    created_at: string;
+    record_on_start?: boolean;
+    updated_at: string;
+    live_stream_on_start?: boolean;
+    persist_chat?: boolean;
+    summarize_on_end?: boolean;
+    status?: string;
+}
+
+export interface Paging {
+    total_count: number;
+    start_offset: number;
+    end_offset: number;
+}
+
+export interface ListMeetingsResponse {
+    success: boolean;
+    data: Meeting[];
+    paging?: Paging;
+}
+

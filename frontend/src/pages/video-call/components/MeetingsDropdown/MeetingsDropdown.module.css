@@ -1,0 +1,140 @@
+.dropdownContainer {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdownButton {
+    padding: 1rem 2rem;
+    border: 2px solid var(--pink-hot);
+    background: var(--pink-primary);
+    color: var(--pink-darker);
+    border-radius: 1rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: "Comic Neue", sans-serif;
+    box-shadow: 4px 4px 0 var(--pink-light);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dropdownButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 6px 6px 0 var(--pink-hot);
+    background: var(--pink-hot);
+    color: white;
+}
+
+.dropdownButton:focus-visible {
+    outline: 3px solid var(--pink-hot);
+    outline-offset: 3px;
+}
+
+.arrow {
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.dropdownMenu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    min-width: 300px;
+    max-width: 400px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: var(--pink-primary);
+    border: 2px solid var(--pink-hot);
+    border-radius: 1rem;
+    box-shadow: 6px 6px 0 var(--pink-light);
+    z-index: 1000;
+    margin-top: 0.5rem;
+}
+
+.emptyState {
+    padding: 2rem;
+    text-align: center;
+    color: var(--pink-darker);
+    font-family: "Comic Neue", sans-serif;
+    font-size: 1rem;
+}
+
+.meetingsList {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem;
+}
+
+.meetingsList li {
+    margin: 0;
+    padding: 0;
+}
+
+.meetingItem {
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: "Comic Neue", sans-serif;
+    border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.meetingItem:hover {
+    background: var(--pink-hot);
+    color: white;
+}
+
+.meetingName {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--pink-darker);
+}
+
+.meetingItem:hover .meetingName {
+    color: white;
+}
+
+.meetingMeta {
+    font-size: 0.85rem;
+    color: var(--pink-darker);
+    opacity: 0.8;
+}
+
+.meetingItem:hover .meetingMeta {
+    color: white;
+    opacity: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+    .dropdownButton {
+        background: var(--dark-surface);
+        color: var(--pink-light);
+        border-color: var(--pink-hot);
+    }
+
+    .dropdownMenu {
+        background: var(--dark-surface);
+        border-color: var(--pink-hot);
+    }
+
+    .emptyState {
+        color: var(--pink-light);
+    }
+
+    .meetingName {
+        color: var(--pink-light);
+    }
+
+    .meetingMeta {
+        color: var(--pink-light);
+    }
+}
+

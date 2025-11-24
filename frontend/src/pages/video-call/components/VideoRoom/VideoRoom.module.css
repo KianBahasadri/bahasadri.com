@@ -42,6 +42,14 @@
     text-align: center;
 }
 
+.buttonGroup {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
 .createButton,
 .retryButton,
 .backButton {
@@ -138,4 +146,3 @@
         color: var(--pink-light);
     }
 }
-

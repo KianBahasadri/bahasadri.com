@@ -119,7 +119,7 @@ CREATE INDEX IF NOT EXISTS idx_whois_cache_expires ON whois_cache (expires_at);
 -   `TWILIO_AUTH_TOKEN` - Twilio API authentication token
 -   `TWILIO_PHONE_NUMBER` - Twilio phone number (E.164 format, e.g., `+1234567890`)
 -   `CLOUDFLARE_ACCOUNT_ID` - Cloudflare account ID
--   `CLOUDFLARE_REALTIME_APP_ID` - RealtimeKit app ID
+-   `CLOUDFLARE_REALTIME_ORG_ID` - RealtimeKit organization ID
 -   `CLOUDFLARE_REALTIME_API_TOKEN` - RealtimeKit API token
 
 ### Optional
@@ -143,7 +143,7 @@ TWILIO_ACCOUNT_SID=your_account_sid
 TWILIO_AUTH_TOKEN=your_auth_token
 TWILIO_PHONE_NUMBER=+1234567890
 CLOUDFLARE_ACCOUNT_ID=your_account_id
-CLOUDFLARE_REALTIME_APP_ID=your_app_id
+CLOUDFLARE_REALTIME_ORG_ID=your_org_id
 CLOUDFLARE_REALTIME_API_TOKEN=your_api_token
 WHOIS_API_KEY=your_whois_key
 ```
@@ -157,7 +157,7 @@ pnpm wrangler secret put TWILIO_ACCOUNT_SID
 pnpm wrangler secret put TWILIO_AUTH_TOKEN
 pnpm wrangler secret put TWILIO_PHONE_NUMBER
 pnpm wrangler secret put CLOUDFLARE_ACCOUNT_ID
-pnpm wrangler secret put CLOUDFLARE_REALTIME_APP_ID
+pnpm wrangler secret put CLOUDFLARE_REALTIME_ORG_ID
 pnpm wrangler secret put CLOUDFLARE_REALTIME_API_TOKEN
 ```
 

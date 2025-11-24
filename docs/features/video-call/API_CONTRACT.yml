@@ -106,6 +106,92 @@ components:
                     items:
                         $ref: "#/components/schemas/Session"
 
+        Meeting:
+            type: object
+            required:
+                - id
+            properties:
+                id:
+                    type: string
+                    description: Unique meeting identifier
+                    example: "497f6eca-6276-4993-bfeb-53cbbbba6f08"
+                title:
+                    type: string
+                    description: Meeting title
+                    example: "string"
+                preferred_region:
+                    type: string
+                    description: Preferred region for the meeting
+                    example: "ap-south-1"
+                created_at:
+                    type: string
+                    format: date-time
+                    description: Meeting creation timestamp
+                    example: "2019-08-24T14:15:22Z"
+                record_on_start:
+                    type: boolean
+                    description: Whether recording starts automatically when meeting begins
+                    example: true
+                updated_at:
+                    type: string
+                    format: date-time
+                    description: Meeting last update timestamp
+                    example: "2019-08-24T14:15:22Z"
+                live_stream_on_start:
+                    type: boolean
+                    description: Whether live streaming starts automatically when meeting begins
+                    example: true
+                persist_chat:
+                    type: boolean
+                    description: Whether chat messages persist after meeting ends
+                    example: true
+                summarize_on_end:
+                    type: boolean
+                    description: Whether meeting summary is generated when meeting ends
+                    example: true
+                status:
+                    type: string
+                    description: Current status of the meeting
+                    example: "ACTIVE"
+
+        Paging:
+            type: object
+            required:
+                - total_count
+                - start_offset
+                - end_offset
+            properties:
+                total_count:
+                    type: integer
+                    description: Total number of meetings available
+                    example: 30
+                start_offset:
+                    type: integer
+                    description: Starting offset of the current page
+                    example: 1
+                end_offset:
+                    type: integer
+                    description: Ending offset of the current page
+                    example: 30
+
+        ListMeetingsResponse:
+            type: object
+            required:
+                - success
+                - data
+            properties:
+                success:
+                    type: boolean
+                    description: Indicates if the request was successful
+                    example: true
+                data:
+                    type: array
+                    description: List of all meetings for the organization
+                    items:
+                        $ref: "#/components/schemas/Meeting"
+                paging:
+                    $ref: "#/components/schemas/Paging"
+
         ErrorResponse:
             type: object
             required:
@@ -212,8 +298,8 @@ paths:
             summary: List ongoing video call sessions
             description: >-
                 Retrieves a list of ongoing/active video call sessions from RealtimeKit.
-                This corresponds to RealtimeKit's "List Meetings" endpoint. Returns all
-                meetings that are currently active (have participants or are available to join).
+                This corresponds to RealtimeKit's "List Sessions" endpoint. Returns all
+                sessions that are currently active (have participants or are available to join).
             tags:
                 - Video Call
             responses:
@@ -223,6 +309,29 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ListSessionsResponse"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # LIST ALL MEETINGS ENDPOINT
+    # ---------------------------------------------------------------------------
+    /video-call/meetings:
+        get:
+            operationId: listAllMeetings
+            summary: List all meetings for the organization
+            description: >-
+                Retrieves a list of all meetings for the organization from RealtimeKit.
+                This corresponds to RealtimeKit's "Get All Meetings" endpoint. Returns all
+                meetings associated with the organization, regardless of their current state.
+            tags:
+                - Video Call
+            responses:
+                "200":
+                    description: Meetings retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ListMeetingsResponse"
                 "500":
                     $ref: "#/components/responses/InternalError"
 

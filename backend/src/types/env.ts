@@ -8,6 +8,6 @@ export interface Env {
     TWILIO_PHONE_NUMBER: string;
     OPENROUTER_API_KEY: string;
     CLOUDFLARE_ACCOUNT_ID: string;
-    CLOUDFLARE_REALTIME_APP_ID: string;
+    CLOUDFLARE_REALTIME_ORG_ID: string;
     CLOUDFLARE_REALTIME_API_TOKEN: string;
 }

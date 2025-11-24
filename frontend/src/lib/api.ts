@@ -26,6 +26,7 @@ import type {
     GenerateTokenRequest,
     GenerateTokenResponse,
     ListSessionsResponse,
+    ListMeetingsResponse,
 } from "../types/video-call";
 
 const API_BASE_URL =
@@ -43,7 +44,10 @@ async function handleApiError(
 ): Promise<never> {
     let errorData: { error?: string; code?: string };
     try {
-        errorData = (await response.json()) as { error?: string; code?: string };
+        errorData = (await response.json()) as {
+            error?: string;
+            code?: string;
+        };
     } catch {
         errorData = {};
     }
@@ -190,7 +194,9 @@ export const fetchConversationHistory =
 
         if (!response.ok) {
             const error = (await response.json()) as { error?: string };
-            throw new Error(error.error ?? "Failed to fetch conversation history");
+            throw new Error(
+                error.error ?? "Failed to fetch conversation history"
+            );
         }
 
         return response.json() as Promise<ConversationHistoryResponse>;
@@ -293,4 +299,21 @@ export const listSessions = async (): Promise<ListSessionsResponse> => {
     }
 
     return response.json() as Promise<ListSessionsResponse>;
+};
+
+export const listAllMeetings = async (): Promise<ListMeetingsResponse> => {
+    const response = await fetch(`${API_BASE_URL}/video-call/meetings`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "listAllMeetings",
+            "Failed to list meetings"
+        );
+    }
+
+    return response.json() as Promise<ListMeetingsResponse>;
 };

@@ -375,7 +375,7 @@ ${testCases}
 }
 
 async function main(): Promise<void> {
-    console.log("🔍 Scanning for OpenAPI specs...");
+    console.warn("🔍 Scanning for OpenAPI specs...");
 
     const yamlFiles = await glob(path.join(FEATURES_DIR, "*/API_CONTRACT.yml"));
 
@@ -384,7 +384,7 @@ async function main(): Promise<void> {
         throw new Error("No API_CONTRACT.yml files found");
     }
 
-    console.log(`📄 Found ${String(yamlFiles.length)} OpenAPI spec(s)\n`);
+    console.warn(`📄 Found ${String(yamlFiles.length)} OpenAPI spec(s)\n`);
 
     // Ensure output directory exists
     mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -393,7 +393,7 @@ async function main(): Promise<void> {
 
     for (const yamlPath of yamlFiles) {
         const featureName = extractFeatureName(yamlPath);
-        console.log(`📝 Processing ${featureName}...`);
+        console.warn(`📝 Processing ${featureName}...`);
 
         try {
             const validatedYamlPath = validatePathWithinDirectory(
@@ -427,7 +427,7 @@ async function main(): Promise<void> {
             );
             writeFileSync(validatedOutputPath, testContent, "utf8");
 
-            console.log(
+            console.warn(
                 `  ✅ Generated ${String(
                     endpoints.length
                 )} test(s) → ${path.basename(outputPath)}`
@@ -437,8 +437,8 @@ async function main(): Promise<void> {
         }
     }
 
-    console.log(`\n✨ Generated ${String(totalEndpoints)} total test case(s)`);
-    console.log(`📁 Test files written to: ${OUTPUT_DIR}`);
+    console.warn(`\n✨ Generated ${String(totalEndpoints)} total test case(s)`);
+    console.warn(`📁 Test files written to: ${OUTPUT_DIR}`);
 }
 
 void main().catch((error: unknown) => {
