@@ -13,6 +13,8 @@
         "backend:dev": "pnpm --filter backend dev",
         "backend:lint": "pnpm --filter backend lint",
         "backend:typecheck": "pnpm --filter backend typecheck",
+        "backend:test": "pnpm --filter backend test",
+        "backend:generate-tests": "pnpm --filter backend generate-tests",
         "backend:deploy": "pnpm --filter backend run deploy",
         "typecheck": "pnpm frontend:typecheck && pnpm backend:typecheck",
         "api:lint": "spectral lint \"docs/features/**/*.yml\" --fail-severity info",

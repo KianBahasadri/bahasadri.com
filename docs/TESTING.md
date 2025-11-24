@@ -4,127 +4,261 @@
 
 ## Overview
 
-This document outlines the testing approach for the **Bahasadri** monorepo. We use a **Contract-First** strategy to ensure the Hono backend and Vite frontend remain in sync, along with unit testing for complex logic.
+This document outlines the testing approach for the **Bahasadri** monorepo. We use a **Contract-First** strategy with **fully automated test generation** to ensure the Hono backend and Vite frontend remain in sync with OpenAPI specifications, along with unit testing for complex logic.
 
 ## Testing Strategy
 
-We follow the **Testing Pyramid** with a heavy emphasis on **Contract Testing**:
+We follow the **Testing Pyramid** with a heavy emphasis on **Automated Contract Testing**:
 
-1.  **Contract Tests (Critical):**
+1.  **Contract Tests (Critical - Fully Automated):**
 
-    -   **Goal:** Ensure the Backend implementation strictly matches `shared/openapi.yaml`.
-    -   **Tool:** `vitest` + `jest-openapi`.
+    -   **Goal:** Ensure the Backend implementation strictly matches OpenAPI YAML files.
+    -   **Tools:** `vitest` + `vitest-openapi` + custom test generator script.
     -   **Rule:** If the code drifts from the YAML, the build fails.
+    -   **Approach:** Tests are **automatically generated** from `docs/features/*/API_CONTRACT.yml` files using a custom generator that:
+        -   Extracts all endpoints, HTTP methods, and operation IDs
+        -   Substitutes path parameters with example values
+        -   Generates request bodies from schema examples
+        -   Validates responses against OpenAPI schemas
+    -   **Zero manual test writing required** - just maintain your OpenAPI specs.
 
-2.  **Unit Tests (Backend):**
+2.  **Unit Tests (Backend - Optional):**
 
-    -   **Goal:** Test individual Hono handlers, services, and utility logic.
+    -   **Goal:** Test individual Hono handlers, services, and utility logic with complex business rules.
     -   **Tool:** `vitest`.
+    -   **When to write:** Only for complex logic not covered by contract tests (e.g., algorithms, data transformations).
 
-3.  **Integration/E2E Tests (Frontend):**
-    -   **Goal:** Verify the React UI flows using the mocked API.
-    -   **Tool:** `vitest` (components) + `playwright` (optional for later).
+3.  **Integration/E2E Tests (Frontend - Optional):**
+    -   **Goal:** Verify the React UI flows using mocked APIs.
+    -   **Tool:** `vitest` (components) + `playwright` (future).
 
 ## Testing Tools
 
-| Tool             | Usage                                                                |
-| :--------------- | :------------------------------------------------------------------- |
-| **Vitest**       | Main test runner (fast, Vite-native).                                |
-| **jest-openapi** | Matcher to validate Hono responses against `openapi.yaml`.           |
-| **Prism**        | Mock server to run `openapi.yaml` locally for frontend dev.          |
-| **Spectral**     | Linter to ensure `openapi.yaml` is valid and follows best practices. |
+| Tool               | Usage                                                                                     |
+| :----------------- | :---------------------------------------------------------------------------------------- |
+| **Vitest**         | Main test runner (fast, Vite-native).                                                     |
+| **vitest-openapi** | Matcher to validate Hono responses against OpenAPI schemas.                               |
+| **Test Generator** | Custom script that auto-generates contract tests from `docs/features/*/API_CONTRACT.yml`. |
+| **Spectral**       | Linter to ensure OpenAPI YAML files are valid and follow best practices.                  |
 
 ## Test Structure
 
-Tests are co-located with the code they test to keep the monorepo clean.
+Generated contract tests are located in `backend/src/__tests__/contract/`:
 
-```text
-/apps
-  /backend
-    /src
-      /routes
-        slides.ts        # The code
-        slides.test.ts   # The contract/unit test
-  /frontend
-    /src
-      /components
-        Slide.tsx
-        Slide.test.tsx
+```
+/backend
+  /src
+    /__tests__
+      /contract
+        calculator.contract.test.ts      # Auto-generated
+        file-hosting.contract.test.ts    # Auto-generated
+        home.contract.test.ts            # Auto-generated
+      /helpers
+        load-openapi.ts                  # Helper to load specs
+    /routes
+      calculator.ts                      # Implementation
+      file-hosting.ts                    # Implementation
 ```
 
-### Standard Contract Test Template
-
-Every API route **must** have a test like this:
-
-```typescript
-import { describe, it, expect } from "vitest";
-import { app } from "../index";
-
-describe("GET /api/feature", () => {
-    it("satisfies OpenAPI spec", async () => {
-        const res = await app.request("/api/feature");
-        expect(res.status).toBe(200);
-        expect(res).toSatisfyApiSpec(); // Validates against shared/openapi.yaml
-    });
-});
-```
+**Important:** Generated test files include a `DO NOT EDIT THIS FILE MANUALLY` header. Always regenerate tests instead of editing them.
 
 ## Running Tests
 
-### 1. Run All Tests (Root)
+### 1. Generate Contract Tests
 
-```bash
-npm run test
-# Or using Turbo
-turbo test
+**⚠️ Run this only if you've made a legitimate OpenAPI spec change (which should be rare).** Most of the time, test failures mean your implementation is wrong, not the spec.
+
+If you've modified an OpenAPI spec:
+
+```
+cd backend
+pnpm generate-tests
 ```
 
-### 2. Run Backend Tests Only
+This scans all `docs/features/*/API_CONTRACT.yml` files and generates corresponding test files.
 
-```bash
-cd apps/backend
-npm run test
+### 2. Run Backend Tests
+
+```
+cd backend
+pnpm test
 ```
 
-### 3. Lint the API Contract
+### 3. Run All Tests (Root)
 
-```bash
-# Validates shared/openapi.yaml syntax
-npx spectral lint shared/openapi.yaml
+```
+pnpm test
+# Or using pnpm workspaces
+pnpm -r test
 ```
 
-### 4. Run Mock Server (For Frontend Dev)
+### 4. Lint OpenAPI Specs
 
-```bash
-# Starts a fake backend at http://127.0.0.1:4010 based on the YAML
-npx prism mock shared/openapi.yaml
 ```
+# From root - validates all OpenAPI YAML files
+pnpm api:lint
+```
+
+## Development Workflow
+
+### Adding a New Feature
+
+1. **Write the OpenAPI spec** in `docs/features/[feature-name]/API_CONTRACT.yml`
+2. **Lint the spec:** `pnpm api:lint`
+3. **Generate tests:** `pnpm backend:generate-tests`
+4. **Implement the backend** in Hono
+5. **Run tests:** `pnpm backend:test`
+6. **Iterate** until all contract tests pass
+
+### Updating an Existing Feature
+
+**⚠️ Before modifying the spec:** Ask yourself - is this a legitimate requirement change, or are you trying to make tests pass? If tests are failing, fix the backend implementation instead.
+
+**Only if the spec change is necessary:**
+
+1. **Update the OpenAPI spec** in `docs/features/[feature-name]/API_CONTRACT.yml` (rare - only for legitimate requirement changes)
+2. **Regenerate tests:** `pnpm backend:generate-tests`
+3. **Update backend implementation** to match new spec
+4. **Run tests:** `pnpm backend:test`
+
+**Most of the time, you should:**
+
+1. **Fix your backend implementation** to match the existing spec
+2. **Regenerate tests:** `pnpm backend:generate-tests` (to ensure tests are up-to-date)
+3. **Run tests:** `pnpm backend:test`
+
+## What the Test Generator Does
+
+The generator (`backend/scripts/generate-tests.ts`) automatically:
+
+✅ **Extracts all endpoints** from your OpenAPI specs  
+✅ **Handles path parameters** - substitutes `{fileId}` with example values from spec  
+✅ **Generates request bodies** - uses examples from schemas or generates minimal valid objects  
+✅ **Validates response status codes** - ensures your API returns expected codes  
+✅ **Validates response schemas** - uses `vitest-openapi` to check response bodies  
+✅ **Resolves basic $refs** - handles common component references  
+✅ **Creates readable test names** - uses operationIds or path + method
 
 ## Best Practices
 
 ### 1. The "Spec First" Rule
 
-**Never** write a backend route without defining it in `shared/openapi.yaml` first.
+**Never** write a backend route without defining it in `docs/features/[feature]/API_CONTRACT.yml` first.
 
--   ❌ _Wrong:_ Write Hono code -> Update YAML later.
--   ✅ _Right:_ Update YAML -> Run Prism (Frontend can start) -> Write Hono code -> Pass Contract Test.
+-   ❌ **Wrong:** Write Hono code → Update YAML later → Manually write tests
+-   ✅ **Right:** Update YAML → Generate tests → Write Hono code → Pass tests
 
-### 2. Mocking in Frontend
+### 2. Do NOT Modify Existing OpenAPI Specs
 
-Frontend tests should **not** hit the real backend. Use MSW (Mock Service Worker) or Vitest mocks to return data that matches the OpenAPI examples.
+**⚠️ CRITICAL:** OpenAPI specs are the **contract** between frontend and backend. Modifying them breaks this contract.
 
-### 3. Continuous Integration
+-   ❌ **Wrong:** Change the spec to match your implementation when tests fail
+-   ❌ **Wrong:** Update the spec because it's "easier" than fixing the backend
+-   ✅ **Right:** Fix your backend implementation to match the existing spec
+-   ✅ **Right:** Only modify specs when there's a legitimate requirement change (and coordinate with frontend)
+
+**The spec is the source of truth.** If your implementation doesn't match it, **your implementation is wrong**, not the spec.
+
+**When spec changes ARE necessary:**
+
+-   Must be a deliberate design decision, not a quick fix
+-   Must be reviewed and approved (specs define the API contract)
+-   Must regenerate tests after any spec change
+-   Frontend may need updates if response schemas change
+
+### 3. Always Regenerate Tests
+
+**⚠️ Only regenerate tests if you've made a legitimate spec change.** Most test failures should be fixed by updating the backend implementation, not the spec.
+
+If you've modified an OpenAPI spec (which should be rare):
+
+```
+pnpm backend:generate-tests && pnpm backend:test
+```
+
+**Never manually edit generated test files** - your changes will be overwritten.
+
+### 4. Use Examples in Your Specs
+
+The test generator uses examples from your OpenAPI specs:
+
+```
+# Good - provides realistic test data
+parameters:
+  - name: fileId
+    in: path
+    schema:
+      type: string
+      format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+# Also good - the generator will auto-generate UUID format
+parameters:
+  - name: fileId
+    in: path
+    schema:
+      type: string
+      format: uuid  # Generator creates example UUID automatically
+```
+
+### 5. Frontend Mocking
+
+Frontend tests should **not** hit the real backend. Options:
+
+-   **MSW (Mock Service Worker):** Returns data matching OpenAPI examples
+-   **Vitest mocks:** Simple mocking for unit tests
+
+### 6. Continuous Integration
 
 All PRs must pass:
 
-1.  `turbo lint` (ESLint + Prettier)
-2.  `npx spectral lint shared/openapi.yaml` (Valid API Spec)
-3.  `turbo test` (Contract tests pass)
+1.  `pnpm api:lint` - Validate OpenAPI specs with Spectral
+2.  `pnpm backend:generate-tests` - Ensure tests are up-to-date
+3.  `pnpm backend:test` - All contract tests pass
+4.  `pnpm lint` - Code quality checks
 
-### 4. Handling "Drift"
+### 7. Handling Test Failures
 
 If a contract test fails:
 
--   **Do not** just change the test to make it pass.
--   **Check the Spec:** Did the requirement change? Update `openapi.yaml`.
--   **Check the Code:** Did you return `created_at` instead of `createdAt`? Fix the Hono handler.
+-   ❌ **Don't** manually edit the generated test file
+-   ❌ **Don't** change the test to make it pass
+-   ❌ **Don't** modify the OpenAPI spec to match your broken implementation
+-   ✅ **Do** fix your Hono handler to match the existing spec
+-   ✅ **Do** verify your implementation matches the spec exactly
+
+**Example failure:** Test expects `createdAt` but your API returns `created_at`  
+**Solution:** Fix your backend to return `createdAt` as specified in the OpenAPI spec. The spec is correct; your implementation is wrong.
+
+**Only modify the spec if:**
+
+-   There's a legitimate requirement change (e.g., product decision to rename the field)
+-   The spec itself contains an error (rare - specs should be reviewed before implementation)
+-   You've coordinated with the frontend team about the breaking change
+
+## Known Limitations
+
+The current test generator:
+
+-   ✅ Handles JSON request/response bodies
+-   ✅ Handles path parameters with examples
+-   ✅ Resolves basic `$ref` references
+-   ⚠️ Limited support for `multipart/form-data` (planned)
+-   ⚠️ Limited support for query parameters (planned)
+-   ⚠️ Does not generate negative test cases (planned)
+
+For advanced scenarios requiring manual tests, add them to `backend/src/__tests__/unit/` (separate from generated contract tests).
+
+## Future Improvements
+
+Planned enhancements to the test generator:
+
+-   Full `$ref` resolution using `@apidevtools/swagger-parser`
+-   `multipart/form-data` support for file uploads
+-   Query parameter extraction and substitution
+-   Negative test case generation (400, 401, 403, 404 scenarios)
+-   Response body schema validation beyond status codes
+
+## Summary
+
+**The key principle:** Your OpenAPI specs are the single source of truth. **Do not modify them to fix test failures** - fix your implementation instead. The spec defines the contract; your code must conform to it, not the other way around. Keep specs accurate and stable, and the test generator ensures your implementation stays compliant with **zero manual test writing**.

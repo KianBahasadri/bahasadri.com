@@ -34,7 +34,7 @@ Do not write any documentation for your task. You will follow exactly the docume
 -   **Fix the underlying issue** - If the linter complains, refactor the code to address the concern rather than suppressing it
 -   **Simplify when needed** - If a pattern is too complex for the linter, simplify it (e.g., use simpler regex patterns, break complex logic into smaller functions)
 
-**For new features**: Use `docs/features/TEMPLATE/` as a starting point for creating `FEATURES.md`, `API_CONTRACT.md`, `FRONTEND.md`, and `BACKEND.md`.
+**For new features**: Use `docs/features/TEMPLATE/` as a starting point
 
 If working on frontend:
 
@@ -54,11 +54,7 @@ If working on backend:
 
 This is a very design document heavy codebase. Don't waste time looking at irrelevant documents—stick to what you need.
 
-**Note**: Frontend and backend are decoupled. The only coupling point is the API contract in `API_CONTRACT.md`. Implement each side independently according to its respective spec.
-
 ## AFTER completing any task:
 
 -   [ ] TypeScript compiles: `pnpm tsc --noEmit`
 -   [ ] Linting passes: `pnpm lint`
--   [ ] Preview works: `pnpm preview`
--   [ ] No breaking changes
