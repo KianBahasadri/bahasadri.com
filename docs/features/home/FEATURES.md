@@ -36,6 +36,7 @@ Users can interact with the yandere agent through a chatbox interface:
 -   Terminal/cyberpunk aesthetic matching the home page design
 -   Agent responds with yandere personality traits
 -   Conversation persists across page refreshes (managed server-side)
+-   **Cute TTS Voice:** Each agent response is spoken aloud using a cute, high-pitched text-to-speech (TTS) voice that matches the yandere personality. The TTS audio plays automatically after each agent reply, enhancing immersion and interactivity.
 
 ### Randomly Generated Welcome Message
 

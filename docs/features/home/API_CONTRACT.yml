@@ -51,6 +51,10 @@ components:
                     type: string
                     description: The agent's response.
                     example: "I've been waiting for you... ♡"
+                audio:
+                    type: string
+                    description: Base64 encoded audio data from ElevenLabs.
+                    example: "SUQzBAAAAAAAI1..."
 
         ConversationHistoryResponse:
             type: object

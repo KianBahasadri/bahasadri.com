@@ -74,6 +74,30 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
                     timestamp: Date.now(),
                 },
             ]);
+
+            // Play audio automatically
+            if (data.audio) {
+                try {
+                    const audioData = atob(data.audio);
+                    const audioBytes = Uint8Array.from(
+                        audioData,
+                        (char) => char.codePointAt(0) ?? 0
+                    );
+                    const audioBlob = new Blob([audioBytes], {
+                        type: "audio/mpeg",
+                    });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    audio.play().catch(() => {
+                        // Ignore playback errors (e.g., user interaction required)
+                    });
+                    audio.addEventListener("ended", () => {
+                        URL.revokeObjectURL(audioUrl);
+                    });
+                } catch {
+                    // Ignore audio playback errors gracefully
+                }
+            }
         },
         onError: (error: Error) => {
             setMessages((prev) => [

@@ -9,6 +9,7 @@ export interface ChatRequest {
 
 export interface ChatResponse {
   response: string;
+  audio: string;
   conversationId: string;
 }
 

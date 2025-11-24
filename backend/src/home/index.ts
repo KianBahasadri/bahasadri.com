@@ -16,6 +16,7 @@ import {
     storeConversationContext,
 } from "./lib/kv-helpers";
 import { generateAgentResponse } from "./lib/openrouter";
+import { synthesizeYandereAgentAudio } from "./lib/elevenlabs";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -210,7 +211,7 @@ app.post("/chat", async (c) => {
             timestamp: now,
         };
 
-        // Generate agent response using OpenRouter
+        // Create agent response using OpenRouter
         let agentResponseText: string;
         try {
             agentResponseText = await generateAgentResponse(
@@ -225,6 +226,42 @@ app.post("/chat", async (c) => {
                 defaultMessage: "Failed to generate response",
                 additionalInfo: {
                     step: "generateAgentResponse",
+                },
+            });
+            return c.json<ErrorResponse>(
+                {
+                    success: false,
+                    error: response.error,
+                    code: response.code as HomeErrorCode,
+                },
+                status as HttpStatusCode
+            );
+        }
+
+        if (!env.ELEVENLABS_API_KEY || env.ELEVENLABS_API_KEY.trim() === "") {
+            return c.json<ErrorResponse>(
+                {
+                    success: false,
+                    error: "ElevenLabs API key is not configured",
+                    code: "INTERNAL_ERROR",
+                },
+                500
+            );
+        }
+
+        let agentAudioBase64: string;
+        try {
+            agentAudioBase64 = await synthesizeYandereAgentAudio(
+                env.ELEVENLABS_API_KEY,
+                agentResponseText
+            );
+        } catch (error) {
+            const { response, status } = handleError(error, {
+                endpoint: "/api/home/chat",
+                method: "POST",
+                defaultMessage: "Failed to synthesize agent audio",
+                additionalInfo: {
+                    step: "synthesizeYandereAgentAudio",
                 },
             });
             return c.json<ErrorResponse>(
@@ -256,6 +293,7 @@ app.post("/chat", async (c) => {
         return c.json<ChatResponse>(
             {
                 response: agentResponseText,
+                audio: agentAudioBase64,
             },
             200
         );
