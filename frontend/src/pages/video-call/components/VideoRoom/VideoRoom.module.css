@@ -4,8 +4,9 @@
     display: flex;
     flex-direction: column;
     position: relative;
-    background: var(--dark-void);
+    background: transparent;
     overflow: hidden;
+    z-index: 1;
 }
 
 .idleState,

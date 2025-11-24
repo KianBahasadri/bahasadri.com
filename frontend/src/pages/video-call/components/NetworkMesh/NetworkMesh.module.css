@@ -1,0 +1,163 @@
+.networkMesh {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+    background: var(--dark-void);
+}
+
+.connections {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.4;
+}
+
+.connectionLine {
+    stroke: var(--pink-primary);
+    stroke-width: 0.15;
+    fill: none;
+    stroke-dasharray: 0.5 1.5;
+    animation: connectionFlow 4s linear infinite;
+    opacity: 0.6;
+}
+
+@keyframes connectionFlow {
+    0% {
+        stroke-dashoffset: 0;
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 0.8;
+    }
+    100% {
+        stroke-dashoffset: 4;
+        opacity: 0.3;
+    }
+}
+
+.nodes {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.node {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    animation: nodePulse 3s ease-in-out infinite;
+}
+
+.nodeCore {
+    width: 8px;
+    height: 8px;
+    background: var(--pink-hot);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--pink-hot), 0 0 20px var(--pink-primary);
+    animation: coreGlow 2s ease-in-out infinite;
+}
+
+.nodeRing {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--pink-primary);
+    border-radius: 50%;
+    opacity: 0.6;
+    animation: ringExpand 3s ease-in-out infinite;
+}
+
+@keyframes nodePulse {
+    0%,
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+}
+
+@keyframes coreGlow {
+    0%,
+    100% {
+        box-shadow: 0 0 10px var(--pink-hot), 0 0 20px var(--pink-primary);
+        opacity: 1;
+    }
+    50% {
+        box-shadow: 0 0 15px var(--pink-hot), 0 0 30px var(--pink-primary),
+            0 0 40px var(--pink-light);
+        opacity: 0.9;
+    }
+}
+
+@keyframes ringExpand {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.6;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(2);
+        opacity: 0.2;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(3);
+        opacity: 0;
+    }
+}
+
+.gradientOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+            circle at 30% 30%,
+            rgba(255, 105, 180, 0.1) 0%,
+            transparent 40%
+        ),
+        radial-gradient(
+            circle at 70% 70%,
+            rgba(255, 179, 222, 0.08) 0%,
+            transparent 40%
+        ),
+        radial-gradient(
+            circle at 50% 50%,
+            rgba(255, 20, 147, 0.05) 0%,
+            transparent 50%
+        );
+    animation: gradientPulse 8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes gradientPulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .connectionLine,
+    .node,
+    .nodeCore,
+    .nodeRing,
+    .gradientOverlay {
+        animation: none;
+    }
+}
+
