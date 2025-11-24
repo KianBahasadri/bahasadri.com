@@ -52,6 +52,9 @@ If working on backend:
 3. Then check `docs/features/[feature-name]/API_CONTRACT.md` for the API contract
 4. Then check `docs/features/[feature-name]/BACKEND.md` for backend-specific design
 
+If using third party APIs, ALWAYS RTFM! They can be found at `third-party-docs/`.
+If you hallucinate endpoints I will be very sad.
+
 This is a very design document heavy codebase. Don't waste time looking at irrelevant documents—stick to what you need.
 
 ## AFTER completing any task:
