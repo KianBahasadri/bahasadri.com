@@ -1,0 +1,86 @@
+.grid {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+    width: 100%;
+    height: 100%;
+    align-content: center;
+    justify-items: center;
+}
+
+.participant {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 200px;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: var(--dark-surface);
+    border: 2px solid var(--pink-primary);
+    box-shadow: 0 0 20px rgba(255, 105, 180, 0.3);
+}
+
+.video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: var(--dark-void);
+}
+
+.overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.name {
+    color: white;
+    font-weight: 700;
+    font-family: "Comic Neue", sans-serif;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.indicators {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.indicator {
+    font-size: 1.2rem;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+.emptyState {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 2rem;
+}
+
+.emptyMessage {
+    font-size: 1.5rem;
+    color: var(--pink-darker);
+    font-family: "Comic Neue", sans-serif;
+    text-align: center;
+    padding: 2rem;
+    background: rgba(255, 179, 222, 0.2);
+    border-radius: 1rem;
+    border: 2px dashed var(--pink-primary);
+}
+
+@media (prefers-color-scheme: dark) {
+    .emptyMessage {
+        color: var(--pink-light);
+        background: rgba(26, 26, 46, 0.5);
+        border-color: var(--pink-hot);
+    }
+}
+

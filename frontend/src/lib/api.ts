@@ -20,6 +20,14 @@ import type {
     ChatResponse,
     ConversationHistoryResponse,
 } from "../types/home";
+import type {
+    GlobalRoomResponse,
+    CreateSessionRequest,
+    CreateSessionResponse,
+    GenerateTokenRequest,
+    GenerateTokenResponse,
+    ErrorResponse as VideoCallErrorResponse,
+} from "../types/video-call";
 
 const API_BASE_URL =
     import.meta.env.MODE === "production"
@@ -184,4 +192,66 @@ export const sendChatMessage = async (
     }
 
     return response.json() as Promise<ChatResponse>;
+};
+
+export const fetchGlobalRoom = async (): Promise<GlobalRoomResponse> => {
+    const response = await fetch(`${API_BASE_URL}/video-call/global-room`);
+    if (!response.ok) {
+        const error: VideoCallErrorResponse = await response.json();
+        throw new Error(error.error || "Failed to fetch global room");
+    }
+    return response.json();
+};
+
+export const createSession = async (
+    name?: string
+): Promise<CreateSessionResponse> => {
+    const body: CreateSessionRequest = {};
+    if (name) {
+        body.name = name;
+    }
+    const response = await fetch(`${API_BASE_URL}/video-call/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+        const error: VideoCallErrorResponse = await response.json();
+        throw new Error(error.error || "Failed to create session");
+    }
+
+    return response.json();
+};
+
+export const generateToken = async (
+    meetingId: string,
+    name?: string,
+    customParticipantId?: string,
+    presetName?: string
+): Promise<GenerateTokenResponse> => {
+    const body: GenerateTokenRequest = {
+        meeting_id: meetingId,
+    };
+    if (name) {
+        body.name = name;
+    }
+    if (customParticipantId) {
+        body.custom_participant_id = customParticipantId;
+    }
+    if (presetName) {
+        body.preset_name = presetName;
+    }
+    const response = await fetch(`${API_BASE_URL}/video-call/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+        const error: VideoCallErrorResponse = await response.json();
+        throw new Error(error.error || "Failed to generate token");
+    }
+
+    return response.json();
 };

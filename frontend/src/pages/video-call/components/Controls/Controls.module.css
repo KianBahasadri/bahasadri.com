@@ -1,0 +1,76 @@
+.controls {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 1rem;
+    z-index: 1000;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 2rem;
+    backdrop-filter: blur(10px);
+    border: 2px solid var(--pink-hot);
+    box-shadow: 0 0 20px rgba(255, 105, 180, 0.5);
+}
+
+.button {
+    padding: 1rem 2rem;
+    border: 2px solid var(--pink-hot);
+    background: var(--pink-primary);
+    color: var(--pink-darker);
+    border-radius: 1rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: "Comic Neue", sans-serif;
+    box-shadow: 4px 4px 0 var(--pink-light);
+}
+
+.button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 6px 6px 0 var(--pink-hot);
+    background: var(--pink-hot);
+    color: white;
+}
+
+.button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 2px 2px 0 var(--pink-light);
+}
+
+.button.disabled {
+    opacity: 0.6;
+    background: var(--dark-surface);
+    color: var(--pink-light);
+}
+
+.leaveButton {
+    background: var(--blood-red);
+    color: white;
+    border-color: var(--blood-red);
+}
+
+.leaveButton:hover:not(:disabled) {
+    background: #b01030;
+    border-color: #b01030;
+}
+
+@media (prefers-color-scheme: dark) {
+    .controls {
+        background: rgba(26, 26, 46, 0.9);
+        border-color: var(--pink-hot);
+    }
+
+    .button {
+        background: var(--dark-surface);
+        color: var(--pink-light);
+    }
+
+    .button:hover:not(:disabled) {
+        background: var(--pink-hot);
+        color: white;
+    }
+}
+
