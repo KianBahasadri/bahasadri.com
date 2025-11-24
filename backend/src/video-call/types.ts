@@ -17,6 +17,16 @@ export interface GenerateTokenResponse {
     auth_token: string;
 }
 
+export interface Session {
+    meeting_id: string;
+    name?: string;
+    created_at?: string;
+}
+
+export interface ListSessionsResponse {
+    sessions: Session[];
+}
+
 export interface ErrorResponse {
     error: string;
     code: "INVALID_INPUT" | "NOT_FOUND" | "INTERNAL_ERROR" | "REALTIMEKIT_ERROR";
@@ -44,6 +54,16 @@ export interface RealtimeKitTokenResponse {
         auth_token?: string;
         participant_id?: string;
     };
+    errors?: unknown[];
+}
+
+export interface RealtimeKitListMeetingsResponse {
+    success: boolean;
+    data?: {
+        id: string;
+        title?: string;
+        created_at?: string;
+    }[];
     errors?: unknown[];
 }
 

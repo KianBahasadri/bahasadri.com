@@ -5,6 +5,7 @@ import type { Participant, RoomState } from "../../../../types/video-call";
 import { createSession, generateToken } from "../../../../lib/api";
 import ParticipantGrid from "../ParticipantGrid/ParticipantGrid";
 import Controls from "../Controls/Controls";
+import SessionList from "../SessionList/SessionList";
 import styles from "./VideoRoom.module.css";
 
 interface VideoRoomProps {
@@ -351,6 +352,11 @@ export default function VideoRoom({
                             : "Create New Call"}
                     </button>
                     {error === null ? null : <div className={styles["error"]}>{error}</div>}
+                    <SessionList
+                        onJoinSession={(meetingId) => {
+                            void handleJoinMeeting(meetingId);
+                        }}
+                    />
                 </div>
             </div>
         );

@@ -25,6 +25,7 @@ import type {
     CreateSessionResponse,
     GenerateTokenRequest,
     GenerateTokenResponse,
+    ListSessionsResponse,
 } from "../types/video-call";
 
 const API_BASE_URL =
@@ -275,4 +276,21 @@ export const generateToken = async (
     }
 
     return response.json() as Promise<GenerateTokenResponse>;
+};
+
+export const listSessions = async (): Promise<ListSessionsResponse> => {
+    const response = await fetch(`${API_BASE_URL}/video-call/sessions`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "listSessions",
+            "Failed to list sessions"
+        );
+    }
+
+    return response.json() as Promise<ListSessionsResponse>;
 };

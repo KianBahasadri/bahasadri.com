@@ -32,3 +32,13 @@ export interface Participant {
 
 export type RoomState = "idle" | "connecting" | "connected" | "error" | "disconnected";
 
+export interface Session {
+    meeting_id: string;
+    name?: string;
+    created_at: string;
+}
+
+export interface ListSessionsResponse {
+    sessions: Session[];
+}
+

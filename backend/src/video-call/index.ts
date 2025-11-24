@@ -10,10 +10,13 @@ import type {
     CreateSessionResponse,
     GenerateTokenRequest,
     GenerateTokenResponse,
+    ListSessionsResponse,
+    Session,
     ErrorResponse,
     RealtimeKitConfig,
     RealtimeKitMeetingResponse,
     RealtimeKitTokenResponse,
+    RealtimeKitListMeetingsResponse,
 } from "./types";
 
 type HttpStatusCode = 400 | 404 | 500;
@@ -119,6 +122,50 @@ async function generateRealtimeKitToken(
     }
 
     return authToken;
+}
+
+async function listRealtimeKitMeetings(
+    config: RealtimeKitConfig
+): Promise<Session[]> {
+    const url = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/realtime/kit/${config.appId}/meetings`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${config.apiToken}`,
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+            `RealtimeKit API error: ${String(response.status)} ${errorText}`
+        );
+    }
+
+    const data = (await response.json()) as RealtimeKitListMeetingsResponse;
+
+    if (!data.success) {
+        throw new Error(
+            `RealtimeKit API error: ${JSON.stringify(data.errors)}`
+        );
+    }
+
+    const meetings = data.data ?? [];
+
+    const sessions: Session[] = [];
+    for (const meeting of meetings) {
+        if (meeting.id) {
+            sessions.push({
+                meeting_id: meeting.id,
+                name: meeting.title,
+                created_at: meeting.created_at,
+            });
+        }
+    }
+
+    return sessions;
 }
 
 app.post("/session", async (c) => {
@@ -232,6 +279,51 @@ app.post("/token", async (c) => {
         const { response, status } = handleError(error, {
             endpoint: "/api/video-call/token",
             method: "POST",
+        });
+        return c.json<ErrorResponse>(
+            {
+                error: response.error,
+                code: response.code as VideoCallErrorCode,
+            },
+            status as HttpStatusCode
+        );
+    }
+});
+
+app.get("/sessions", async (c) => {
+    try {
+        const config = getRealtimeKitConfig(c.env);
+
+        if (!config.accountId || !config.appId || !config.apiToken) {
+            const { response, status } = handleError(
+                new Error("RealtimeKit configuration missing"),
+                {
+                    endpoint: "/api/video-call/sessions",
+                    method: "GET",
+                    defaultMessage: "RealtimeKit configuration missing",
+                    additionalInfo: {
+                        hasAccountId: !!config.accountId,
+                        hasAppId: !!config.appId,
+                        hasApiToken: !!config.apiToken,
+                    },
+                }
+            );
+            return c.json<ErrorResponse>(
+                {
+                    error: response.error,
+                    code: response.code as VideoCallErrorCode,
+                },
+                status as HttpStatusCode
+            );
+        }
+
+        const sessions = await listRealtimeKitMeetings(config);
+
+        return c.json<ListSessionsResponse>({ sessions }, 200);
+    } catch (error) {
+        const { response, status } = handleError(error, {
+            endpoint: "/api/video-call/sessions",
+            method: "GET",
         });
         return c.json<ErrorResponse>(
             {
