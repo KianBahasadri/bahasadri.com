@@ -65,8 +65,8 @@ backend/src/
 
 ## Development
 
--   **Local Dev**: `pnpm dev` (runs Wrangler dev server)
--   **Build**: `pnpm build` (compiles TypeScript)
+-   **Local Dev**: `pnpm dev` (runs Wrangler dev server with local bindings)
+-   **Preview**: `pnpm preview` (runs Wrangler dev server with remote Cloudflare resources - production-like testing)
 -   **Deploy**: `pnpm deploy` (deploys to Cloudflare)
 
 ## Deployment
