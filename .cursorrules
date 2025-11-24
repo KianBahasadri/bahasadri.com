@@ -56,5 +56,8 @@ This is a very design document heavy codebase. Don't waste time looking at irrel
 
 ## AFTER completing any task:
 
--   [ ] TypeScript compiles: `pnpm tsc --noEmit`
--   [ ] Linting passes: `pnpm lint`
+-   [ ] Lint passes: `pnpm frontend:lint` or `pnpm backend:lint` or `pnpm api:lint`
+-   [ ] TypeCheck passes: `pnpm frontend:typecheck` or `pnpm backend:typecheck`
+-   [ ] Generate backend tests if necessary: `pnpm backend:generate-tests`
+-   [ ] Backend tests pass: `pnpm backend:test`
+-   [ ] All checks pass: `pnpm backend:generate-tests && pnpm lint && pnpm typecheck && pnpm backend:test`

@@ -3,8 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { sendSMS, fetchMessages, fetchThreads, fetchContacts } from "../../../../../lib/api";
 import { ThreadSidebar } from "./ThreadSidebar";
 import { MessageArea } from "./MessageArea";
-import type { Message, ThreadSummary, Contact } from "../../../../../types/sms-messenger";
-import { useMessagePolling } from "./useMessagePolling";
+import type { Message, ThreadSummary, Contact, MessagesSinceResponse } from "../../../../../types/sms-messenger";
+import { useMessagePolling } from "./use-message-polling";
 import styles from "./sms-interface.module.css";
 
 interface SMSInterfaceProps {
@@ -13,9 +13,6 @@ interface SMSInterfaceProps {
   readonly initialContacts: readonly Contact[];
   readonly initialCounterpart: string | undefined;
 }
-
-const POLL_INTERVAL = 2000; // 2 seconds
-const POLL_MAX_ATTEMPTS = 1000;
 
 function addMessageToCache(
   cache: Record<string, Message[]>,
@@ -99,7 +96,7 @@ export default function SMSInterface({
 
   // Handle polling response
   const handlePollResponse = useCallback(
-    (response: Awaited<ReturnType<typeof import("../../../../../lib/api").pollMessagesSince>>) => {
+    (response: MessagesSinceResponse) => {
       if (response.success && response.messages.length > 0) {
         setMessageCache((previous) => updateMessageCache(previous, response.messages));
 
@@ -153,11 +150,13 @@ export default function SMSInterface({
     },
   });
 
-  const handleContactFormSuccess = useCallback(async () => {
-    setShowContactForm(false);
-    setContactFormPhoneNumber("");
-    const contactsData = await fetchContacts();
-    setContacts(contactsData.contacts);
+  const handleContactFormSuccess = useCallback(() => {
+    void (async (): Promise<void> => {
+      setShowContactForm(false);
+      setContactFormPhoneNumber("");
+      const contactsData = await fetchContacts();
+      setContacts(contactsData.contacts);
+    })();
   }, []);
 
   const handleSend = (event: React.FormEvent): void => {
