@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import * as Tone from "tone";
 import styles from "./NotFound.module.css";
 
 export default function NotFound(): React.JSX.Element {
@@ -7,12 +8,15 @@ export default function NotFound(): React.JSX.Element {
     const [trail, setTrail] = useState<Array<{ x: number; y: number; id: number }>>([]);
     const trailIdRef = useRef(0);
     const containerRef = useRef<HTMLDivElement>(null);
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const oscillatorsRef = useRef<Array<OscillatorNode>>([]);
-    const gainNodesRef = useRef<Array<GainNode>>([]);
     const hasInteractedRef = useRef(false);
     const interactionListenersRef = useRef<Array<() => void>>([]);
     const isPlayingRef = useRef(false);
+    const synthRef = useRef<Tone.PolySynth | null>(null);
+    const reverbRef = useRef<Tone.Reverb | null>(null);
+    const autoFilterRef = useRef<Tone.AutoFilter | null>(null);
+    const volumeRef = useRef<Tone.Volume | null>(null);
+    const compressorRef = useRef<Tone.Compressor | null>(null);
+    const cleanupRef = useRef<(() => void) | null>(null);
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent): void => {
@@ -38,34 +42,39 @@ export default function NotFound(): React.JSX.Element {
     }, []);
 
     useEffect(() => {
-        const createAudioContext = (): AudioContext | null => {
-            if (audioContextRef.current) {
-                return audioContextRef.current;
-            }
-
-            try {
-                const webkitAudioContext = (
-                    globalThis as { webkitAudioContext?: typeof AudioContext }
-                ).webkitAudioContext;
-                const AudioContextClass =
-                    webkitAudioContext ?? globalThis.AudioContext;
-                audioContextRef.current = new AudioContextClass();
-                return audioContextRef.current;
-            } catch {
-                return null;
-            }
-        };
-
         const stopMusic = (): void => {
-            oscillatorsRef.current.forEach((osc) => {
-                try {
-                    osc.stop();
-                } catch {
-                    // Oscillator already stopped
-                }
-            });
-            oscillatorsRef.current = [];
-            gainNodesRef.current = [];
+            if (cleanupRef.current) {
+                cleanupRef.current();
+                cleanupRef.current = null;
+            }
+
+            if (synthRef.current) {
+                synthRef.current.releaseAll();
+                synthRef.current.dispose();
+                synthRef.current = null;
+            }
+
+            if (reverbRef.current) {
+                reverbRef.current.dispose();
+                reverbRef.current = null;
+            }
+
+            if (autoFilterRef.current) {
+                autoFilterRef.current.dispose();
+                autoFilterRef.current = null;
+            }
+
+            if (volumeRef.current) {
+                volumeRef.current.dispose();
+                volumeRef.current = null;
+            }
+
+            if (compressorRef.current) {
+                compressorRef.current.dispose();
+                compressorRef.current = null;
+            }
+
+            Tone.Transport.cancel();
             isPlayingRef.current = false;
         };
 
@@ -74,84 +83,92 @@ export default function NotFound(): React.JSX.Element {
                 return;
             }
 
-            let audioContext = audioContextRef.current;
-            if (!audioContext) {
-                audioContext = createAudioContext();
-                if (!audioContext) {
-                    return;
-                }
-            }
-
-            if (audioContext.state === "suspended") {
-                try {
-                    await audioContext.resume();
-                } catch (error) {
+            try {
+                await Tone.start();
+            } catch (error) {
+                if (error instanceof Error) {
                     throw error;
                 }
+                return;
             }
 
-            // Ambient music: soft, melancholic tones fitting the kawaii/yami kawaii aesthetic
-            // Using a minor chord progression with gentle harmonics
-            const frequencies = [
-                220.0, // A3 - base tone
-                261.63, // C4 - minor third
-                293.66, // D4 - perfect fourth
-                329.63, // E4 - perfect fifth
-                392.0, // G4 - minor seventh
-            ];
+            const reverb = new Tone.Reverb(15);
+            await reverb.generate();
+            reverbRef.current = reverb;
 
-            const createOscillator = (
-                frequency: number,
-                type: OscillatorType,
-                gainValue: number,
-                delay: number
-            ): void => {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                const lfo = audioContext.createOscillator();
-                const lfoGain = audioContext.createGain();
+            const synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "sine" },
+                envelope: {
+                    attack: 5,
+                    decay: 0.5,
+                    sustain: 0.8,
+                    release: 4,
+                },
+            });
+            synthRef.current = synth;
 
-                oscillator.type = type;
-                oscillator.frequency.value = frequency;
+            const compressor = new Tone.Compressor({
+                threshold: -24,
+                ratio: 12,
+                attack: 0.003,
+                release: 0.25,
+            });
+            compressorRef.current = compressor;
 
-                lfo.type = "sine";
-                lfo.frequency.value = 0.1 + Math.random() * 0.2;
-                lfoGain.gain.value = frequency * 0.02;
+            const volume = new Tone.Volume(-10);
+            volumeRef.current = volume;
 
-                lfo.connect(lfoGain);
-                lfoGain.connect(oscillator.frequency);
+            const autoFilter = new Tone.AutoFilter(
+                Math.random() / 100 + 0.01,
+                100,
+                4
+            );
+            autoFilter.start();
+            autoFilterRef.current = autoFilter;
 
-                gainNode.gain.setValueAtTime(0, audioContext.currentTime + delay);
-                gainNode.gain.linearRampToValueAtTime(
-                    gainValue,
-                    audioContext.currentTime + delay + 0.5
-                );
+            synth.connect(volume);
+            volume.connect(compressor);
+            compressor.connect(autoFilter);
+            autoFilter.connect(reverb);
+            reverb.toDestination();
 
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
+            const activeSources: Array<Tone.ToneEvent> = [];
 
-                oscillator.start(audioContext.currentTime + delay);
-                lfo.start(audioContext.currentTime + delay);
+            const play = (notes: string[]): void => {
+                const note =
+                    notes[Math.floor(Math.random() * notes.length)];
+                const delay = 1 + Math.random() * 5;
 
-                oscillatorsRef.current.push(oscillator, lfo);
-                gainNodesRef.current.push(gainNode, lfoGain);
+                synth.triggerAttackRelease(note, "8n", `+${delay}`);
+
+                const nextDelay =
+                    4 + Math.random() * 5 - 2.5;
+
+                const event = Tone.Transport.scheduleOnce(() => {
+                    if (isPlayingRef.current) {
+                        play(notes);
+                    }
+                }, `+${nextDelay}`);
+
+                activeSources.push(event);
             };
 
-            // Create layered ambient tones
-            frequencies.forEach((freq, index) => {
-                const gain = 0.08 - index * 0.01;
-                const delay = index * 0.2;
-                createOscillator(freq, "sine", gain, delay);
-            });
+            const schedule = (): void => {
+                play(["C5"]);
+                play(["A5", "G5", "F5", "D5", "E5"]);
+                play(["C6"]);
+            };
 
-            // Add some harmonics for texture
-            frequencies.slice(0, 3).forEach((freq, index) => {
-                const harmonicFreq = freq * 2;
-                const gain = 0.03 - index * 0.005;
-                const delay = 1 + index * 0.15;
-                createOscillator(harmonicFreq, "triangle", gain, delay);
-            });
+            schedule();
 
+            cleanupRef.current = (): void => {
+                activeSources.forEach((event) => {
+                    Tone.Transport.clear(event);
+                });
+                synth.releaseAll();
+            };
+
+            Tone.Transport.start();
             isPlayingRef.current = true;
             hasInteractedRef.current = true;
 
@@ -162,19 +179,26 @@ export default function NotFound(): React.JSX.Element {
         };
 
         const handleInteraction = (): void => {
-            void playMusic();
+            if (!isPlayingRef.current) {
+                void playMusic();
+            }
         };
 
         const setupInteractionListeners = (): void => {
+            if (interactionListenersRef.current.length > 0) {
+                return;
+            }
+
             const events = ["click", "keydown", "touchstart", "mousedown"];
             const cleanups: Array<() => void> = [];
 
             events.forEach((eventType) => {
-                window.addEventListener(eventType, handleInteraction, {
-                    once: true,
-                });
+                const handler = (): void => {
+                    handleInteraction();
+                };
+                window.addEventListener(eventType, handler);
                 cleanups.push(() => {
-                    window.removeEventListener(eventType, handleInteraction);
+                    window.removeEventListener(eventType, handler);
                 });
             });
 
@@ -182,18 +206,12 @@ export default function NotFound(): React.JSX.Element {
         };
 
         const tryPlayMusic = async (): Promise<void> => {
+            setupInteractionListeners();
+
             try {
                 await playMusic();
             } catch (error) {
-                if (
-                    error instanceof Error &&
-                    (error.name === "NotAllowedError" ||
-                        error.name === "NotSupportedError")
-                ) {
-                    setupInteractionListeners();
-                } else {
-                    setupInteractionListeners();
-                }
+                // If autoplay fails, listeners are already set up
             }
         };
 
