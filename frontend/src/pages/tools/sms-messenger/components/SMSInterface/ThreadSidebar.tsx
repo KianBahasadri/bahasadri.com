@@ -43,7 +43,9 @@ export function ThreadSidebar({
   return (
     <div className={styles["sidebar"]}>
       <div className={styles["sidebarHeader"]}>
-        <h2 className={styles["sidebarTitle"]}>Conversations</h2>
+        <h2 className={styles["sidebarTitle"]} data-text="Conversations">
+          Conversations
+        </h2>
         <button
           className={styles["addContactButton"]}
           onClick={onShowContactForm}

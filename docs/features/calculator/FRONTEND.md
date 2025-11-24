@@ -4,7 +4,7 @@
 
 ## Overview
 
-Frontend implementation for the calculator utility. The frontend provides a button-based calculator interface that mimics a physical calculator, with power on/off functionality, number input, operator selection, and calculation execution. All calculations are performed by the backend API.
+Frontend implementation for the calculator utility. The frontend provides a button-based calculator interface that mimics a physical calculator, with power on/off functionality, number input, operator selection, and calculation execution. The calculator supports building equations of any length by chaining multiple operations together. All calculations are performed by the backend API.
 
 ## Code Location
 
@@ -42,6 +42,7 @@ See `docs/features/calculator/API_CONTRACT.md` for the API contract this fronten
 -   Local state:
     -   `isOn: boolean` - Calculator power state
     -   `display: string` - Current display value
+    -   `equation: string` - Current equation being built (of any length)
     -   `currentInput: string` - Current number being entered
     -   `operator: string | null` - Selected operator (+, -, \*, /)
     -   `previousValue: number | null` - First operand for calculation
@@ -61,13 +62,14 @@ See `docs/features/calculator/API_CONTRACT.md` for the API contract this fronten
 
 **Location**: `components/Display/Display.tsx`
 
-**Purpose**: Shows the current calculator display value
+**Purpose**: Shows the current calculator display value and equation being typed
 
 **Props**:
 
 ```typescript
 interface DisplayProps {
     value: string;
+    equation?: string;
     isOn: boolean;
 }
 ```
@@ -83,8 +85,10 @@ interface DisplayProps {
 **Styling**:
 
 -   CSS Modules: `Display.module.css`
+-   Display should show the current equation being typed (of any length) or the current value
+-   When an equation is being built, show the equation; otherwise show the current value
 -   Display should show "0" or blank when calculator is off
--   Right-aligned text for numbers
+-   Right-aligned text for numbers and equations
 -   Monospace font for consistent digit width
 
 ### ButtonGrid
@@ -189,6 +193,9 @@ const [isOn, setIsOn] = useState<boolean>(false);
 // Display value
 const [display, setDisplay] = useState<string>("0");
 
+// Current equation being built (of any length)
+const [equation, setEquation] = useState<string>("");
+
 // Current input being entered
 const [currentInput, setCurrentInput] = useState<string>("");
 
@@ -258,14 +265,14 @@ export const calculateExpression = async (
 -   **Operator Selection**:
 
     -   Trigger: Click operator button (+, -, ×, ÷)
-    -   Flow: If previous calculation exists, calculate it first. Store current value as previousValue, set operator, set waitingForOperand to true.
+    -   Flow: Append operator to the current equation. If previous calculation exists, calculate it first. Store current value as previousValue, set operator, set waitingForOperand to true. Update equation display.
     -   Error handling: N/A
 
 -   **Calculate (Equals)**:
 
     -   Trigger: Click equals button (=)
-    -   Flow: Build expression string from previousValue, operator, and currentInput. Call API mutation. Display result on success.
-    -   Error handling: Show error on display, reset operator and previousValue
+    -   Flow: Build expression string from the complete equation (of any length). Call API mutation with the full equation. Display result on success. Clear equation after calculation.
+    -   Error handling: Show error on display, reset operator, previousValue, and equation
 
 -   **Clear**:
 
@@ -334,7 +341,7 @@ export const calculateExpression = async (
 
 -   [ ] TanStack Query mutation setup for calculation
 -   [ ] API client function (`calculateExpression`)
--   [ ] Calculator state management (isOn, display, currentInput, operator, previousValue, waitingForOperand)
+-   [ ] Calculator state management (isOn, display, equation, currentInput, operator, previousValue, waitingForOperand)
 -   [ ] Error handling (all error codes from API_CONTRACT.md)
 -   [ ] Loading states (disable equals button during calculation)
 

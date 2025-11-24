@@ -1,3 +1,9 @@
+:root {
+  --terminal-green: #00ff88;
+  --terminal-cyan: #00ffff;
+  --blood-red: #dc143c;
+}
+
 .container {
   display: flex;
   height: 100vh;
@@ -53,6 +59,84 @@
   color: var(--pink-darker);
   font-family: "Comic Neue", cursive, sans-serif;
   text-shadow: 1px 1px 0 rgba(255, 105, 180, 0.3);
+  position: relative;
+  animation: titleGlow 3s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+  0%,
+  100% {
+    text-shadow: 1px 1px 0 rgba(255, 105, 180, 0.3),
+      0 0 10px rgba(255, 105, 180, 0.2);
+  }
+  50% {
+    text-shadow: 1px 1px 0 rgba(255, 105, 180, 0.3),
+      0 0 20px rgba(255, 105, 180, 0.4);
+  }
+}
+
+.sidebarTitle::before,
+.sidebarTitle::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.sidebarTitle::before {
+  color: var(--blood-red);
+  animation: glitch1 0.3s infinite alternate;
+  clip-path: polygon(0 0, 100% 0, 100% 48%, 0 48%);
+  opacity: 0.6;
+}
+
+.sidebarTitle::after {
+  color: var(--terminal-cyan);
+  animation: glitch2 0.35s infinite alternate-reverse;
+  clip-path: polygon(0 52%, 100% 52%, 100% 100%, 0 100%);
+  opacity: 0.5;
+}
+
+@keyframes glitch1 {
+  0%,
+  100% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px) skewX(-2deg);
+  }
+  40% {
+    transform: translate(-2px, -2px) skewY(1deg);
+  }
+  60% {
+    transform: translate(2px, 2px) scaleX(1.01);
+  }
+  80% {
+    transform: translate(2px, -2px) scaleY(0.99);
+  }
+}
+
+@keyframes glitch2 {
+  0%,
+  100% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(2px, -2px) scale(1.01);
+  }
+  40% {
+    transform: translate(-2px, 2px) scale(0.99);
+  }
+  60% {
+    transform: translate(-2px, -1px) skewY(-1deg);
+  }
+  80% {
+    transform: translate(2px, 2px) skewX(1deg);
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -76,6 +160,26 @@
   justify-content: center;
   transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   box-shadow: 0 0 10px rgba(255, 105, 180, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.addContactButton::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s, height 0.4s;
+}
+
+.addContactButton:hover::before {
+  width: 200%;
+  height: 200%;
 }
 
 .addContactButton:hover {
@@ -83,6 +187,26 @@
   border-color: var(--pink-darker);
   transform: scale(1.1) rotate(90deg);
   box-shadow: 0 0 20px rgba(255, 105, 180, 0.6);
+  animation: buttonHeartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes buttonHeartbeat {
+  0%,
+  100% {
+    transform: scale(1.1) rotate(90deg);
+  }
+  10% {
+    transform: scale(1.15) rotate(90deg);
+  }
+  20% {
+    transform: scale(1.1) rotate(90deg);
+  }
+  30% {
+    transform: scale(1.15) rotate(90deg);
+  }
+  40% {
+    transform: scale(1.1) rotate(90deg);
+  }
 }
 
 .contactForm {
@@ -237,8 +361,45 @@
   text-align: left;
   cursor: pointer;
   border-bottom: 1px solid rgba(255, 179, 222, 0.3);
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   position: relative;
+  animation: threadItemFadeIn 0.4s ease-out;
+  animation-fill-mode: both;
+}
+
+@keyframes threadItemFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.threadItem:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.threadItem:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.threadItem:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.threadItem:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.threadItem:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+.threadItem:nth-child(n + 6) {
+  animation-delay: 0.3s;
 }
 
 .threadItem::before {
@@ -255,6 +416,8 @@
 
 .threadItem:hover {
   background: linear-gradient(90deg, rgba(255, 105, 180, 0.1), transparent);
+  transform: translateX(5px);
+  box-shadow: -5px 0 15px rgba(255, 105, 180, 0.2);
 }
 
 .threadItem:hover::before {
@@ -366,6 +529,34 @@
   color: var(--pink-darker);
   font-family: "Comic Neue", cursive, sans-serif;
   text-shadow: 1px 1px 0 rgba(255, 105, 180, 0.3);
+  position: relative;
+  animation: titleGlow 3s ease-in-out infinite;
+}
+
+.headerTitle::before,
+.headerTitle::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.headerTitle::before {
+  color: var(--blood-red);
+  animation: glitch1 0.3s infinite alternate;
+  clip-path: polygon(0 0, 100% 0, 100% 48%, 0 48%);
+  opacity: 0.6;
+}
+
+.headerTitle::after {
+  color: var(--terminal-cyan);
+  animation: glitch2 0.35s infinite alternate-reverse;
+  clip-path: polygon(0 52%, 100% 52%, 100% 100%, 0 100%);
+  opacity: 0.5;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -526,6 +717,28 @@
   white-space: nowrap;
   font-family: "Comic Neue", cursive, sans-serif;
   box-shadow: 0 2px 10px rgba(255, 105, 180, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.sendButton::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.sendButton:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 .sendButton:hover:not(:disabled) {
@@ -552,6 +765,45 @@
   padding: 2rem;
   color: var(--pink-darker);
   font-family: "Comic Neue", cursive, sans-serif;
+  animation: emptyMainFadeIn 0.8s ease-out;
+  text-align: center;
+}
+
+@keyframes emptyMainFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.emptyMain::before {
+  content: "📱 (♡ >ω< ♡)";
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  display: block;
+  animation: emptyMainFloat 3s ease-in-out infinite;
+  opacity: 0.9;
+  line-height: 1.2;
+}
+
+.emptyMain p {
+  margin: 0;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+@keyframes emptyMainFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(2deg);
+  }
 }
 
 @media (prefers-color-scheme: dark) {

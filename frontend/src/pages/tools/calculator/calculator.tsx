@@ -19,16 +19,14 @@ export default function Calculator(): React.JSX.Element {
   const [isOn, setIsOn] = useState<boolean>(false);
   const [display, setDisplay] = useState<string>("0");
   const [currentInput, setCurrentInput] = useState<string>("");
-  const [operator, setOperator] = useState<string | null>(null);
-  const [previousValue, setPreviousValue] = useState<number | null>(null);
+  const [equation, setEquation] = useState<string>("");
   const [waitingForOperand, setWaitingForOperand] = useState<boolean>(false);
 
   // Refs to access latest state in keyboard handler
   const stateRef = useRef({
     isOn,
     currentInput,
-    operator,
-    previousValue,
+    equation,
     waitingForOperand,
   });
 
@@ -37,29 +35,27 @@ export default function Calculator(): React.JSX.Element {
     stateRef.current = {
       isOn,
       currentInput,
-      operator,
-      previousValue,
+      equation,
       waitingForOperand,
     };
-  }, [isOn, currentInput, operator, previousValue, waitingForOperand]);
+  }, [isOn, currentInput, equation, waitingForOperand]);
 
   const getEquation = useCallback((): string => {
-    if (previousValue !== null && operator) {
-      if (currentInput && !waitingForOperand) {
-        return `${String(previousValue)} ${operator} ${currentInput}`;
-      }
-      return `${String(previousValue)} ${operator}`;
+    if (equation === "") {
+      return "";
     }
-    return "";
-  }, [previousValue, operator, currentInput, waitingForOperand]);
+    if (currentInput && !waitingForOperand) {
+      return `${equation} ${currentInput}`;
+    }
+    return equation;
+  }, [equation, currentInput, waitingForOperand]);
 
   const calculateMutation = useMutation({
     mutationFn: calculateExpression,
     onSuccess: (data) => {
       setDisplay(data.result.toString());
       setCurrentInput(data.result.toString());
-      setPreviousValue(null);
-      setOperator(null);
+      setEquation("");
       setWaitingForOperand(true);
     },
     onError: (error: Error) => {
@@ -71,8 +67,7 @@ export default function Calculator(): React.JSX.Element {
       } else {
         setDisplay("Error");
       }
-      setPreviousValue(null);
-      setOperator(null);
+      setEquation("");
       setWaitingForOperand(true);
       setCurrentInput("");
     },
@@ -84,8 +79,7 @@ export default function Calculator(): React.JSX.Element {
       // Reset everything regardless of state
       setDisplay("0");
       setCurrentInput("");
-      setOperator(null);
-      setPreviousValue(null);
+      setEquation("");
       setWaitingForOperand(false);
       return newPowerState;
     });
@@ -126,41 +120,44 @@ export default function Calculator(): React.JSX.Element {
     (op: string): void => {
       if (!isOn) return;
 
-      const inputValue = Number.parseFloat(currentInput || "0");
+      const inputValue = currentInput || "0";
 
-      if (previousValue === null) {
-        setPreviousValue(inputValue);
-        setOperator(op);
+      if (equation === "") {
+        // First operator - start building equation
+        setEquation(`${inputValue} ${mapOperatorToSymbol(op)}`);
+        setCurrentInput("");
         setWaitingForOperand(true);
-      } else if (operator && !waitingForOperand) {
-        // Chain operations - calculate previous operation first
-        const expression = `${String(previousValue)} ${mapOperatorToSymbol(operator)} ${String(inputValue)}`;
-        calculateMutation.mutate(expression);
-        setOperator(op);
-        setWaitingForOperand(true);
+      } else if (waitingForOperand) {
+        // Just update the last operator
+        const parts = equation.trim().split(" ");
+        if (parts.length >= 2) {
+          parts[parts.length - 1] = mapOperatorToSymbol(op);
+          setEquation(parts.join(" "));
+        }
       } else {
-        // Just update the operator
-        setOperator(op);
+        // Append current input and new operator to equation
+        setEquation(`${equation} ${inputValue} ${mapOperatorToSymbol(op)}`);
+        setCurrentInput("");
+        setWaitingForOperand(true);
       }
     },
-    [isOn, currentInput, previousValue, operator, waitingForOperand, calculateMutation]
+    [isOn, currentInput, equation, waitingForOperand]
   );
 
   const handleEqualsClick = useCallback((): void => {
-    if (!isOn || !operator || previousValue === null) return;
+    if (!isOn || equation === "") return;
 
-    const inputValue = Number.parseFloat(currentInput || "0");
-    const expression = `${String(previousValue)} ${mapOperatorToSymbol(operator)} ${String(inputValue)}`;
+    const inputValue = currentInput || "0";
+    const expression = `${equation} ${inputValue}`;
     calculateMutation.mutate(expression);
-  }, [isOn, operator, previousValue, currentInput, calculateMutation]);
+  }, [isOn, equation, currentInput, calculateMutation]);
 
   const handleClearClick = useCallback((): void => {
     if (!isOn) return;
 
     setDisplay("0");
     setCurrentInput("");
-    setOperator(null);
-    setPreviousValue(null);
+    setEquation("");
     setWaitingForOperand(false);
   }, [isOn]);
 

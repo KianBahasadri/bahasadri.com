@@ -192,10 +192,26 @@ const [localStream, setLocalStream] = useState<MediaStream | null>(null);
 **Location**: `lib/api.ts`
 
 ```typescript
+// Types matching API contract
+interface ErrorResponse {
+    error: string;
+    code: "INVALID_INPUT" | "NOT_FOUND" | "INTERNAL_ERROR" | "REALTIMEKIT_ERROR";
+}
+
+interface GenerateTokenRequest {
+    meeting_id: string;
+    name?: string;
+    custom_participant_id?: string;
+    preset_name?: string;
+}
+
 // Get global room ID
 export const fetchGlobalRoom = async (): Promise<GlobalRoomResponse> => {
     const response = await fetch("/api/video-call/global-room");
-    if (!response.ok) throw new Error("Failed to fetch global room");
+    if (!response.ok) {
+        const error: ErrorResponse = await response.json();
+        throw new Error(error.error || "Failed to fetch global room");
+    }
     return response.json();
 };
 
@@ -210,7 +226,7 @@ export const createSession = async (
     });
 
     if (!response.ok) {
-        const error = await response.json();
+        const error: ErrorResponse = await response.json();
         throw new Error(error.error || "Failed to create session");
     }
 
@@ -246,28 +262,32 @@ export const generateToken = async (
 
 ### RealtimeKit SDK Integration
 
+The frontend uses the RealtimeKit SDK to join meetings. The authToken from the backend's generateToken endpoint is used to initialize the SDK:
+
 ```typescript
 import RealtimeKit from "@cloudflare/realtimekit";
 
-// Initialize SDK
+// Initialize SDK with authToken from backend
 const meeting = await RealtimeKit.init({
     accountId: config.accountId,
     appId: config.appId,
-    authToken: authToken, // From backend
+    authToken: authToken, // From generateToken API response
 });
 
-// Join meeting
+// Join meeting using the meeting_id from createSession
 await meeting.join(meetingId);
 
 // Handle events
 meeting.on("participantJoined", (participant) => {
-    // Add remote participant
+    // Add remote participant to state
 });
 
 meeting.on("participantLeft", (participantId) => {
-    // Remove participant
+    // Remove participant from state
 });
 ```
+
+**Note**: The authToken corresponds to RealtimeKit's "Add Participant" operation, which creates a participant entry and returns the token needed to join.
 
 ### Error Handling
 

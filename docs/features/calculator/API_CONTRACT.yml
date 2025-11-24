@@ -4,7 +4,7 @@ info:
     description: >-
         API contract document defining the interface between frontend and backend.
         This is the ONLY coupling point between frontend and backend.
-        A calculator API that evaluates basic arithmetic expressions. The frontend handles
+        A calculator API that evaluates arithmetic expressions of any length. The frontend handles
         the button-based UI and state management (on/off, display, input), while the backend
         performs the actual calculation when the user presses equals.
     version: 1.0.0
@@ -33,9 +33,10 @@ components:
                 expression:
                     type: string
                     description: >-
-                        String representation of the calculation, e.g., "2 + 3", "10 - 5",
-                        "4 * 7", "20 / 4".
-                    example: "2 + 3"
+                        String representation of the calculation. Supports equations of any length
+                        with multiple operations, e.g., "2 + 3", "10 - 5", "4 * 7", "20 / 4",
+                        "5 + 3 * 2 - 1", "10 / 2 + 5 * 3 - 1".
+                    example: "5 + 3 * 2 - 1"
 
         CalculateResponse:
             type: object
@@ -46,11 +47,11 @@ components:
                 result:
                     type: number
                     description: The calculated result.
-                    example: 5
+                    example: 10
                 expression:
                     type: string
                     description: The original expression that was evaluated.
-                    example: "2 + 3"
+                    example: "5 + 3 * 2 - 1"
 
         ErrorResponse:
             type: object
@@ -109,7 +110,8 @@ paths:
             operationId: calculateExpression
             summary: Evaluate arithmetic expression
             description: >-
-                Evaluates a basic arithmetic expression and returns the result.
+                Evaluates an arithmetic expression of any length and returns the result.
+                Supports multiple operations with proper operator precedence.
             tags:
                 - Calculator
             requestBody:

@@ -50,7 +50,10 @@ export function MessageArea({
       {activeCounterpart ? (
         <>
           <div className={styles["header"]}>
-            <h2 className={styles["headerTitle"]}>
+            <h2
+              className={styles["headerTitle"]}
+              data-text={getContactName(activeCounterpart)}
+            >
               {getContactName(activeCounterpart)}
             </h2>
             {activeCounterpart && !contacts.some((c) => c.phoneNumber === activeCounterpart) ? (

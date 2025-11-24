@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import smsMessengerRoutes from "./sms-messenger";
 import calculatorRoutes from "./calculator";
 import homeRoutes from "./home";
+import videoCallRoutes from "./video-call";
 
 const app = new Hono();
 
@@ -35,6 +36,7 @@ app.use(
 app.route("/api/sms-messenger", smsMessengerRoutes);
 app.route("/api/calculator", calculatorRoutes);
 app.route("/api/home", homeRoutes);
+app.route("/api/video-call", videoCallRoutes);
 
 // Health check
 app.get("/", (c) => c.json({ success: true, message: "bahasadri.com API" }));

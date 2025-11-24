@@ -203,8 +203,12 @@ All error responses must match the ErrorResponse schema from the API contract:
 
 ```typescript
 interface ErrorResponse {
-    error: string;  // Human-readable error message
-    code: "INVALID_INPUT" | "NOT_FOUND" | "INTERNAL_ERROR" | "REALTIMEKIT_ERROR";
+    error: string; // Human-readable error message
+    code:
+        | "INVALID_INPUT"
+        | "NOT_FOUND"
+        | "INTERNAL_ERROR"
+        | "REALTIMEKIT_ERROR";
 }
 
 try {
