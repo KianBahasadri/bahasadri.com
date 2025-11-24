@@ -1,0 +1,519 @@
+openapi: 3.1.0
+info:
+    title: File Hosting API
+    description: >-
+        API contract document defining the interface between frontend and backend.
+        This is the ONLY coupling point between frontend and backend.
+        A personal file hosting and sharing utility with automatic compression,
+        detailed access analytics, and WHOIS tracking. Users can upload files,
+        share them via public links, and view comprehensive analytics about file access.
+    version: 1.0.0
+    contact:
+        name: API Support
+servers:
+    - url: http://localhost:8787/api
+      description: Development
+    - url: https://bahasadri.com/api
+      description: Production
+
+tags:
+    - name: File Hosting
+      description: File hosting endpoints
+
+components:
+    # -------------------------------------------------------------------------
+    # SHARED MODELS
+    # -------------------------------------------------------------------------
+    schemas:
+        CompressionStatus:
+            type: string
+            enum: [pending, processing, done, failed]
+            description: Status of file compression
+
+        FileMetadata:
+            type: object
+            required:
+                - id
+                - name
+                - originalSize
+                - mimeType
+                - uploadTime
+                - compressionStatus
+                - originalUrl
+                - accessCount
+                - deleted
+                - isPublic
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                    description: Unique file identifier
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+                name:
+                    type: string
+                    description: Original filename
+                    example: "document.pdf"
+                originalSize:
+                    type: integer
+                    format: int64
+                    description: Original file size in bytes
+                    example: 1048576
+                compressedSize:
+                    type: integer
+                    format: int64
+                    nullable: true
+                    description: Compressed file size in bytes (if compression is done)
+                    example: 524288
+                mimeType:
+                    type: string
+                    description: MIME type of the file
+                    example: "application/pdf"
+                uploadTime:
+                    type: string
+                    format: date-time
+                    description: Upload timestamp
+                    example: "2023-10-27T10:00:00Z"
+                compressionStatus:
+                    $ref: "#/components/schemas/CompressionStatus"
+                originalUrl:
+                    type: string
+                    format: uri
+                    description: URL to download the original file
+                    example: "https://bahasadri.com/api/file-hosting/download/550e8400-e29b-41d4-a716-446655440000"
+                compressedUrl:
+                    type: string
+                    format: uri
+                    nullable: true
+                    description: URL to download the compressed file (if available)
+                    example: "https://bahasadri.com/api/file-hosting/download/550e8400-e29b-41d4-a716-446655440000?compressed=true"
+                compressionRatio:
+                    type: number
+                    format: float
+                    nullable: true
+                    description: Compression ratio (0-1, where lower is better compression)
+                    example: 0.5
+                accessCount:
+                    type: integer
+                    description: Number of times the file has been accessed
+                    example: 42
+                lastAccessed:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: Timestamp of last access
+                    example: "2023-10-27T15:30:00Z"
+                deleted:
+                    type: boolean
+                    description: Whether the file has been deleted
+                    example: false
+                isPublic:
+                    type: boolean
+                    description: Whether the file is publicly accessible via direct link
+                    example: true
+
+        AccessLogEntry:
+            type: object
+            required:
+                - id
+                - fileId
+                - ipAddress
+                - timestamp
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                    description: Unique log entry identifier
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+                fileId:
+                    type: string
+                    format: uuid
+                    description: Associated file ID
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+                ipAddress:
+                    type: string
+                    format: ipv4
+                    description: IP address of the requester
+                    example: "192.168.1.1"
+                timestamp:
+                    type: string
+                    format: date-time
+                    description: Access timestamp
+                    example: "2023-10-27T15:30:00Z"
+                userAgent:
+                    type: string
+                    nullable: true
+                    description: User agent string
+                    example: "Mozilla/5.0..."
+                referrer:
+                    type: string
+                    nullable: true
+                    description: HTTP referrer
+                    example: "https://example.com"
+                country:
+                    type: string
+                    nullable: true
+                    description: Country code from IP geolocation
+                    example: "US"
+                organization:
+                    type: string
+                    nullable: true
+                    description: Organization from WHOIS data
+                    example: "Example Corp"
+                asn:
+                    type: string
+                    nullable: true
+                    description: ASN from WHOIS data
+                    example: "AS12345"
+
+        UploadResponse:
+            type: object
+            required:
+                - fileId
+                - downloadUrl
+                - compressionStatus
+            properties:
+                fileId:
+                    type: string
+                    format: uuid
+                    description: Unique file identifier
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+                downloadUrl:
+                    type: string
+                    format: uri
+                    description: URL to download the file
+                    example: "https://bahasadri.com/api/file-hosting/download/550e8400-e29b-41d4-a716-446655440000"
+                compressionStatus:
+                    $ref: "#/components/schemas/CompressionStatus"
+
+        UploadFromUrlRequest:
+            type: object
+            required:
+                - url
+            properties:
+                url:
+                    type: string
+                    format: uri
+                    description: URL of the file to download and host
+                    example: "https://example.com/file.pdf"
+                isPublic:
+                    type: boolean
+                    description: "Whether the file should be publicly accessible (default: true)"
+                    example: true
+
+        FileListResponse:
+            type: object
+            required:
+                - files
+            properties:
+                files:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/FileMetadata"
+                nextCursor:
+                    type: string
+                    description: Pagination cursor for the next page
+                    example: "cursor_string"
+
+        AccessLogResponse:
+            type: object
+            required:
+                - entries
+            properties:
+                entries:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/AccessLogEntry"
+                nextCursor:
+                    type: string
+                    description: Pagination cursor for the next page
+                    example: "cursor_string"
+
+        ErrorResponse:
+            type: object
+            required:
+                - error
+            properties:
+                error:
+                    type: string
+                    description: Human-readable error message
+                    example: "Invalid file or missing file payload"
+
+    # ---------------------------------------------------------------------------
+    # STANDARD RESPONSES
+    # ---------------------------------------------------------------------------
+    responses:
+        BadRequest:
+            description: Invalid input provided (400).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        invalid_input:
+                            value:
+                                error: "Invalid file or missing required fields"
+
+        Forbidden:
+            description: Access denied (403).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        forbidden:
+                            value:
+                                error: "Private file accessed without UI access"
+
+        NotFound:
+            description: Resource not found (404).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        not_found:
+                            value:
+                                error: "File doesn't exist"
+
+        InternalError:
+            description: Server error (500).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        server_error:
+                            value:
+                                error: "Server error"
+
+paths:
+    # ---------------------------------------------------------------------------
+    # UPLOAD ENDPOINT
+    # ---------------------------------------------------------------------------
+    /file-hosting/upload:
+        post:
+            operationId: uploadFile
+            summary: Upload a file
+            description: >-
+                Upload a file to R2 storage and store metadata in D1.
+            tags:
+                - File Hosting
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            required:
+                                - file
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                                    description: The file to upload
+                                isPublic:
+                                    type: boolean
+                                    description: "Whether the file should be publicly accessible (default: true)"
+            responses:
+                "200":
+                    description: File uploaded successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/UploadResponse"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # UPLOAD FROM URL ENDPOINT
+    # ---------------------------------------------------------------------------
+    /file-hosting/upload-from-url:
+        post:
+            operationId: uploadFileFromUrl
+            summary: Upload a file from URL
+            description: >-
+                Download a file from a URL and host it in R2 storage, storing metadata in D1.
+            tags:
+                - File Hosting
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/UploadFromUrlRequest"
+            responses:
+                "200":
+                    description: File downloaded and hosted successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/UploadResponse"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # DOWNLOAD ENDPOINT
+    # ---------------------------------------------------------------------------
+    /file-hosting/download/{fileId}:
+        get:
+            operationId: downloadFile
+            summary: Download a hosted file
+            description: >-
+                Download a hosted file. Returns the file content as a binary stream.
+            tags:
+                - File Hosting
+            parameters:
+                - name: fileId
+                  in: path
+                  required: true
+                  description: File ID (UUID)
+                  schema:
+                      type: string
+                      format: uuid
+                      example: "550e8400-e29b-41d4-a716-446655440000"
+                - name: uiAccess
+                  in: query
+                  required: false
+                  description: Set to true when accessing from the UI
+                  schema:
+                      type: boolean
+                      example: true
+            responses:
+                "200":
+                    description: File found and returned.
+                    content:
+                        application/octet-stream:
+                            schema:
+                                type: string
+                                format: binary
+                    headers:
+                        Content-Disposition:
+                            schema:
+                                type: string
+                                description: Attachment with filename
+                                example: "attachment; filename=document.pdf"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # LIST FILES ENDPOINT
+    # ---------------------------------------------------------------------------
+    /file-hosting/files:
+        get:
+            operationId: listFiles
+            summary: List all uploaded files
+            description: >-
+                List all uploaded files with metadata.
+            tags:
+                - File Hosting
+            parameters:
+                - name: cursor
+                  in: query
+                  required: false
+                  description: Pagination cursor
+                  schema:
+                      type: string
+                - name: limit
+                  in: query
+                  required: false
+                  description: Number of files to return
+                  schema:
+                      type: integer
+                      minimum: 1
+            responses:
+                "200":
+                    description: Files retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/FileListResponse"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # GET FILE METADATA ENDPOINT
+    # ---------------------------------------------------------------------------
+    /file-hosting/files/{fileId}:
+        get:
+            operationId: getFileMetadata
+            summary: Get file metadata
+            description: >-
+                Get detailed metadata for a specific file.
+            tags:
+                - File Hosting
+            parameters:
+                - name: fileId
+                  in: path
+                  required: true
+                  description: File ID (UUID)
+                  schema:
+                      type: string
+                      format: uuid
+                      example: "550e8400-e29b-41d4-a716-446655440000"
+            responses:
+                "200":
+                    description: File found.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/FileMetadata"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # GET ACCESS LOGS ENDPOINT
+    # ---------------------------------------------------------------------------
+    /file-hosting/access-logs/{fileId}:
+        get:
+            operationId: getAccessLogs
+            summary: Get access logs for a file
+            description: >-
+                Get access logs for a specific file.
+            tags:
+                - File Hosting
+            parameters:
+                - name: fileId
+                  in: path
+                  required: true
+                  description: File ID (UUID)
+                  schema:
+                      type: string
+                      format: uuid
+                      example: "550e8400-e29b-41d4-a716-446655440000"
+                - name: cursor
+                  in: query
+                  required: false
+                  description: Pagination cursor
+                  schema:
+                      type: string
+                - name: limit
+                  in: query
+                  required: false
+                  description: Number of entries to return
+                  schema:
+                      type: integer
+                      minimum: 1
+            responses:
+                "200":
+                    description: Access logs retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/AccessLogResponse"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+

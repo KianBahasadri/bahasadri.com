@@ -1,0 +1,132 @@
+openapi: 3.1.0
+info:
+    title: Calculator API
+    description: >-
+        API contract document defining the interface between frontend and backend.
+        This is the ONLY coupling point between frontend and backend.
+        A calculator API that evaluates basic arithmetic expressions. The frontend handles
+        the button-based UI and state management (on/off, display, input), while the backend
+        performs the actual calculation when the user presses equals.
+    version: 1.0.0
+    contact:
+        name: API Support
+servers:
+    - url: http://localhost:8787/api
+      description: Development
+    - url: https://bahasadri.com/api
+      description: Production
+
+tags:
+    - name: Calculator
+      description: Calculator endpoints
+
+components:
+    # -------------------------------------------------------------------------
+    # SHARED MODELS
+    # -------------------------------------------------------------------------
+    schemas:
+        CalculateRequest:
+            type: object
+            required:
+                - expression
+            properties:
+                expression:
+                    type: string
+                    description: >-
+                        String representation of the calculation, e.g., "2 + 3", "10 - 5",
+                        "4 * 7", "20 / 4".
+                    example: "2 + 3"
+
+        CalculateResponse:
+            type: object
+            required:
+                - result
+                - expression
+            properties:
+                result:
+                    type: number
+                    description: The calculated result.
+                    example: 5
+                expression:
+                    type: string
+                    description: The original expression that was evaluated.
+                    example: "2 + 3"
+
+        ErrorResponse:
+            type: object
+            required:
+                - error
+                - code
+            properties:
+                error:
+                    type: string
+                    description: Human-readable error message.
+                    example: "Invalid expression format"
+                code:
+                    type: string
+                    enum: [INVALID_INPUT, DIVISION_BY_ZERO, INTERNAL_ERROR]
+                    description: Machine-readable error code.
+                    example: "INVALID_INPUT"
+
+    # ---------------------------------------------------------------------------
+    # STANDARD RESPONSES
+    # ---------------------------------------------------------------------------
+    responses:
+        BadRequest:
+            description: Invalid input provided (400).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        invalid_input:
+                            value:
+                                error: "Invalid expression format or syntax error"
+                                code: "INVALID_INPUT"
+                        division_by_zero:
+                            value:
+                                error: "Division by zero is not allowed"
+                                code: "DIVISION_BY_ZERO"
+
+        InternalError:
+            description: Server error (500).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        server_error:
+                            value:
+                                error: "Server error during expression evaluation"
+                                code: "INTERNAL_ERROR"
+
+paths:
+    # ---------------------------------------------------------------------------
+    # CALCULATE ENDPOINT
+    # ---------------------------------------------------------------------------
+    /calculator/calculate:
+        post:
+            operationId: calculateExpression
+            summary: Evaluate arithmetic expression
+            description: >-
+                Evaluates a basic arithmetic expression and returns the result.
+            tags:
+                - Calculator
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CalculateRequest"
+            responses:
+                "200":
+                    description: Calculation successful.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/CalculateResponse"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
