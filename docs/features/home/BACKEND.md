@@ -111,7 +111,7 @@ A static list of yandere-themed greetings to randomly select from:
 
 **Validation**:
 
--   Message: Non-empty string, reasonable length limit (e.g., 1000 characters)
+-   Message: Non-empty string
 
 **Response Body**:
 
@@ -120,7 +120,7 @@ A static list of yandere-themed greetings to randomly select from:
 **Processing Flow**:
 
 1. Parse and validate request body
-2. Validate message (non-empty, length limit)
+2. Validate message (non-empty)
 3. Use single global conversation ID (constant: "global")
 4. Retrieve conversation context from KV using global conversation ID
 5. If context doesn't exist:
@@ -339,7 +339,6 @@ Stay in character at all times.
 
 -   Message is required (non-empty string)
 -   Message must not be empty after trimming
--   Message length: max 1000 characters
 -   Type must be string
 
 **Conversation Session** (for chat endpoint):
@@ -372,7 +371,6 @@ Stay in character at all times.
 ### Input Sanitization
 
 -   Sanitize user messages to prevent injection attacks
--   Limit message length to prevent abuse (1000 chars)
 -   Consider rate limiting to prevent abuse (Cloudflare Workers rate limiting)
 
 ### Rate Limiting
@@ -434,7 +432,7 @@ Since this is a single-user app within free tier limits, basic rate limiting:
 
 ### Validation
 
--   [ ] Message validation (non-empty, length limit)
+-   [ ] Message validation (non-empty)
 -   [ ] ConversationId validation (UUID format)
 -   [ ] Error response formatting
 

@@ -366,16 +366,16 @@ export default function Home(): React.JSX.Element {
                 </div>
             </div>
 
-            {/* Chat Panel - Fixed position, conditionally rendered */}
-            {isChatOpen ? (
-                <div
-                    className={`${String(styles["chatSection"])} ${
-                        isChatClosing ? String(styles["chatClosing"]) : ""
-                    }`}
-                >
-                    <Chatbox onClose={handleCloseChat} />
-                </div>
-            ) : null}
+            {/* Chat Panel - Always rendered for smooth transitions */}
+            <div
+                className={`${String(styles["chatSection"])} ${
+                    isChatOpen ? String(styles["chatOpen"]) : ""
+                } ${
+                    isChatClosing ? String(styles["chatClosing"]) : ""
+                }`}
+            >
+                {isChatOpen && <Chatbox onClose={handleCloseChat} />}
+            </div>
             {/* Toggle button (only visible when chat closed) */}
             {!isChatOpen && (
                 <button

@@ -8,9 +8,6 @@ export function validateMessage(message: string): {
     if (message.trim().length === 0) {
         return { ok: false, error: "Message cannot be empty" };
     }
-    if (message.length > 1000) {
-        return { ok: false, error: "Message too long (max 1000 characters)" };
-    }
     return { ok: true };
 }
 

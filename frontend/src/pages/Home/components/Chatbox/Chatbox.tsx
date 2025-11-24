@@ -1,9 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-    sendChatMessage,
-    fetchConversationHistory,
-} from "../../../../lib/api";
+import { sendChatMessage, fetchConversationHistory } from "../../../../lib/api";
 import type { ChatMessage } from "../../../../types/home";
 import styles from "./Chatbox.module.css";
 
@@ -24,6 +21,18 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    const adjustTextareaHeight = (): void => {
+        const textarea = inputRef.current;
+        if (textarea) {
+            textarea.style.height = "auto";
+            const scrollHeight = textarea.scrollHeight;
+            const maxHeight = 400;
+            textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+            textarea.style.overflowY =
+                scrollHeight > maxHeight ? "auto" : "hidden";
+        }
+    };
+
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
@@ -31,6 +40,10 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
     useEffect(() => {
         inputRef.current?.focus();
     }, []);
+
+    useEffect(() => {
+        adjustTextareaHeight();
+    }, [messageInput]);
 
     const { data: historyData } = useQuery({
         queryKey: ["conversationHistory"],
@@ -89,6 +102,9 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
 
         setMessages((prev) => [...prev, userMessage]);
         setMessageInput("");
+        setTimeout(() => {
+            adjustTextareaHeight();
+        }, 0);
         chatMutation.mutate(trimmedMessage);
     };
 
@@ -157,8 +173,8 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
                     onChange={(e) => {
                         setMessageInput(e.target.value);
                     }}
-                    placeholder="Type a message..."
-                    rows={2}
+                    placeholder="Talk to me Admin-kun 💕"
+                    rows={1}
                     disabled={chatMutation.isPending}
                     onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
