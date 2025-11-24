@@ -1,7 +1,7 @@
 # Bahasadri.com 🎀💻
 
 ### TODO
-- finalize homepage, sms messenger, and calculator
+- finalize sms messenger, and calculator
 - turn the homepage into a cyebrpunk themed workshop where each utility is a different object in the workshop
 - add anime girl voice tts to yandere chat
 
@@ -24,9 +24,9 @@ These steps are in sequential order
 ### Finished Writing Design Documents
 
 ### Started Building
-- Homepage
 - SMS Messenger
 - Calculator
 
 ### Finished Building
+- Homepage
 - 

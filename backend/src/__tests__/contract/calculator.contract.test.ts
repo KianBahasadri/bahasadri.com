@@ -25,6 +25,6 @@ describe("calculator API Contract Tests", () => {
         });
         expect([200, 400, 500]).toContain(res.status);
         const formattedRes = await formatResponseForValidation(res, "/api/calculator/calculate", "POST");
-        expect(formattedRes).toSatisfyApiSpec();
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 });

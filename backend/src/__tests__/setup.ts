@@ -7,7 +7,6 @@ import type { KVNamespace } from "@cloudflare/workers-types";
 import type { Env } from "../types/env";
 
 declare global {
-    // eslint-disable-next-line no-var
     var ENV: Env;
 }
 

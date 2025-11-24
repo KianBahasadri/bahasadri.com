@@ -6,13 +6,13 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { toSatisfyApiSpec } from "vitest-openapi";
+import vitestOpenAPI from "vitest-openapi";
 import app from "../../index";
 import { loadOpenAPISpec } from "../helpers/load-openapi";
-
-expect.extend({ toSatisfyApiSpec });
+import { formatResponseForValidation } from "../helpers/format-response";
 
 const openapiSpec = loadOpenAPISpec("file-hosting");
+vitestOpenAPI(openapiSpec);
 
 describe("file-hosting API Contract Tests", () => {
 
@@ -24,7 +24,8 @@ describe("file-hosting API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/file-hosting/upload", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("uploadFileFromUrl satisfies OpenAPI spec", async () => {
@@ -35,7 +36,8 @@ describe("file-hosting API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/file-hosting/upload-from-url", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("downloadFile satisfies OpenAPI spec", async () => {
@@ -44,7 +46,8 @@ describe("file-hosting API Contract Tests", () => {
             method: "GET",
         });
         expect([200, 403, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/file-hosting/download/550e8400-e29b-41d4-a716-446655440000", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("listFiles satisfies OpenAPI spec", async () => {
@@ -53,7 +56,8 @@ describe("file-hosting API Contract Tests", () => {
             method: "GET",
         });
         expect([200, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/file-hosting/files", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("getFileMetadata satisfies OpenAPI spec", async () => {
@@ -62,7 +66,8 @@ describe("file-hosting API Contract Tests", () => {
             method: "GET",
         });
         expect([200, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/file-hosting/files/550e8400-e29b-41d4-a716-446655440000", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("getAccessLogs satisfies OpenAPI spec", async () => {
@@ -71,6 +76,7 @@ describe("file-hosting API Contract Tests", () => {
             method: "GET",
         });
         expect([200, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/file-hosting/access-logs/550e8400-e29b-41d4-a716-446655440000", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 });

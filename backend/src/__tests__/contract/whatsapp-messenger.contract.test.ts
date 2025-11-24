@@ -6,13 +6,13 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { toSatisfyApiSpec } from "vitest-openapi";
+import vitestOpenAPI from "vitest-openapi";
 import app from "../../index";
 import { loadOpenAPISpec } from "../helpers/load-openapi";
-
-expect.extend({ toSatisfyApiSpec });
+import { formatResponseForValidation } from "../helpers/format-response";
 
 const openapiSpec = loadOpenAPISpec("whatsapp-messenger");
+vitestOpenAPI(openapiSpec);
 
 describe("whatsapp-messenger API Contract Tests", () => {
 
@@ -24,7 +24,8 @@ describe("whatsapp-messenger API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 502]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/whatsapp-messenger/send", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("getMessages satisfies OpenAPI spec", async () => {
@@ -33,7 +34,8 @@ describe("whatsapp-messenger API Contract Tests", () => {
             method: "GET",
         });
         expect([200, 400, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/whatsapp-messenger/messages", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("getMessagesSince satisfies OpenAPI spec", async () => {
@@ -42,7 +44,8 @@ describe("whatsapp-messenger API Contract Tests", () => {
             method: "GET",
         });
         expect([200, 400, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/whatsapp-messenger/messages-since", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("getThreads satisfies OpenAPI spec", async () => {
@@ -51,7 +54,8 @@ describe("whatsapp-messenger API Contract Tests", () => {
             method: "GET",
         });
         expect([200, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/whatsapp-messenger/threads", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("getContacts satisfies OpenAPI spec", async () => {
@@ -60,7 +64,8 @@ describe("whatsapp-messenger API Contract Tests", () => {
             method: "GET",
         });
         expect([200, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/whatsapp-messenger/contacts", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("createContact satisfies OpenAPI spec", async () => {
@@ -71,7 +76,8 @@ describe("whatsapp-messenger API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/whatsapp-messenger/contacts", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("updateContact satisfies OpenAPI spec", async () => {
@@ -82,7 +88,8 @@ describe("whatsapp-messenger API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/whatsapp-messenger/contacts/550e8400-e29b-41d4-a716-446655440000", "PATCH");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("receiveWebhook satisfies OpenAPI spec", async () => {
@@ -93,6 +100,7 @@ describe("whatsapp-messenger API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 403, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/whatsapp-messenger/webhook", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 });

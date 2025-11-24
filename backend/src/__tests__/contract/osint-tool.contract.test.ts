@@ -24,8 +24,8 @@ describe("osint-tool API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 429, 500]).toContain(res.status);
-        const formattedRes = formatResponseForValidation(res, "/osint-tool/username-search");
-        expect(formattedRes).toSatisfyApiSpec();
+        const formattedRes = await formatResponseForValidation(res, "/api/osint-tool/username-search", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("lookupEmail satisfies OpenAPI spec", async () => {
@@ -36,8 +36,8 @@ describe("osint-tool API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 429, 500]).toContain(res.status);
-        const formattedRes = formatResponseForValidation(res, "/osint-tool/email-lookup");
-        expect(formattedRes).toSatisfyApiSpec();
+        const formattedRes = await formatResponseForValidation(res, "/api/osint-tool/email-lookup", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("getDomainInfo satisfies OpenAPI spec", async () => {
@@ -48,8 +48,8 @@ describe("osint-tool API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 404, 429, 500]).toContain(res.status);
-        const formattedRes = formatResponseForValidation(res, "/osint-tool/domain-info");
-        expect(formattedRes).toSatisfyApiSpec();
+        const formattedRes = await formatResponseForValidation(res, "/api/osint-tool/domain-info", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("checkBreach satisfies OpenAPI spec", async () => {
@@ -60,7 +60,7 @@ describe("osint-tool API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 429, 500]).toContain(res.status);
-        const formattedRes = formatResponseForValidation(res, "/osint-tool/breach-check");
-        expect(formattedRes).toSatisfyApiSpec();
+        const formattedRes = await formatResponseForValidation(res, "/api/osint-tool/breach-check", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 });

@@ -2,12 +2,15 @@
  * Helper to load OpenAPI YAML files in tests
  */
 
-import { readFileSync } from "fs";
-import { join } from "path";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { parse } from "yaml";
+import type { OpenAPIV3_1 } from "openapi-types";
 
-export function loadOpenAPISpec(featureName: string): unknown {
-    const specPath = join(
+type OpenAPISpecObject = OpenAPIV3_1.Document;
+
+export function loadOpenAPISpec(featureName: string): OpenAPISpecObject {
+    const specPath = path.join(
         process.cwd(),
         "..",
         "docs",
@@ -15,7 +18,6 @@ export function loadOpenAPISpec(featureName: string): unknown {
         featureName,
         "API_CONTRACT.yml"
     );
-    const yamlContent = readFileSync(specPath, "utf-8");
-    return parse(yamlContent);
+    const yamlContent = readFileSync(specPath, "utf8");
+    return parse(yamlContent) as OpenAPISpecObject;
 }
-

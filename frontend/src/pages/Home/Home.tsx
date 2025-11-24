@@ -40,6 +40,7 @@ const toolPopups: Record<string, ToolPopup> = {
 export default function Home(): React.JSX.Element {
     const audioContextRef = useRef<AudioContext | null>(null);
     const heartbeatIntervalRef = useRef<number | null>(null);
+    const hoveredCardRef = useRef<HTMLElement | null>(null);
     const [hoveredTool, setHoveredTool] = useState<string | null>(null);
     const [popupPosition, setPopupPosition] = useState<{
         x: number;
@@ -113,17 +114,35 @@ export default function Home(): React.JSX.Element {
         oscillator.stop(audioContext.currentTime + 0.15);
     };
 
-    const startHeartbeat = (): void => {
+    const startHeartbeat = (cardElement: HTMLElement): void => {
         if (heartbeatIntervalRef.current !== null) {
             return;
         }
 
+        hoveredCardRef.current = cardElement;
         playHeartbeatSound();
 
         heartbeatIntervalRef.current = globalThis.setInterval(() => {
+            const card = hoveredCardRef.current;
+            if (
+                card === null ||
+                !card.matches(":hover") ||
+                card.hasAttribute("disabled")
+            ) {
+                stopHeartbeat();
+                return;
+            }
+
             playHeartbeatSound();
             setTimeout(() => {
-                playHeartbeatSound();
+                const cardStillHovered = hoveredCardRef.current;
+                if (
+                    cardStillHovered !== null &&
+                    cardStillHovered.matches(":hover") &&
+                    !cardStillHovered.hasAttribute("disabled")
+                ) {
+                    playHeartbeatSound();
+                }
             }, 150);
         }, 1500);
     };
@@ -133,6 +152,7 @@ export default function Home(): React.JSX.Element {
             clearInterval(heartbeatIntervalRef.current);
             heartbeatIntervalRef.current = null;
         }
+        hoveredCardRef.current = null;
     };
 
     const handleCardHover = (
@@ -291,7 +311,7 @@ export default function Home(): React.JSX.Element {
                                     className={styles["cardMenhera"]}
                                     onMouseEnter={(e) => {
                                         handleCardHover("sms-messenger", e);
-                                        startHeartbeat();
+                                        startHeartbeat(e.currentTarget);
                                     }}
                                     onMouseLeave={() => {
                                         handleCardLeave();
@@ -311,7 +331,7 @@ export default function Home(): React.JSX.Element {
                                     className={styles["cardMenhera"]}
                                     onMouseEnter={(e) => {
                                         handleCardHover("calculator", e);
-                                        startHeartbeat();
+                                        startHeartbeat(e.currentTarget);
                                     }}
                                     onMouseLeave={() => {
                                         handleCardLeave();
@@ -370,11 +390,9 @@ export default function Home(): React.JSX.Element {
             <div
                 className={`${String(styles["chatSection"])} ${
                     isChatOpen ? String(styles["chatOpen"]) : ""
-                } ${
-                    isChatClosing ? String(styles["chatClosing"]) : ""
-                }`}
+                } ${isChatClosing ? String(styles["chatClosing"]) : ""}`}
             >
-                {isChatOpen && <Chatbox onClose={handleCloseChat} />}
+                {isChatOpen ? <Chatbox onClose={handleCloseChat} /> : null}
             </div>
             {/* Toggle button (only visible when chat closed) */}
             {!isChatOpen && (

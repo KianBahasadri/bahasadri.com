@@ -1,9 +1,9 @@
-/* eslint-disable no-console, unicorn/prefer-module */
+/* eslint-disable no-console */
 // Auto-generates contract tests from OpenAPI YAML files
 // Run: pnpm generate-tests
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { join, basename } from "node:path";
+import path from "node:path";
 import { parse } from "yaml";
 import { glob } from "glob";
 import type { OpenAPIV3_1 } from "openapi-types";
@@ -20,13 +20,21 @@ interface Endpoint {
     responses: string[];
 }
 
-const FEATURES_DIR = join(process.cwd(), "..", "docs", "features");
-const OUTPUT_DIR = join(process.cwd(), "src", "__tests__", "contract");
+const FEATURES_DIR = path.join(process.cwd(), "..", "docs", "features");
+const OUTPUT_DIR = path.join(process.cwd(), "src", "__tests__", "contract");
 
 function extractFeatureName(yamlPath: string): string {
     const parts = yamlPath.split("/");
     const featuresIndex = parts.indexOf("features");
     return parts[featuresIndex + 1] ?? "unknown";
+}
+
+function hasJsonContent(
+    requestBody: OpenAPIV3_1.RequestBodyObject
+): requestBody is OpenAPIV3_1.RequestBodyObject & {
+    content: { "application/json": OpenAPIV3_1.MediaTypeObject };
+} {
+    return "application/json" in requestBody.content;
 }
 
 function getPropertyValue(prop: OpenAPIV3_1.SchemaObject): unknown {
@@ -69,6 +77,9 @@ function extractRequestBodyExample(
 ): unknown {
     // Handle $ref references (would need to resolve, but for now skip)
     if ("$ref" in requestBody) {
+        return {};
+    }
+    if (!hasJsonContent(requestBody)) {
         return {};
     }
     const jsonContent = requestBody.content["application/json"];
@@ -313,14 +324,12 @@ function generateTestFile(featureName: string, endpoints: Endpoint[]): string {
 
             // Use toBeOneOf for status codes (vitest doesn't have this, so we'll use a helper)
             const statusCodes = endpoint.responses.join(", ");
-            // Use the full API path for validation (with /api prefix)
-            const apiPath = `/api${substitutedPath}`;
             return `
     it("${testName} satisfies OpenAPI spec", async () => {
         ${requestCode}
         expect([${statusCodes}]).toContain(res.status);
         const formattedRes = await formatResponseForValidation(res, "${apiPath}", "${endpoint.method}");
-        expect(formattedRes).toSatisfyApiSpec();
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });`;
         })
         .join("\n");
@@ -350,7 +359,7 @@ ${testCases}
 async function main(): Promise<void> {
     console.log("🔍 Scanning for OpenAPI specs...");
 
-    const yamlFiles = await glob(join(FEATURES_DIR, "*/API_CONTRACT.yml"));
+    const yamlFiles = await glob(path.join(FEATURES_DIR, "*/API_CONTRACT.yml"));
 
     if (yamlFiles.length === 0) {
         console.error("❌ No API_CONTRACT.yml files found in docs/features/");
@@ -386,7 +395,7 @@ async function main(): Promise<void> {
             }
 
             const testContent = generateTestFile(featureName, endpoints);
-            const outputPath = join(
+            const outputPath = path.join(
                 OUTPUT_DIR,
                 `${featureName}.contract.test.ts`
             );
@@ -395,7 +404,7 @@ async function main(): Promise<void> {
             console.log(
                 `  ✅ Generated ${String(
                     endpoints.length
-                )} test(s) → ${basename(outputPath)}`
+                )} test(s) → ${path.basename(outputPath)}`
             );
         } catch (error: unknown) {
             console.error(`  ❌ Error processing ${featureName}:`, error);
@@ -406,7 +415,8 @@ async function main(): Promise<void> {
     console.log(`📁 Test files written to: ${OUTPUT_DIR}`);
 }
 
-main().catch((error: unknown) => {
+// eslint-disable-next-line unicorn/prefer-top-level-await -- Top-level await not supported by tsx in this context
+void main().catch((error: unknown) => {
     console.error("Fatal error:", error);
     throw error;
 });

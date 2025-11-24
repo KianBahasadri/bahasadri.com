@@ -8,7 +8,7 @@ const CONTACT_PREFIX = "contact:";
 async function paginateKV<T>(
   kv: KVNamespace,
   prefix: string,
-  parseValue: (value: string) => T | null,
+  parseValue: (value: string) => T | undefined,
   filter?: (item: T) => boolean
 ): Promise<T[]> {
   const items: T[] = [];
@@ -26,7 +26,7 @@ async function paginateKV<T>(
       const value = await kv.get(key.name);
       if (value) {
         const item = parseValue(value);
-        if (item !== null && (filter === undefined || filter(item))) {
+        if (item !== undefined && (filter === undefined || filter(item))) {
           items.push(item);
         }
       }
@@ -98,11 +98,11 @@ export async function getMessages(
   };
 }
 
-function parseMessage(value: string): Message | null {
+function parseMessage(value: string): Message | undefined {
   try {
     return JSON.parse(value) as Message;
   } catch {
-    return null;
+    return undefined;
   }
 }
 
@@ -153,11 +153,11 @@ export async function updateThreadSummary(
   await kv.put(threadKey, JSON.stringify(threadSummary));
 }
 
-function parseThreadSummary(value: string): ThreadSummary | null {
+function parseThreadSummary(value: string): ThreadSummary | undefined {
   try {
     return JSON.parse(value) as ThreadSummary;
   } catch {
-    return null;
+    return undefined;
   }
 }
 
@@ -192,11 +192,11 @@ export async function getContact(
   }
 }
 
-function parseContact(value: string): Contact | null {
+function parseContact(value: string): Contact | undefined {
   try {
     return JSON.parse(value) as Contact;
   } catch {
-    return null;
+    return undefined;
   }
 }
 

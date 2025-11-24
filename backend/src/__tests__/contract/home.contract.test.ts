@@ -23,7 +23,17 @@ describe("home API Contract Tests", () => {
         });
         expect([200, 500]).toContain(res.status);
         const formattedRes = await formatResponseForValidation(res, "/api/home/welcome", "GET");
-        expect(formattedRes).toSatisfyApiSpec();
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
+    });
+
+    it("getConversationHistory satisfies OpenAPI spec", async () => {
+        
+        const res = await app.request("/api/home/chat", {
+            method: "GET",
+        });
+        expect([200, 500]).toContain(res.status);
+        const formattedRes = await formatResponseForValidation(res, "/api/home/chat", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("sendChatMessage satisfies OpenAPI spec", async () => {
@@ -35,6 +45,6 @@ describe("home API Contract Tests", () => {
         });
         expect([200, 400, 500]).toContain(res.status);
         const formattedRes = await formatResponseForValidation(res, "/api/home/chat", "POST");
-        expect(formattedRes).toSatisfyApiSpec();
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 });

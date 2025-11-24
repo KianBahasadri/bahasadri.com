@@ -6,13 +6,13 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { toSatisfyApiSpec } from "vitest-openapi";
+import vitestOpenAPI from "vitest-openapi";
 import app from "../../index";
 import { loadOpenAPISpec } from "../helpers/load-openapi";
-
-expect.extend({ toSatisfyApiSpec });
+import { formatResponseForValidation } from "../helpers/format-response";
 
 const openapiSpec = loadOpenAPISpec("file-encryptor");
+vitestOpenAPI(openapiSpec);
 
 describe("file-encryptor API Contract Tests", () => {
 
@@ -24,7 +24,8 @@ describe("file-encryptor API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 413, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/file-encryptor/upload-temp", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("downloadTempFile satisfies OpenAPI spec", async () => {
@@ -33,7 +34,8 @@ describe("file-encryptor API Contract Tests", () => {
             method: "GET",
         });
         expect([200, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/file-encryptor/download-temp/temp_550e8400-e29b-41d4-a716-446655440000", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("deleteTempFile satisfies OpenAPI spec", async () => {
@@ -42,6 +44,7 @@ describe("file-encryptor API Contract Tests", () => {
             method: "DELETE",
         });
         expect([200, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/file-encryptor/temp/temp_550e8400-e29b-41d4-a716-446655440000", "DELETE");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 });

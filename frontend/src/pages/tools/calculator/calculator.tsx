@@ -43,6 +43,16 @@ export default function Calculator(): React.JSX.Element {
     };
   }, [isOn, currentInput, operator, previousValue, waitingForOperand]);
 
+  const getEquation = useCallback((): string => {
+    if (previousValue !== null && operator) {
+      if (currentInput && !waitingForOperand) {
+        return `${String(previousValue)} ${operator} ${currentInput}`;
+      }
+      return `${String(previousValue)} ${operator}`;
+    }
+    return "";
+  }, [previousValue, operator, currentInput, waitingForOperand]);
+
   const calculateMutation = useMutation({
     mutationFn: calculateExpression,
     onSuccess: (data) => {
@@ -246,7 +256,7 @@ export default function Calculator(): React.JSX.Element {
       <div className={styles["screenBorder"]} />
 
       <div className={styles["container"]}>
-        <Display value={display} isOn={isOn} />
+        <Display value={display} equation={getEquation()} isOn={isOn} />
         <ButtonGrid
           isOn={isOn}
           onNumberClick={handleNumberClick}

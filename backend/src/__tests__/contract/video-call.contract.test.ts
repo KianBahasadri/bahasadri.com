@@ -6,13 +6,13 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { toSatisfyApiSpec } from "vitest-openapi";
+import vitestOpenAPI from "vitest-openapi";
 import app from "../../index";
 import { loadOpenAPISpec } from "../helpers/load-openapi";
-
-expect.extend({ toSatisfyApiSpec });
+import { formatResponseForValidation } from "../helpers/format-response";
 
 const openapiSpec = loadOpenAPISpec("video-call");
+vitestOpenAPI(openapiSpec);
 
 describe("video-call API Contract Tests", () => {
 
@@ -24,7 +24,8 @@ describe("video-call API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/session", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("getSessionDetails satisfies OpenAPI spec", async () => {
@@ -33,7 +34,8 @@ describe("video-call API Contract Tests", () => {
             method: "GET",
         });
         expect([200, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/session/session_550e8400-e29b-41d4-a716-446655440000", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("endSession satisfies OpenAPI spec", async () => {
@@ -42,7 +44,8 @@ describe("video-call API Contract Tests", () => {
             method: "DELETE",
         });
         expect([200, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/session/session_550e8400-e29b-41d4-a716-446655440000", "DELETE");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("generateParticipantToken satisfies OpenAPI spec", async () => {
@@ -53,7 +56,8 @@ describe("video-call API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/session/session_550e8400-e29b-41d4-a716-446655440000/participant-token", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("generateControlToken satisfies OpenAPI spec", async () => {
@@ -62,7 +66,8 @@ describe("video-call API Contract Tests", () => {
             method: "POST",
         });
         expect([200, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/session/session_550e8400-e29b-41d4-a716-446655440000/control-token", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("muteParticipant satisfies OpenAPI spec", async () => {
@@ -73,7 +78,8 @@ describe("video-call API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/session/session_550e8400-e29b-41d4-a716-446655440000/mute", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("unmuteParticipant satisfies OpenAPI spec", async () => {
@@ -84,7 +90,8 @@ describe("video-call API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/session/session_550e8400-e29b-41d4-a716-446655440000/unmute", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("getScreenShares satisfies OpenAPI spec", async () => {
@@ -93,7 +100,8 @@ describe("video-call API Contract Tests", () => {
             method: "GET",
         });
         expect([200, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/session/session_550e8400-e29b-41d4-a716-446655440000/screen-shares", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("uploadVideoFile satisfies OpenAPI spec", async () => {
@@ -104,7 +112,8 @@ describe("video-call API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 404, 413, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/session/session_550e8400-e29b-41d4-a716-446655440000/video-file", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
     it("getVideoFiles satisfies OpenAPI spec", async () => {
@@ -113,6 +122,7 @@ describe("video-call API Contract Tests", () => {
             method: "GET",
         });
         expect([200, 404, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/session/session_550e8400-e29b-41d4-a716-446655440000/video-files", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 });

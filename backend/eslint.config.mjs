@@ -19,6 +19,7 @@ export default [
             ".wrangler",
             "coverage",
             "eslint.config.mjs",
+            "vitest.config.ts",
         ],
     },
 

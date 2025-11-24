@@ -27,7 +27,9 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
             textarea.style.height = "auto";
             const scrollHeight = textarea.scrollHeight;
             const maxHeight = 400;
-            textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+            textarea.style.height = `${String(
+                Math.min(scrollHeight, maxHeight)
+            )}px`;
             textarea.style.overflowY =
                 scrollHeight > maxHeight ? "auto" : "hidden";
         }
