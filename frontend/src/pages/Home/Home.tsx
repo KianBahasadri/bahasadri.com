@@ -32,14 +32,16 @@ const toolPopups: Record<string, ToolPopup> = {
         ascii: "(o_O)",
     },
     "video-call": {
-        text: "Let's see each other~ Click me now! 📹💖",
+        text: "Click me, darling~ Let's see each other! 📹💖",
         ascii: "(〜￣▽￣)〜",
     },
 };
 
 export default function Home(): React.JSX.Element {
     const audioContextRef = useRef<AudioContext | null>(null);
-    const heartbeatIntervalRef = useRef<ReturnType<typeof globalThis.setInterval> | null>(null);
+    const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+        null
+    );
     const hoveredCardRef = useRef<HTMLElement | null>(null);
     const [hoveredTool, setHoveredTool] = useState<string | null>(null);
     const [popupPosition, setPopupPosition] = useState<{
@@ -122,7 +124,7 @@ export default function Home(): React.JSX.Element {
         hoveredCardRef.current = cardElement;
         playHeartbeatSound();
 
-        heartbeatIntervalRef.current = globalThis.setInterval(() => {
+        heartbeatIntervalRef.current = setInterval(() => {
             const card = hoveredCardRef.current;
             if (
                 card === null ||

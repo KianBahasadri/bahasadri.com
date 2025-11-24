@@ -3,7 +3,7 @@ import type { Participant } from "../../../../types/video-call";
 import styles from "./ParticipantGrid.module.css";
 
 interface ParticipantGridProps {
-    participants: Participant[];
+    readonly participants: Participant[];
 }
 
 export default function ParticipantGrid({
@@ -12,12 +12,12 @@ export default function ParticipantGrid({
     const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
 
     useEffect(() => {
-        participants.forEach((participant) => {
+        for (const participant of participants) {
             const videoElement = videoRefs.current.get(participant.id);
             if (videoElement && participant.stream) {
                 videoElement.srcObject = participant.stream;
             }
-        });
+        }
     }, [participants]);
 
     if (participants.length === 0) {
@@ -30,12 +30,19 @@ export default function ParticipantGrid({
         );
     }
 
-    const gridCols = participants.length === 1 ? 1 : participants.length <= 4 ? 2 : 3;
+    let gridCols: 1 | 2 | 3;
+    if (participants.length === 1) {
+        gridCols = 1;
+    } else if (participants.length <= 4) {
+        gridCols = 2;
+    } else {
+        gridCols = 3;
+    }
 
     return (
         <div
             className={styles["grid"]}
-            style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}
+            style={{ gridTemplateColumns: `repeat(${String(gridCols)}, 1fr)` }}
         >
             {participants.map((participant) => (
                 <div key={participant.id} className={styles["participant"]}>
@@ -54,10 +61,12 @@ export default function ParticipantGrid({
                         playsInline
                         muted={participant.id === "local"}
                         className={styles["video"]}
-                    />
+                    >
+                        <track kind="captions" />
+                    </video>
                     <div className={styles["overlay"]}>
                         <div className={styles["name"]}>
-                            {participant.name || `Participant ${participant.id}`}
+                            {participant.name ?? `Participant ${participant.id}`}
                         </div>
                         <div className={styles["indicators"]}>
                             {!participant.videoEnabled && (

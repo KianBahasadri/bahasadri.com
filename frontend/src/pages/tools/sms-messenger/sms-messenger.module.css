@@ -124,6 +124,34 @@
     }
 }
 
+/* Screen Border */
+.screenBorder {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1000;
+    border: 4px solid var(--pink-hot);
+    box-shadow: 0 0 0 2px var(--pink-primary), 0 0 60px rgba(255, 105, 180, 0.5),
+        inset 0 0 60px rgba(255, 105, 180, 0.2);
+    animation: borderGlow 3s ease-in-out infinite;
+}
+
+@keyframes borderGlow {
+    0%,
+    100% {
+        box-shadow: 0 0 0 2px var(--pink-primary),
+            0 0 60px rgba(255, 105, 180, 0.5),
+            inset 0 0 60px rgba(255, 105, 180, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 0 2px var(--pink-primary),
+            0 0 80px rgba(255, 105, 180, 0.7),
+            inset 0 0 80px rgba(255, 105, 180, 0.3);
+    }
+}
 
 @media (prefers-reduced-motion: reduce) {
     *,

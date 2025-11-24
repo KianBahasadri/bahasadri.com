@@ -46,9 +46,10 @@ export async function validateTwilioSignature(
     signature: string
 ): Promise<boolean> {
     // Create the signature string
+    // Twilio requires parameters in key=value format, sorted alphabetically
     const sortedParams = Object.keys(params)
         .toSorted((a, b) => a.localeCompare(b))
-        .map((key) => `${key}${params[key]}`)
+        .map((key) => `${key}=${params[key]}`)
         .join("");
 
     const signatureString = url + sortedParams;

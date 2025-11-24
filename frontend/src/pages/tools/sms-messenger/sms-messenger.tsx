@@ -28,6 +28,10 @@ export default function SMSMessenger(): React.JSX.Element {
 
     return (
         <>
+            {/* Terminal Scanline Background */}
+            <div className={styles["bgTerminal"]} />
+            <div className={styles["scanlines"]} />
+
             {/* Particle System */}
             <div className={styles["particles"]}>
                 {Array.from({ length: 20 }, (_, i) => {

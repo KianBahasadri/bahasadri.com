@@ -8,7 +8,7 @@ import Controls from "../Controls/Controls";
 import styles from "./VideoRoom.module.css";
 
 interface VideoRoomProps {
-    participantName?: string;
+    readonly participantName?: string;
 }
 
 export default function VideoRoom({
@@ -27,14 +27,14 @@ export default function VideoRoom({
     const localAudioTrackRef = useRef<MediaStreamTrack | null>(null);
 
     const createSessionMutation = useMutation({
-        mutationFn: (_?: string) => createSession(_),
+        mutationFn: async (_?: string) => await createSession(_),
     });
 
     const generateTokenMutation = useMutation({
-        mutationFn: (params: {
+        mutationFn: async (params: {
             meetingId: string;
             name?: string;
-        }) => generateToken(params.meetingId, params.name),
+        }) => await generateToken(params.meetingId, params.name),
     });
 
     const getRealtimeKitConfig = useCallback(() => {
@@ -57,10 +57,10 @@ export default function VideoRoom({
                 audio: audioEnabled,
             });
             return stream;
-        } catch (err) {
+        } catch (error_) {
             const errorMessage =
-                err instanceof Error
-                    ? err.message
+                error_ instanceof Error
+                    ? error_.message
                     : "Failed to access camera/microphone";
             throw new Error(
                 `Permission denied: ${errorMessage}. Please allow camera and microphone access.`
@@ -78,10 +78,118 @@ export default function VideoRoom({
             localAudioTrackRef.current = null;
         }
         if (localStream) {
-            localStream.getTracks().forEach((track) => track.stop());
+            for (const track of localStream.getTracks()) {
+                track.stop();
+            }
             setLocalStream(null);
         }
     }, [localStream]);
+
+    const addParticipant = useCallback((remoteParticipant: Participant): void => {
+        setParticipants((prev) => {
+            if (prev.some((prevP) => prevP.id === remoteParticipant.id)) {
+                return prev;
+            }
+            return [...prev, remoteParticipant];
+        });
+    }, []);
+
+    const removeParticipant = useCallback((id: string): void => {
+        setParticipants((prev) => prev.filter((p) => p.id !== id));
+    }, []);
+
+    const setupEventHandlers = useCallback(
+        (
+            client: {
+                on?: (event: string, handler: (...args: unknown[]) => void) => void;
+                addEventListener?: (event: string, handler: (e: Event) => void) => void;
+            }
+        ): void => {
+            const handleParticipantJoined = (participant: unknown): void => {
+                const p = participant as {
+                    id?: string;
+                    name?: string;
+                    videoTrack?: MediaStreamTrack;
+                    audioTrack?: MediaStreamTrack;
+                };
+                const participantId = p.id ?? `participant-${String(Date.now())}`;
+                const remoteParticipant: Participant = {
+                    id: participantId,
+                    name: p.name ?? "Participant",
+                    videoEnabled: true,
+                    audioEnabled: true,
+                };
+
+                if (p.videoTrack) {
+                    const tracks: MediaStreamTrack[] = [p.videoTrack];
+                    const remoteStream = new MediaStream(tracks);
+                    if (p.audioTrack) {
+                        remoteStream.addTrack(p.audioTrack);
+                    }
+                    remoteParticipant.stream = remoteStream;
+                }
+
+                addParticipant(remoteParticipant);
+            };
+
+            const handleParticipantLeft = (participantId: unknown): void => {
+                const id = typeof participantId === "string" ? participantId : String(participantId);
+                removeParticipant(id);
+            };
+
+            const handleError = (err: unknown): void => {
+                setError(`Meeting error: ${String(err)}`);
+                setRoomState("error");
+            };
+
+            if (client.on) {
+                client.on("participantJoined", handleParticipantJoined);
+                client.on("participantLeft", handleParticipantLeft);
+                client.on("error", handleError);
+            } else if (client.addEventListener) {
+                const handleJoinedEvent = (e: Event): void => {
+                    const detail = (e as { detail?: unknown }).detail;
+                    handleParticipantJoined(detail ?? e);
+                };
+                const handleLeftEvent = (e: Event): void => {
+                    const detail = (e as { detail?: unknown }).detail;
+                    handleParticipantLeft(detail ?? e);
+                };
+                const handleErrorEvent = (e: Event): void => {
+                    const detail = (e as { detail?: unknown }).detail;
+                    handleError(detail ?? e);
+                };
+                client.addEventListener("participantJoined", handleJoinedEvent);
+                client.addEventListener("participantLeft", handleLeftEvent);
+                client.addEventListener("error", handleErrorEvent);
+            }
+        },
+        [addParticipant, removeParticipant]
+    );
+
+    const initializeMediaStream = useCallback(async (): Promise<MediaStream> => {
+        const stream = await requestMediaPermissions();
+        setLocalStream(stream);
+
+        const videoTrack = stream.getVideoTracks()[0];
+        const audioTrack = stream.getAudioTracks()[0];
+        if (videoTrack) localVideoTrackRef.current = videoTrack;
+        if (audioTrack) localAudioTrackRef.current = audioTrack;
+
+        return stream;
+    }, [requestMediaPermissions]);
+
+    const joinMeetingClient = useCallback(
+        async (client: { join: (meetingId?: string) => Promise<void> | void }, meetingId: string): Promise<void> => {
+            if (typeof client.join === "function") {
+                const joinResult = client.join(meetingId);
+                if (joinResult instanceof Promise) {
+                    await joinResult;
+                }
+            }
+        },
+        []
+    );
 
     const handleJoinMeeting = useCallback(
         async (targetMeetingId: string) => {
@@ -89,13 +197,9 @@ export default function VideoRoom({
                 setRoomState("connecting");
                 setError(null);
 
-                const stream = await requestMediaPermissions();
-                setLocalStream(stream);
-
+                const stream = await initializeMediaStream();
                 const videoTrack = stream.getVideoTracks()[0];
                 const audioTrack = stream.getAudioTracks()[0];
-                if (videoTrack) localVideoTrackRef.current = videoTrack;
-                if (audioTrack) localAudioTrackRef.current = audioTrack;
 
                 const tokenResponse = await generateTokenMutation.mutateAsync({
                     meetingId: targetMeetingId,
@@ -103,112 +207,56 @@ export default function VideoRoom({
                 });
 
                 const config = getRealtimeKitConfig();
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const meeting = (RealtimeKit as any).init({
+                const meeting = (RealtimeKit as {
+                    init: (config: {
+                        accountId: string;
+                        appId: string;
+                        authToken: string;
+                    }) => Promise<object> | object;
+                }).init({
                     accountId: config.accountId,
                     appId: config.appId,
                     authToken: tokenResponse.auth_token,
-                }) as Promise<unknown> | unknown;
+                });
 
                 const meetingClient = meeting instanceof Promise ? await meeting : meeting;
                 meetingRef.current = meetingClient;
 
-                if (typeof meetingClient === "object" && meetingClient !== null) {
-                    const client = meetingClient as { join: (meetingId?: string) => Promise<void> | void };
-                    if (typeof client.join === "function") {
-                        const joinResult = client.join(targetMeetingId);
-                        if (joinResult instanceof Promise) {
-                            await joinResult;
-                        }
-                    }
-                }
+                const client = meetingClient as { join: (meetingId?: string) => Promise<void> | void };
+                await joinMeetingClient(client, targetMeetingId);
 
                 const localParticipant: Participant = {
                     id: "local",
-                    name: participantName || "You",
-                    videoEnabled: !!videoTrack && videoTrack.enabled,
-                    audioEnabled: !!audioTrack && audioTrack.enabled,
+                    name: participantName ?? "You",
+                    videoEnabled: videoTrack?.enabled ?? false,
+                    audioEnabled: audioTrack?.enabled ?? false,
                     stream,
                 };
 
                 setParticipants([localParticipant]);
                 setRoomState("connected");
 
-                if (typeof meetingClient === "object" && meetingClient !== null) {
-                    const client = meetingClient as {
-                        on?: (event: string, handler: (...args: unknown[]) => void) => void;
-                        addEventListener?: (event: string, handler: (e: Event) => void) => void;
-                    };
-
-                    const handleParticipantJoined = (participant: unknown): void => {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const p = participant as any;
-                        const remoteParticipant: Participant = {
-                            id: p?.id || `participant-${Date.now()}`,
-                            name: p?.name || `Participant`,
-                            videoEnabled: true,
-                            audioEnabled: true,
-                        };
-
-                        if (p?.videoTrack) {
-                            const remoteStream = new MediaStream([p.videoTrack]);
-                            if (p?.audioTrack) {
-                                remoteStream.addTrack(p.audioTrack);
-                            }
-                            remoteParticipant.stream = remoteStream;
-                        }
-
-                        setParticipants((prev) => {
-                            if (prev.some((prevP) => prevP.id === remoteParticipant.id)) {
-                                return prev;
-                            }
-                            return [...prev, remoteParticipant];
-                        });
-                    };
-
-                    const handleParticipantLeft = (participantId: unknown): void => {
-                        const id = typeof participantId === "string" ? participantId : String(participantId);
-                        setParticipants((prev) => prev.filter((p) => p.id !== id));
-                    };
-
-                    const handleError = (err: unknown): void => {
-                        setError(`Meeting error: ${String(err)}`);
-                        setRoomState("error");
-                    };
-
-                    if (client.on) {
-                        client.on("participantJoined", handleParticipantJoined);
-                        client.on("participantLeft", handleParticipantLeft);
-                        client.on("error", handleError);
-                    } else if (client.addEventListener) {
-                        client.addEventListener("participantJoined", (e: Event) => {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            handleParticipantJoined((e as any).detail || e);
-                        });
-                        client.addEventListener("participantLeft", (e: Event) => {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            handleParticipantLeft((e as any).detail || e);
-                        });
-                        client.addEventListener("error", (e: Event) => {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            handleError((e as any).detail || e);
-                        });
-                    }
-                }
-            } catch (err) {
+                const eventClient = meetingClient as {
+                    on?: (event: string, handler: (...args: unknown[]) => void) => void;
+                    addEventListener?: (event: string, handler: (e: Event) => void) => void;
+                };
+                setupEventHandlers(eventClient);
+            } catch (error_) {
                 cleanupMedia();
                 const errorMessage =
-                    err instanceof Error ? err.message : "Failed to join meeting";
+                    error_ instanceof Error ? error_.message : "Failed to join meeting";
                 setError(errorMessage);
                 setRoomState("error");
             }
         },
         [
             participantName,
-            requestMediaPermissions,
+            initializeMediaStream,
             generateTokenMutation,
             getRealtimeKitConfig,
+            joinMeetingClient,
             cleanupMedia,
+            setupEventHandlers,
         ]
     );
 
@@ -219,9 +267,9 @@ export default function VideoRoom({
 
             const sessionResponse = await createSessionMutation.mutateAsync(undefined);
             await handleJoinMeeting(sessionResponse.meeting_id);
-        } catch (err) {
+        } catch (error_) {
             const errorMessage =
-                err instanceof Error ? err.message : "Failed to create call";
+                error_ instanceof Error ? error_.message : "Failed to create call";
             setError(errorMessage);
             setRoomState("error");
         }
@@ -257,7 +305,6 @@ export default function VideoRoom({
 
     const handleLeave = useCallback(() => {
         if (meetingRef.current) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const client = meetingRef.current as { leave?: () => void | Promise<void> };
             if (typeof client.leave === "function") {
                 const result = client.leave();
@@ -276,7 +323,7 @@ export default function VideoRoom({
     }, [cleanupMedia]);
 
     useEffect(() => {
-        return () => {
+        return (): void => {
             handleLeave();
         };
     }, [handleLeave]);
@@ -294,14 +341,16 @@ export default function VideoRoom({
                     <button
                         type="button"
                         className={styles["createButton"]}
-                        onClick={handleCreateCall}
+                        onClick={() => {
+                            void handleCreateCall();
+                        }}
                         disabled={createSessionMutation.isPending}
                     >
                         {createSessionMutation.isPending
                             ? "Connecting..."
                             : "Create New Call"}
                     </button>
-                    {error && <div className={styles["error"]}>{error}</div>}
+                    {error === null ? null : <div className={styles["error"]}>{error}</div>}
                 </div>
             </div>
         );
@@ -323,11 +372,13 @@ export default function VideoRoom({
             <div className={styles["container"]}>
                 <div className={styles["errorState"]}>
                     <h2 className={styles["errorTitle"]}>Connection Error 💔</h2>
-                    <p className={styles["errorMessage"]}>{error || "Unknown error"}</p>
+                    <p className={styles["errorMessage"]}>{error ?? "Unknown error"}</p>
                     <button
                         type="button"
                         className={styles["retryButton"]}
-                        onClick={handleCreateCall}
+                        onClick={() => {
+                            void handleCreateCall();
+                        }}
                     >
                         Retry
                     </button>

@@ -2,7 +2,7 @@ import type { KVNamespace } from "@cloudflare/workers-types";
 import type { ConversationContext } from "../types";
 
 const CONVERSATION_PREFIX = "conversation:";
-const TTL_SECONDS = 3600; // 1 hour
+const TTL_SECONDS = 10800; // 3 hours
 
 export function getConversationKey(conversationId: string): string {
     return `${CONVERSATION_PREFIX}${conversationId}`;

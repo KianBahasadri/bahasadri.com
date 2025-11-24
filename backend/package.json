@@ -8,6 +8,7 @@
         "lint": "eslint .",
         "typecheck": "tsc --noEmit",
         "generate-tests": "tsx scripts/generate-tests.ts",
+        "upload-secrets": "tsx scripts/upload-secrets.ts",
         "test": "vitest run",
         "test:watch": "vitest"
     },
