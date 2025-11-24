@@ -16,7 +16,7 @@ export function useMessagePolling(
 ): UseMessagePollingResult {
   const [pollCounter, setPollCounter] = useState(0);
   const [lastPollTimestamp, setLastPollTimestamp] = useState(Date.now());
-  const pollIntervalRef = useRef<number | undefined>(undefined);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   const pollForUpdates = useCallback(async () => {
     if (pollCounter >= POLL_MAX_ATTEMPTS) {

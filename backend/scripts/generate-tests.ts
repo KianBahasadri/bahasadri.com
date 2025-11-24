@@ -20,8 +20,26 @@ interface Endpoint {
     responses: string[];
 }
 
-const FEATURES_DIR = path.join(process.cwd(), "..", "docs", "features");
-const OUTPUT_DIR = path.join(process.cwd(), "src", "__tests__", "contract");
+const FEATURES_DIR = path.resolve(
+    path.join(process.cwd(), "..", "docs", "features")
+);
+const OUTPUT_DIR = path.resolve(
+    path.join(process.cwd(), "src", "__tests__", "contract")
+);
+
+function validatePathWithinDirectory(
+    filePath: string,
+    allowedDir: string
+): string {
+    const resolvedPath = path.resolve(filePath);
+    const resolvedDir = path.resolve(allowedDir);
+    if (!resolvedPath.startsWith(resolvedDir)) {
+        throw new Error(
+            `Path ${resolvedPath} is not within allowed directory ${resolvedDir}`
+        );
+    }
+    return resolvedPath;
+}
 
 function extractFeatureName(yamlPath: string): string {
     const parts = yamlPath.split("/");
@@ -378,7 +396,11 @@ async function main(): Promise<void> {
         console.log(`📝 Processing ${featureName}...`);
 
         try {
-            const yamlContent = readFileSync(yamlPath, "utf8");
+            const validatedYamlPath = validatePathWithinDirectory(
+                yamlPath,
+                FEATURES_DIR
+            );
+            const yamlContent = readFileSync(validatedYamlPath, "utf8");
             const spec = parse(yamlContent) as OpenAPISpec;
 
             if (!spec.paths) {
@@ -399,7 +421,11 @@ async function main(): Promise<void> {
                 OUTPUT_DIR,
                 `${featureName}.contract.test.ts`
             );
-            writeFileSync(outputPath, testContent, "utf8");
+            const validatedOutputPath = validatePathWithinDirectory(
+                outputPath,
+                OUTPUT_DIR
+            );
+            writeFileSync(validatedOutputPath, testContent, "utf8");
 
             console.log(
                 `  ✅ Generated ${String(
@@ -415,7 +441,6 @@ async function main(): Promise<void> {
     console.log(`📁 Test files written to: ${OUTPUT_DIR}`);
 }
 
-// eslint-disable-next-line unicorn/prefer-top-level-await -- Top-level await not supported by tsx in this context
 void main().catch((error: unknown) => {
     console.error("Fatal error:", error);
     throw error;

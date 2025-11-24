@@ -109,4 +109,12 @@ export default [
             "security/detect-object-injection": "off",
         },
     },
+    {
+        // Scripts need to use promise chains due to tsx CJS limitation
+        files: ["scripts/**/*.ts"],
+        rules: {
+            "unicorn/prefer-top-level-await": "off",
+            "security/detect-non-literal-fs-filename": "off",
+        },
+    },
 ];

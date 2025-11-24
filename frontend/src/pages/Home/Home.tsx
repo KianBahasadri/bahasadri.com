@@ -39,7 +39,9 @@ const toolPopups: Record<string, ToolPopup> = {
 
 export default function Home(): React.JSX.Element {
     const audioContextRef = useRef<AudioContext | null>(null);
-    const heartbeatIntervalRef = useRef<number | null>(null);
+    const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+        null
+    );
     const hoveredCardRef = useRef<HTMLElement | null>(null);
     const [hoveredTool, setHoveredTool] = useState<string | null>(null);
     const [popupPosition, setPopupPosition] = useState<{

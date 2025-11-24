@@ -200,7 +200,7 @@ export const fetchGlobalRoom = async (): Promise<GlobalRoomResponse> => {
         const error: VideoCallErrorResponse = await response.json();
         throw new Error(error.error || "Failed to fetch global room");
     }
-    return response.json();
+    return response.json() as Promise<GlobalRoomResponse>;
 };
 
 export const createSession = async (
@@ -221,7 +221,7 @@ export const createSession = async (
         throw new Error(error.error || "Failed to create session");
     }
 
-    return response.json();
+    return response.json() as Promise<CreateSessionResponse>;
 };
 
 export const generateToken = async (
@@ -253,5 +253,5 @@ export const generateToken = async (
         throw new Error(error.error || "Failed to generate token");
     }
 
-    return response.json();
+    return response.json() as Promise<GenerateTokenResponse>;
 };

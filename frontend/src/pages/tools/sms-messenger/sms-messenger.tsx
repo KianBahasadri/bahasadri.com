@@ -56,36 +56,42 @@ export default function SMSMessenger(): React.JSX.Element {
         }
 
         let charIndex = 0;
-        const typingInterval = setInterval(() => {
+        const updateTerminalText = (prev: string): string => {
+            const lines = prev === "" ? [] : prev.split("\n");
+            while (lines.length <= currentLineIndex) {
+                lines.push("");
+            }
+            lines[currentLineIndex] = line.slice(0, charIndex + 1);
+            return lines.join("\n");
+        };
+
+        const handleTyping = (): void => {
             if (charIndex < line.length) {
-                setTerminalText((prev) => {
-                    const lines = prev === "" ? [] : prev.split("\n");
-                    while (lines.length <= currentLineIndex) {
-                        lines.push("");
-                    }
-                    lines[currentLineIndex] = line.slice(0, charIndex + 1);
-                    return lines.join("\n");
-                });
+                setTerminalText(updateTerminalText);
                 charIndex++;
             } else {
                 clearInterval(typingInterval);
-                setTimeout(() => {
-                    setCurrentLineIndex((prev) => prev + 1);
-                }, 500);
+                const nextIndex = currentLineIndex + 1;
+                const advanceLine = (): void => {
+                    setCurrentLineIndex(nextIndex);
+                };
+                setTimeout(advanceLine, 500);
             }
-        }, 50);
+        };
 
-        return () => {
+        const typingInterval = setInterval(handleTyping, 50);
+
+        return (): void => {
             clearInterval(typingInterval);
         };
-    }, [currentLineIndex]);
+    }, [currentLineIndex, isTerminalFinished]);
 
     useEffect(() => {
         const cursorInterval = setInterval(() => {
             setShowCursor((prev) => !prev);
         }, 530);
 
-        return () => {
+        return (): void => {
             clearInterval(cursorInterval);
         };
     }, []);
@@ -97,10 +103,10 @@ export default function SMSMessenger(): React.JSX.Element {
             <div className={styles["scanlines"]} />
 
             {/* Terminal Lines */}
-            {!shouldHideTerminal ? (
+            {shouldHideTerminal ? null : (
                 <div
-                    className={`${styles["terminalLines"]} ${
-                        isTerminalFinished ? styles["fadeOut"] : ""
+                    className={`${String(styles["terminalLines"])} ${
+                        isTerminalFinished ? String(styles["fadeOut"]) : ""
                     }`}
                 >
                     <pre className={styles["terminalText"]}>
@@ -111,7 +117,7 @@ export default function SMSMessenger(): React.JSX.Element {
                         ) : null}
                     </pre>
                 </div>
-            ) : null}
+            )}
 
             {/* Particle System */}
             <div className={styles["particles"]}>

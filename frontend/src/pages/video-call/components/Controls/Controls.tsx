@@ -2,11 +2,11 @@ import React from "react";
 import styles from "./Controls.module.css";
 
 interface ControlsProps {
-    videoEnabled: boolean;
-    audioEnabled: boolean;
-    onToggleVideo: () => void;
-    onToggleAudio: () => void;
-    onLeave: () => void;
+    readonly videoEnabled: boolean;
+    readonly audioEnabled: boolean;
+    readonly onToggleVideo: () => void;
+    readonly onToggleAudio: () => void;
+    readonly onLeave: () => void;
 }
 
 export default function Controls({
@@ -20,8 +20,8 @@ export default function Controls({
         <div className={styles["controls"]}>
             <button
                 type="button"
-                className={`${styles["button"]} ${styles["videoButton"]} ${
-                    !videoEnabled ? styles["disabled"] : ""
+                className={`${String(styles["button"])} ${String(styles["videoButton"])} ${
+                    videoEnabled ? "" : String(styles["disabled"])
                 }`}
                 onClick={onToggleVideo}
                 aria-label={videoEnabled ? "Turn off camera" : "Turn on camera"}
@@ -30,8 +30,8 @@ export default function Controls({
             </button>
             <button
                 type="button"
-                className={`${styles["button"]} ${styles["audioButton"]} ${
-                    !audioEnabled ? styles["disabled"] : ""
+                className={`${String(styles["button"])} ${String(styles["audioButton"])} ${
+                    audioEnabled ? "" : String(styles["disabled"])
                 }`}
                 onClick={onToggleAudio}
                 aria-label={audioEnabled ? "Mute microphone" : "Unmute microphone"}
@@ -40,7 +40,7 @@ export default function Controls({
             </button>
             <button
                 type="button"
-                className={`${styles["button"]} ${styles["leaveButton"]}`}
+                className={`${String(styles["button"])} ${String(styles["leaveButton"])}`}
                 onClick={onLeave}
                 aria-label="Leave call"
             >
