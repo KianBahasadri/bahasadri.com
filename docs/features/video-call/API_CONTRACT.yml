@@ -1,0 +1,240 @@
+openapi: 3.1.0
+info:
+    title: Video Call API
+    description: >-
+        API contract document defining the interface between frontend and backend.
+        This is the ONLY coupling point between frontend and backend.
+        Video call utility using Cloudflare RealtimeKit. Allows users to create
+        meetings and generate participant authentication tokens to join them.
+        This API wraps RealtimeKit's REST API endpoints for meeting creation
+        and participant token generation.
+    version: 1.0.0
+    contact:
+        name: API Support
+servers:
+    - url: http://localhost:8787/api
+      description: Development
+    - url: https://bahasadri.com/api
+      description: Production
+
+tags:
+    - name: Video Call
+      description: Video call endpoints
+
+components:
+    # -------------------------------------------------------------------------
+    # SHARED MODELS
+    # -------------------------------------------------------------------------
+    schemas:
+        GlobalRoomResponse:
+            type: object
+            required:
+                - room_id
+            properties:
+                room_id:
+                    type: string
+                    description: Global room identifier
+                    example: "room_550e8400-e29b-41d4-a716-446655440000"
+
+        CreateSessionRequest:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: Optional session name for identification
+                    example: "Team Meeting"
+
+        CreateSessionResponse:
+            type: object
+            required:
+                - meeting_id
+            properties:
+                meeting_id:
+                    type: string
+                    description: Unique meeting identifier returned from RealtimeKit
+                    example: "meeting_550e8400-e29b-41d4-a716-446655440000"
+
+        GenerateTokenRequest:
+            type: object
+            required:
+                - meeting_id
+            properties:
+                meeting_id:
+                    type: string
+                    description: The meeting identifier to join (from createSession response)
+                    example: "meeting_550e8400-e29b-41d4-a716-446655440000"
+                name:
+                    type: string
+                    description: Optional participant display name
+                    example: "John Doe"
+                custom_participant_id:
+                    type: string
+                    description: Optional custom participant identifier. If not provided, RealtimeKit generates one.
+                    example: "participant_123"
+                preset_name:
+                    type: string
+                    description: 'Optional preset name defining participant permissions and UI configuration. Default: "group_call_participant"'
+                    example: "group_call_participant"
+
+        GenerateTokenResponse:
+            type: object
+            required:
+                - auth_token
+            properties:
+                auth_token:
+                    type: string
+                    description: Authentication token returned from RealtimeKit. This token is used to initialize the RealtimeKit SDK on the frontend to join the meeting.
+                    example: "token_abc123"
+
+        ErrorResponse:
+            type: object
+            required:
+                - error
+                - code
+            properties:
+                error:
+                    type: string
+                    description: Human-readable error message
+                    example: "Meeting does not exist"
+                code:
+                    type: string
+                    enum:
+                        [
+                            INVALID_INPUT,
+                            NOT_FOUND,
+                            INTERNAL_ERROR,
+                            REALTIMEKIT_ERROR,
+                        ]
+                    description: Machine-readable error code
+                    example: "NOT_FOUND"
+
+    # ---------------------------------------------------------------------------
+    # STANDARD RESPONSES
+    # ---------------------------------------------------------------------------
+    responses:
+        BadRequest:
+            description: Invalid input provided (400).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        invalid_input:
+                            value:
+                                error: "Missing or invalid request fields"
+                                code: "INVALID_INPUT"
+
+        NotFound:
+            description: Resource not found (404).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        not_found:
+                            value:
+                                error: "Meeting does not exist"
+                                code: "NOT_FOUND"
+
+        InternalError:
+            description: Server error (500).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        realtimekit_error:
+                            value:
+                                error: "RealtimeKit API error"
+                                code: "REALTIMEKIT_ERROR"
+                        server_error:
+                            value:
+                                error: "Server error"
+                                code: "INTERNAL_ERROR"
+
+paths:
+    # ---------------------------------------------------------------------------
+    # GET GLOBAL ROOM ENDPOINT
+    # ---------------------------------------------------------------------------
+    /video-call/global-room:
+        get:
+            operationId: getGlobalRoom
+            summary: Get global room ID
+            description: >-
+                Returns the hard-coded global room ID for direct video calls.
+            tags:
+                - Video Call
+            responses:
+                "200":
+                    description: Global room ID retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/GlobalRoomResponse"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # CREATE SESSION ENDPOINT
+    # ---------------------------------------------------------------------------
+    /video-call/session:
+        post:
+            operationId: createSession
+            summary: Create a new video call meeting
+            description: >-
+                Creates a new meeting via RealtimeKit's REST API. This corresponds to
+                RealtimeKit's "Create Meeting" endpoint. Returns a meeting ID that can
+                be used to generate participant tokens. The meeting persists until
+                all participants leave or it is explicitly ended.
+            tags:
+                - Video Call
+            requestBody:
+                required: false
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CreateSessionRequest"
+            responses:
+                "200":
+                    description: Session created successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/CreateSessionResponse"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # GENERATE TOKEN ENDPOINT
+    # ---------------------------------------------------------------------------
+    /video-call/token:
+        post:
+            operationId: generateToken
+            summary: Generate participant authentication token
+            description: >-
+                Generates a participant authentication token via RealtimeKit's REST API.
+                This corresponds to RealtimeKit's "Add Participant" endpoint, which
+                creates a participant entry for the meeting and returns an authToken.
+                The token is used to initialize the RealtimeKit SDK on the frontend
+                to join the meeting. Each participant needs their own token.
+            tags:
+                - Video Call
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/GenerateTokenRequest"
+            responses:
+                "200":
+                    description: Token generated successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/GenerateTokenResponse"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"

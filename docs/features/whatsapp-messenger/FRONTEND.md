@@ -309,12 +309,10 @@ export const createContact = async (
 -   [ ] WhatsAppInterface component
 -   [ ] MessageList component
 -   [ ] CSS Modules for all components
--   [ ] Component tests
 
 ### Pages
 
 -   [ ] Main page route configuration
--   [ ] Page tests
 
 ### State Management
 
@@ -335,28 +333,7 @@ export const createContact = async (
 ### Integration
 
 -   [ ] Connect to backend API (per API_CONTRACT.md)
--   [ ] Test API calls
 -   [ ] Handle errors gracefully
--   [ ] Test polling mechanism
--   [ ] Test message deduplication
-
-## Testing Considerations
-
-### Unit Tests
-
--   Component rendering
--   User interactions (send, select thread)
--   State management
--   Polling logic
--   Message deduplication
-
-### Integration Tests
-
--   API integration
--   Send message flow
--   Polling flow
--   Contact management
--   Error scenarios
 
 ## Dependencies
 

@@ -164,12 +164,10 @@ export const [functionName] = async ([params]): Promise<[ReturnType]> => {
 -   [ ] [ComponentName] page component
 -   [ ] [SubComponent] component
 -   [ ] CSS Modules for all components
--   [ ] Component tests
 
 ### Pages
 
 -   [ ] Main page route configuration
--   [ ] Page tests
 
 ### State Management
 
@@ -188,26 +186,7 @@ export const [functionName] = async ([params]): Promise<[ReturnType]> => {
 ### Integration
 
 -   [ ] Connect to backend API (per API_CONTRACT.md)
--   [ ] Test API calls
 -   [ ] Handle errors gracefully
--   [ ] Test error scenarios
-
-## Testing Considerations
-
-### Unit Tests
-
--   Component rendering
--   User interactions
--   State management
--   API client functions
--   Error handling
-
-### Integration Tests
-
--   API integration
--   [Feature-specific integration tests]
--   Error scenarios
--   Loading states
 
 ## Dependencies
 

@@ -21,11 +21,15 @@ Users can perform standard arithmetic calculations including:
 -   Multiplication (×)
 -   Division (÷)
 
-The calculator evaluates expressions and displays the result on the display screen.
+The calculator supports equations of any length, allowing users to chain multiple operations together (e.g., "5 + 3 * 2 - 1"). The calculator evaluates expressions and displays the current equation being typed on the display screen, showing the result after calculation.
 
 ### Button-Based Interface
 
-All input is done through clicking buttons on the calculator interface, mimicking the experience of using a physical calculator. The display shows the current input and results.
+All input is done through clicking buttons on the calculator interface, mimicking the experience of using a physical calculator. The display shows the current equation being typed, updating in real-time as buttons are pressed.
+
+### Sound effects
+
+All button presses make satisfying _click_ sounds.
 
 ## User Workflows
 
@@ -36,11 +40,11 @@ All input is done through clicking buttons on the calculator interface, mimickin
 **Steps**:
 
 1. Turn on the calculator using the power button
-2. Click number buttons to enter the first operand
-3. Click an operator button (+, -, ×, ÷)
-4. Click number buttons to enter the second operand
+2. Click number buttons to enter numbers
+3. Click operator buttons (+, -, ×, ÷) to add operations
+4. Continue entering numbers and operators to build equations of any length
 5. Click the equals/enter button to calculate
-6. View the result displayed on the calculator screen
+6. View the result displayed on the calculator screen (the display shows the current equation being typed throughout the process)
 7. Optionally turn off the calculator when finished
 
 **Result**: The calculated result is displayed on the calculator screen, ready for further calculations or to be turned off.
@@ -50,9 +54,10 @@ All input is done through clicking buttons on the calculator interface, mimickin
 -   Turn the calculator on and off
 -   Enter numbers using button clicks
 -   Perform addition, subtraction, multiplication, and division
+-   Build equations of any length by chaining multiple operations together
+-   View the current equation being typed on the display screen
 -   View calculation results on the display
 -   Clear input and start new calculations
--   Chain multiple operations together
 
 ## Use Cases
 
@@ -68,7 +73,7 @@ Experience the tactile feel of a button-based calculator interface, similar to u
 
 -   **Simple Interface**: Button-based design is intuitive and familiar
 -   **No Typing Required**: Click buttons instead of typing, reducing input errors
--   **Clear Display**: Results are clearly shown on the calculator screen
+-   **Clear Display**: The current equation being typed (of any length) is clearly shown on the calculator screen, with results displayed after calculation
 -   **Power Management**: On/off functionality allows users to reset and start fresh
 
 ---

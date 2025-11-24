@@ -1,0 +1,217 @@
+openapi: 3.1.0
+info:
+    title: Home Page API
+    description: >-
+        API contract document defining the interface between frontend and backend.
+        This is the ONLY coupling point between frontend and backend.
+    version: 1.0.0
+    contact:
+        name: API Support
+servers:
+    - url: http://localhost:8787/api
+      description: Development
+    - url: https://bahasadri.com/api
+      description: Production
+
+tags:
+    - name: Home
+      description: Home page endpoints
+
+components:
+    # -------------------------------------------------------------------------
+    # SHARED MODELS
+    # -------------------------------------------------------------------------
+    schemas:
+        WelcomeResponse:
+            type: object
+            required:
+                - message
+            properties:
+                message:
+                    type: string
+                    description: A random yandere-themed welcome message.
+                    example: "You entered my domain~ ♡"
+
+        ChatRequest:
+            type: object
+            required:
+                - message
+            properties:
+                message:
+                    type: string
+                    description: The user's message to the agent.
+                    example: "Hello"
+
+        ChatResponse:
+            type: object
+            required:
+                - response
+            properties:
+                response:
+                    type: string
+                    description: The agent's response.
+                    example: "I've been waiting for you... ♡"
+
+        ConversationHistoryResponse:
+            type: object
+            required:
+                - messages
+                - conversationId
+            properties:
+                messages:
+                    type: array
+                    description: Array of chat messages in chronological order.
+                    items:
+                        $ref: "#/components/schemas/ChatMessage"
+                conversationId:
+                    type: string
+                    description: The conversation ID (always "global" for this single-user app).
+                    example: "global"
+
+        ChatMessage:
+            type: object
+            required:
+                - id
+                - role
+                - content
+                - timestamp
+            properties:
+                id:
+                    type: string
+                    description: Unique message ID.
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+                role:
+                    type: string
+                    enum: [user, agent]
+                    description: Message role (user or agent).
+                    example: "user"
+                content:
+                    type: string
+                    description: Message content.
+                    example: "Hello"
+                timestamp:
+                    type: integer
+                    format: int64
+                    description: Message timestamp in milliseconds since epoch.
+                    example: 1704067200000
+
+        ErrorResponse:
+            type: object
+            required:
+                - success
+                - error
+                - code
+            properties:
+                success:
+                    type: boolean
+                    enum: [false]
+                    example: false
+                error:
+                    type: string
+                    description: Human-readable error message.
+                    example: "Message cannot be empty"
+                code:
+                    type: string
+                    enum: [INVALID_INPUT, INTERNAL_ERROR]
+                    description: Machine-readable error code.
+                    example: "INVALID_INPUT"
+
+    # ---------------------------------------------------------------------------
+    # STANDARD RESPONSES
+    # ---------------------------------------------------------------------------
+    responses:
+        BadRequest:
+            description: Invalid input provided (400).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        empty_message:
+                            value:
+                                success: false
+                                error: "Message cannot be empty"
+                                code: "INVALID_INPUT"
+
+        InternalError:
+            description: Server error (500).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        server_error:
+                            value:
+                                success: false
+                                error: "Internal server error processing request"
+                                code: "INTERNAL_ERROR"
+
+paths:
+    # ---------------------------------------------------------------------------
+    # WELCOME ENDPOINT
+    # ---------------------------------------------------------------------------
+    /home/welcome:
+        get:
+            operationId: getWelcomeMessage
+            summary: Get random welcome message
+            description: Retrieves a randomly selected welcome message to display on page load.
+            tags:
+                - Home
+            responses:
+                "200":
+                    description: Welcome message returned successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/WelcomeResponse"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # CHAT ENDPOINT
+    # ---------------------------------------------------------------------------
+    /home/chat:
+        get:
+            operationId: getConversationHistory
+            summary: Get conversation history
+            description: >-
+                Retrieves the conversation history for the global chat session.
+                Returns empty array if no conversation exists yet.
+                No session management required on the client side.
+            tags:
+                - Home
+            responses:
+                "200":
+                    description: Conversation history retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ConversationHistoryResponse"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+        post:
+            operationId: sendChatMessage
+            summary: Chat with yandere agent
+            description: >-
+                Sends a user message to the yandere agent.
+                Uses a single global chat session that persists across page refreshes.
+                No session management required on the client side.
+            tags:
+                - Home
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ChatRequest"
+            responses:
+                "200":
+                    description: Message processed successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ChatResponse"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "500":
+                    $ref: "#/components/responses/InternalError"

@@ -12,7 +12,7 @@ Frontend implementation for the Video Call utility. Provides video conferencing 
 
 ## API Contract Reference
 
-See `docs/features/video-call/API_CONTRACT.md` for the API contract this frontend consumes.
+See `docs/features/video-call/API_CONTRACT.yml` for the API contract this frontend consumes.
 
 ## Pages/Routes
 
@@ -59,8 +59,9 @@ See `docs/features/video-call/API_CONTRACT.md` for the API contract this fronten
 **Interactions**:
 
 -   Request media permissions
--   Connect to global room
--   Join meeting with token
+-   Create new meeting session or join existing meeting
+-   Generate participant token for meeting
+-   Join meeting with token using RealtimeKit SDK
 -   Handle remote participants
 -   Toggle camera/microphone
 -   Leave room
@@ -140,6 +141,7 @@ interface ControlsProps {
 // Query keys
 const queryKeys = {
     globalRoom: ["video-call", "global-room"] as const,
+    session: (name?: string) => ["video-call", "session", name] as const,
 };
 
 // TanStack Query hooks
@@ -147,6 +149,23 @@ const useGlobalRoom = () => {
     return useQuery({
         queryKey: queryKeys.globalRoom,
         queryFn: () => fetchGlobalRoom(),
+    });
+};
+
+const useCreateSession = () => {
+    return useMutation({
+        mutationFn: (name?: string) => createSession(name),
+    });
+};
+
+const useGenerateToken = () => {
+    return useMutation({
+        mutationFn: (params: GenerateTokenRequest) => generateToken(
+            params.meeting_id,
+            params.name,
+            params.custom_participant_id,
+            params.preset_name
+        ),
     });
 };
 ```
@@ -173,10 +192,26 @@ const [localStream, setLocalStream] = useState<MediaStream | null>(null);
 **Location**: `lib/api.ts`
 
 ```typescript
+// Types matching API contract
+interface ErrorResponse {
+    error: string;
+    code: "INVALID_INPUT" | "NOT_FOUND" | "INTERNAL_ERROR" | "REALTIMEKIT_ERROR";
+}
+
+interface GenerateTokenRequest {
+    meeting_id: string;
+    name?: string;
+    custom_participant_id?: string;
+    preset_name?: string;
+}
+
 // Get global room ID
 export const fetchGlobalRoom = async (): Promise<GlobalRoomResponse> => {
     const response = await fetch("/api/video-call/global-room");
-    if (!response.ok) throw new Error("Failed to fetch global room");
+    if (!response.ok) {
+        const error: ErrorResponse = await response.json();
+        throw new Error(error.error || "Failed to fetch global room");
+    }
     return response.json();
 };
 
@@ -191,7 +226,7 @@ export const createSession = async (
     });
 
     if (!response.ok) {
-        const error = await response.json();
+        const error: ErrorResponse = await response.json();
         throw new Error(error.error || "Failed to create session");
     }
 
@@ -217,7 +252,7 @@ export const generateToken = async (
     });
 
     if (!response.ok) {
-        const error = await response.json();
+        const error: ErrorResponse = await response.json();
         throw new Error(error.error || "Failed to generate token");
     }
 
@@ -227,45 +262,68 @@ export const generateToken = async (
 
 ### RealtimeKit SDK Integration
 
+The frontend uses the RealtimeKit SDK to join meetings. The authToken from the backend's generateToken endpoint is used to initialize the SDK:
+
 ```typescript
 import RealtimeKit from "@cloudflare/realtimekit";
 
-// Initialize SDK
+// Initialize SDK with authToken from backend
 const meeting = await RealtimeKit.init({
     accountId: config.accountId,
     appId: config.appId,
-    authToken: authToken, // From backend
+    authToken: authToken, // From generateToken API response
 });
 
-// Join meeting
+// Join meeting using the meeting_id from createSession
 await meeting.join(meetingId);
 
 // Handle events
 meeting.on("participantJoined", (participant) => {
-    // Add remote participant
+    // Add remote participant to state
 });
 
 meeting.on("participantLeft", (participantId) => {
-    // Remove participant
+    // Remove participant from state
 });
 ```
 
+**Note**: The authToken corresponds to RealtimeKit's "Add Participant" operation, which creates a participant entry and returns the token needed to join.
+
 ### Error Handling
 
--   Connection errors: Show error state, allow retry
--   Media permission errors: Show permission request UI
--   API errors: Show error message, allow retry
--   Network errors: Handle reconnection
+All API errors follow the ErrorResponse schema from the API contract:
+
+```typescript
+interface ErrorResponse {
+    error: string;
+    code: "INVALID_INPUT" | "NOT_FOUND" | "INTERNAL_ERROR" | "REALTIMEKIT_ERROR";
+}
+```
+
+Error handling strategies:
+
+-   **API errors**: Display error message from `error.error` field, allow retry
+-   **Connection errors**: Show error state, allow retry
+-   **Media permission errors**: Show permission request UI
+-   **Network errors**: Handle reconnection
+-   **404 errors**: Show "Meeting does not exist" message (code: NOT_FOUND)
+-   **400 errors**: Show validation error message (code: INVALID_INPUT)
 
 ## User Interactions
 
 ### Primary Actions
 
--   **Join Room**:
+-   **Create New Call** (per feature spec):
 
-    -   Trigger: Page load or button click
-    -   Flow: Request permissions → Get room ID → Generate token → Join meeting
+    -   Trigger: "Create New Call" button click
+    -   Flow: Create session → Generate token → Request permissions → Join meeting with token
     -   Error handling: Show error, allow retry
+
+-   **Join Existing Call** (per feature spec):
+
+    -   Trigger: Click on existing call (if viewing ongoing calls)
+    -   Flow: Generate token for meeting ID → Request permissions → Join meeting with token
+    -   Error handling: Show error if meeting not found (404), allow retry
 
 -   **Toggle Camera**:
 
@@ -321,12 +379,10 @@ meeting.on("participantLeft", (participantId) => {
 -   [ ] ParticipantGrid component
 -   [ ] Controls component
 -   [ ] CSS Modules for all components
--   [ ] Component tests
 
 ### Pages
 
 -   [ ] Main page route configuration
--   [ ] Page tests
 
 ### State Management
 
@@ -347,27 +403,10 @@ meeting.on("participantLeft", (participantId) => {
 
 ### Integration
 
--   [ ] Connect to backend API (per API_CONTRACT.md)
+-   [ ] Connect to backend API (per API_CONTRACT.yml)
 -   [ ] Integrate RealtimeKit SDK
 -   [ ] Handle media permissions
--   [ ] Test video/audio functionality
 -   [ ] Handle errors gracefully
-
-## Testing Considerations
-
-### Unit Tests
-
--   Component rendering
--   State management
--   API client functions
--   Error handling
-
-### Integration Tests
-
--   API integration
--   RealtimeKit SDK integration (mocked)
--   Media stream handling
--   Participant management
 
 ## Dependencies
 
@@ -394,4 +433,4 @@ meeting.on("participantLeft", (participantId) => {
 
 ---
 
-**Note**: This document is independent of backend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend.
+**Note**: This document is independent of backend implementation. Only the API contract in API_CONTRACT.yml couples frontend and backend.

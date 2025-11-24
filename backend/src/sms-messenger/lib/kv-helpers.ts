@@ -5,6 +5,39 @@ const MESSAGE_PREFIX = "msg:";
 const THREAD_PREFIX = "thread:";
 const CONTACT_PREFIX = "contact:";
 
+async function paginateKV<T>(
+  kv: KVNamespace,
+  prefix: string,
+  parseValue: (value: string) => T | undefined,
+  filter?: (item: T) => boolean
+): Promise<T[]> {
+  const items: T[] = [];
+  let cursor: string | undefined;
+
+  do {
+    const listOptions: { prefix: string; cursor?: string } = { prefix };
+    if (cursor) {
+      listOptions.cursor = cursor;
+    }
+
+    const result = await kv.list(listOptions);
+
+    for (const key of result.keys) {
+      const value = await kv.get(key.name);
+      if (value) {
+        const item = parseValue(value);
+        if (item !== undefined && (filter === undefined || filter(item))) {
+          items.push(item);
+        }
+      }
+    }
+
+    cursor = "cursor" in result ? result.cursor : undefined;
+  } while (cursor);
+
+  return items;
+}
+
 export function generateMessageKey(counterpart: string, timestamp: number, id: string): string {
   return `${MESSAGE_PREFIX}${counterpart}:${String(timestamp)}:${id}`;
 }
@@ -65,41 +98,25 @@ export async function getMessages(
   };
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
+function parseMessage(value: string): Message | undefined {
+  try {
+    return JSON.parse(value) as Message;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function getMessagesSince(
   kv: KVNamespace,
   since: number
 ): Promise<Message[]> {
-  const prefix = MESSAGE_PREFIX;
-  const messages: Message[] = [];
-  let cursor: string | undefined;
+  const messages = await paginateKV(
+    kv,
+    MESSAGE_PREFIX,
+    parseMessage,
+    (message) => message.timestamp > since
+  );
 
-  do {
-    const listOptions: { prefix: string; cursor?: string } = { prefix };
-    if (cursor) {
-      listOptions.cursor = cursor;
-    }
-
-    const result = await kv.list(listOptions);
-
-    for (const key of result.keys) {
-      const value = await kv.get(key.name);
-      if (value) {
-        try {
-          const message = JSON.parse(value) as Message;
-          if (message.timestamp > since) {
-            messages.push(message);
-          }
-        } catch {
-          // Failed to parse message, skip it
-        }
-      }
-    }
-
-    cursor = "cursor" in result ? result.cursor : undefined;
-  } while (cursor);
-
-  // Sort by timestamp ascending
   return messages.toSorted((a, b) => a.timestamp - b.timestamp);
 }
 
@@ -136,37 +153,19 @@ export async function updateThreadSummary(
   await kv.put(threadKey, JSON.stringify(threadSummary));
 }
 
+function parseThreadSummary(value: string): ThreadSummary | undefined {
+  try {
+    return JSON.parse(value) as ThreadSummary;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function getThreadSummaries(
   kv: KVNamespace
 ): Promise<ThreadSummary[]> {
-  const prefix = THREAD_PREFIX;
-  const threads: ThreadSummary[] = [];
-  let cursor: string | undefined;
+  const threads = await paginateKV(kv, THREAD_PREFIX, parseThreadSummary);
 
-  do {
-    const listOptions: { prefix: string; cursor?: string } = { prefix };
-    if (cursor) {
-      listOptions.cursor = cursor;
-    }
-
-    const result = await kv.list(listOptions);
-
-    for (const key of result.keys) {
-      const value = await kv.get(key.name);
-      if (value) {
-        try {
-          const thread = JSON.parse(value) as ThreadSummary;
-          threads.push(thread);
-        } catch {
-          // Failed to parse thread, skip it
-        }
-      }
-    }
-
-    cursor = "cursor" in result ? result.cursor : undefined;
-  } while (cursor);
-
-  // Sort by last message timestamp descending (newest first)
   return threads.toSorted((a, b) => b.lastMessageTimestamp - a.lastMessageTimestamp);
 }
 
@@ -193,71 +192,31 @@ export async function getContact(
   }
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
+function parseContact(value: string): Contact | undefined {
+  try {
+    return JSON.parse(value) as Contact;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function getContactByPhoneNumber(
   kv: KVNamespace,
   phoneNumber: string
 ): Promise<Contact | undefined> {
-  const prefix = CONTACT_PREFIX;
-  let cursor: string | undefined;
+  const contacts = await paginateKV(
+    kv,
+    CONTACT_PREFIX,
+    parseContact,
+    (contact) => contact.phoneNumber === phoneNumber
+  );
 
-  do {
-    const listOptions: { prefix: string; cursor?: string } = { prefix };
-    if (cursor) {
-      listOptions.cursor = cursor;
-    }
-
-    const result = await kv.list(listOptions);
-
-    for (const key of result.keys) {
-      const value = await kv.get(key.name);
-      if (value) {
-        try {
-          const contact = JSON.parse(value) as Contact;
-          if (contact.phoneNumber === phoneNumber) {
-            return contact;
-          }
-        } catch {
-          // Failed to parse contact, skip it
-        }
-      }
-    }
-
-    cursor = "cursor" in result ? result.cursor : undefined;
-  } while (cursor);
-
-  return undefined;
+  return contacts[0];
 }
 
 export async function getAllContacts(kv: KVNamespace): Promise<Contact[]> {
-  const prefix = CONTACT_PREFIX;
-  const contacts: Contact[] = [];
-  let cursor: string | undefined;
+  const contacts = await paginateKV(kv, CONTACT_PREFIX, parseContact);
 
-  do {
-    const listOptions: { prefix: string; cursor?: string } = { prefix };
-    if (cursor) {
-      listOptions.cursor = cursor;
-    }
-
-    const result = await kv.list(listOptions);
-
-    for (const key of result.keys) {
-      const value = await kv.get(key.name);
-      if (value) {
-        try {
-          const contact = JSON.parse(value) as Contact;
-          contacts.push(contact);
-        } catch {
-          // Failed to parse contact, skip it
-        }
-      }
-    }
-
-    cursor = "cursor" in result ? result.cursor : undefined;
-  } while (cursor);
-
-  // Sort by display name
   return contacts.toSorted((a, b) => a.displayName.localeCompare(b.displayName));
 }
 

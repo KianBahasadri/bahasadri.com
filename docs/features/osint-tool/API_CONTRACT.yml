@@ -1,0 +1,495 @@
+openapi: 3.1.0
+info:
+    title: OSINT Tool API
+    description: >-
+        API contract document defining the interface between frontend and backend.
+        This is the ONLY coupling point between frontend and backend.
+        Provides endpoints for gathering publicly available information (OSINT) about
+        usernames, email addresses, domains, and other identifiers from various public sources.
+    version: 1.0.0
+    contact:
+        name: API Support
+servers:
+    - url: http://localhost:8787/api
+      description: Development
+    - url: https://bahasadri.com/api
+      description: Production
+
+tags:
+    - name: OSINT Tool
+      description: OSINT tool endpoints
+
+components:
+    # -------------------------------------------------------------------------
+    # SHARED MODELS
+    # -------------------------------------------------------------------------
+    schemas:
+        PlatformResult:
+            type: object
+            required:
+                - platform
+                - found
+            properties:
+                platform:
+                    type: string
+                    description: Name of the platform
+                    example: "GitHub"
+                url:
+                    type: string
+                    format: uri
+                    description: URL to the profile if found
+                    example: "https://github.com/username"
+                profileName:
+                    type: string
+                    description: Display name on the platform
+                    example: "John Doe"
+                verified:
+                    type: boolean
+                    description: Whether the account is verified
+                found:
+                    type: boolean
+                    description: Whether the profile was found on this platform
+
+        BreachInfo:
+            type: object
+            required:
+                - breachName
+                - breachDate
+                - affectedData
+            properties:
+                breachName:
+                    type: string
+                    description: Name of the data breach
+                    example: "Example Breach 2023"
+                breachDate:
+                    type: string
+                    format: date
+                    description: Date when the breach occurred
+                    example: "2023-01-15"
+                description:
+                    type: string
+                    description: Description of the breach
+                    example: "A major data breach affecting millions of users"
+                affectedData:
+                    type: array
+                    items:
+                        type: string
+                    description: Types of data affected in the breach
+                    example: ["email", "password", "phone"]
+
+        UsernameSearchRequest:
+            type: object
+            required:
+                - username
+            properties:
+                username:
+                    type: string
+                    description: Username to search for
+                    example: "johndoe"
+
+        UsernameSearchResponse:
+            type: object
+            required:
+                - username
+                - results
+                - searchDate
+            properties:
+                username:
+                    type: string
+                    description: The searched username
+                    example: "johndoe"
+                results:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/PlatformResult"
+                    description: Search results across platforms
+                searchDate:
+                    type: string
+                    format: date-time
+                    description: Date and time when the search was performed
+                    example: "2023-10-27T10:00:00Z"
+
+        EmailLookupRequest:
+            type: object
+            required:
+                - email
+            properties:
+                email:
+                    type: string
+                    format: email
+                    description: Email address to lookup
+                    example: "user@example.com"
+
+        AssociatedAccount:
+            type: object
+            required:
+                - platform
+            properties:
+                platform:
+                    type: string
+                    description: Name of the platform
+                    example: "GitHub"
+                username:
+                    type: string
+                    description: Username on the platform
+                    example: "johndoe"
+                url:
+                    type: string
+                    format: uri
+                    description: URL to the account
+                    example: "https://github.com/johndoe"
+
+        EmailLookupResponse:
+            type: object
+            required:
+                - email
+                - associatedAccounts
+                - breachHistory
+                - searchDate
+            properties:
+                email:
+                    type: string
+                    format: email
+                    description: The searched email address
+                    example: "user@example.com"
+                associatedAccounts:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/AssociatedAccount"
+                    description: Accounts associated with this email
+                breachHistory:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/BreachInfo"
+                    description: Known data breaches involving this email
+                searchDate:
+                    type: string
+                    format: date-time
+                    description: Date and time when the lookup was performed
+                    example: "2023-10-27T10:00:00Z"
+
+        DomainInfoRequest:
+            type: object
+            required:
+                - domain
+            properties:
+                domain:
+                    type: string
+                    description: Domain name to lookup
+                    example: "example.com"
+
+        WhoisInfo:
+            type: object
+            properties:
+                registrar:
+                    type: string
+                    description: Domain registrar
+                    example: "Example Registrar Inc."
+                creationDate:
+                    type: string
+                    format: date-time
+                    description: Domain creation date
+                    example: "2020-01-15T00:00:00Z"
+                expirationDate:
+                    type: string
+                    format: date-time
+                    description: Domain expiration date
+                    example: "2025-01-15T00:00:00Z"
+                nameServers:
+                    type: array
+                    items:
+                        type: string
+                    description: Name servers for the domain
+                    example: ["ns1.example.com", "ns2.example.com"]
+                registrant:
+                    type: string
+                    description: Domain registrant information
+                    example: "Example Organization"
+
+        DNSInfo:
+            type: object
+            properties:
+                a:
+                    type: array
+                    items:
+                        type: string
+                        format: ipv4
+                    description: A records (IPv4 addresses)
+                    example: ["192.0.2.1"]
+                aaaa:
+                    type: array
+                    items:
+                        type: string
+                        format: ipv6
+                    description: AAAA records (IPv6 addresses)
+                    example: ["2001:db8::1"]
+                mx:
+                    type: array
+                    items:
+                        type: string
+                    description: MX records (mail servers)
+                    example: ["mail.example.com"]
+                txt:
+                    type: array
+                    items:
+                        type: string
+                    description: TXT records
+                    example: ["v=spf1 include:_spf.example.com ~all"]
+                ns:
+                    type: array
+                    items:
+                        type: string
+                    description: NS records (name servers)
+                    example: ["ns1.example.com"]
+
+        DomainInfoResponse:
+            type: object
+            required:
+                - domain
+                - whois
+                - dns
+                - searchDate
+            properties:
+                domain:
+                    type: string
+                    description: The searched domain
+                    example: "example.com"
+                whois:
+                    $ref: "#/components/schemas/WhoisInfo"
+                dns:
+                    $ref: "#/components/schemas/DNSInfo"
+                searchDate:
+                    type: string
+                    format: date-time
+                    description: Date and time when the lookup was performed
+                    example: "2023-10-27T10:00:00Z"
+
+        BreachCheckRequest:
+            type: object
+            required:
+                - email
+            properties:
+                email:
+                    type: string
+                    format: email
+                    description: Email address to check for breaches
+                    example: "user@example.com"
+
+        BreachCheckResponse:
+            type: object
+            required:
+                - email
+                - breaches
+                - searchDate
+            properties:
+                email:
+                    type: string
+                    format: email
+                    description: The checked email address
+                    example: "user@example.com"
+                breaches:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/BreachInfo"
+                    description: Known data breaches involving this email
+                searchDate:
+                    type: string
+                    format: date-time
+                    description: Date and time when the check was performed
+                    example: "2023-10-27T10:00:00Z"
+
+        ErrorResponse:
+            type: object
+            required:
+                - error
+            properties:
+                error:
+                    type: string
+                    description: Human-readable error message
+                    example: "Invalid username format"
+                code:
+                    type: string
+                    enum: [INVALID_INPUT, RATE_LIMIT, NOT_FOUND, INTERNAL_ERROR]
+                    description: Machine-readable error code
+                    example: "INVALID_INPUT"
+
+    # ---------------------------------------------------------------------------
+    # STANDARD RESPONSES
+    # ---------------------------------------------------------------------------
+    responses:
+        BadRequest:
+            description: Invalid input provided (400).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        invalid_input:
+                            value:
+                                error: "Invalid input format (username, email, domain)"
+                                code: "INVALID_INPUT"
+
+        NotFound:
+            description: Resource not found (404).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        not_found:
+                            value:
+                                error: "Domain or resource not found"
+                                code: "NOT_FOUND"
+
+        TooManyRequests:
+            description: Rate limit exceeded (429).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        rate_limit:
+                            value:
+                                error: "Too many requests, rate limit exceeded"
+                                code: "RATE_LIMIT"
+
+        InternalError:
+            description: Server error (500).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        server_error:
+                            value:
+                                error: "Server error during processing"
+                                code: "INTERNAL_ERROR"
+
+paths:
+    # ---------------------------------------------------------------------------
+    # USERNAME SEARCH ENDPOINT
+    # ---------------------------------------------------------------------------
+    /osint-tool/username-search:
+        post:
+            operationId: searchUsername
+            summary: Search for username across platforms
+            description: >-
+                Search for a username across multiple platforms to find associated
+                profiles and accounts.
+            tags:
+                - OSINT Tool
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/UsernameSearchRequest"
+            responses:
+                "200":
+                    description: Search completed successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/UsernameSearchResponse"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "429":
+                    $ref: "#/components/responses/TooManyRequests"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # EMAIL LOOKUP ENDPOINT
+    # ---------------------------------------------------------------------------
+    /osint-tool/email-lookup:
+        post:
+            operationId: lookupEmail
+            summary: Lookup information for an email address
+            description: >-
+                Lookup information associated with an email address.
+            tags:
+                - OSINT Tool
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/EmailLookupRequest"
+            responses:
+                "200":
+                    description: Lookup completed successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/EmailLookupResponse"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "429":
+                    $ref: "#/components/responses/TooManyRequests"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # DOMAIN INFO ENDPOINT
+    # ---------------------------------------------------------------------------
+    /osint-tool/domain-info:
+        post:
+            operationId: getDomainInfo
+            summary: Get domain information
+            description: >-
+                Gather information about a domain including WHOIS and DNS data.
+            tags:
+                - OSINT Tool
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/DomainInfoRequest"
+            responses:
+                "200":
+                    description: Domain information retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/DomainInfoResponse"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "429":
+                    $ref: "#/components/responses/TooManyRequests"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # BREACH CHECK ENDPOINT
+    # ---------------------------------------------------------------------------
+    /osint-tool/breach-check:
+        post:
+            operationId: checkBreach
+            summary: Check for data breaches
+            description: >-
+                Check if an email address has been involved in known data breaches.
+            tags:
+                - OSINT Tool
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/BreachCheckRequest"
+            responses:
+                "200":
+                    description: Breach check completed successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/BreachCheckResponse"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "429":
+                    $ref: "#/components/responses/TooManyRequests"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+

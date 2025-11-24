@@ -4,17 +4,22 @@
 
 ## Overview
 
-A personal file hosting and sharing utility that allows users to upload files, compress them, share them via public links, and view detailed analytics about who has accessed their files. Users can also password protect the file.
+A personal file hosting and sharing utility that allows users to upload files, compress them, share them via public or private links, and view detailed analytics about who has accessed their files. Users can control whether files are accessible to anyone with the link (public) or only accessible through the UI (private).
 
 ## Key Features
 
 ### File Upload
 
-Users can upload files through a simple drag-and-drop interface or by clicking to select files. Files are automatically stored and made available for sharing.
+Users can upload files through a simple drag-and-drop interface or by clicking to select files. Files are automatically stored and made available for sharing. During upload, users can choose whether the file should be public or private.
 
-### Public File Sharing
+### Public/Private File Sharing
 
-Users can share their uploaded files with anyone by sharing a public download link. No authentication required for download - anyone with the link can access the file.
+Users can control the accessibility of their uploaded files:
+
+-   **Public Files**: Anyone with the download link can access the file. No authentication required - the link can be shared freely and accessed from anywhere.
+-   **Private Files**: Only accessible through the file hosting UI. Direct download links will not work - users must access the file through the main file hosting page interface.
+
+Users can toggle between public and private sharing when uploading files, allowing them to choose the appropriate access level for each file.
 
 ### Access Analytics
 
@@ -34,9 +39,9 @@ Files are automatically compressed in the background to save storage space and i
 
 Users can generate QR codes for their file download links, making it easy to share files by simply showing the QR code. Recipients can scan the QR code with their phone camera to instantly access the file download link.
 
-### URL-Based File Hosting
+### URL-Based File Upload
 
-Users can provide a URL to a file, and the system will download that file and host it. This allows users to host files from external sources without needing to download them locally first.
+Users can provide a URL to a file, and the system will download that file and host it. This allows users to host files from external sources without needing to download them locally first. This feature will check the link and will use yt-dlp to download the file if necessary.
 
 ## User Workflows
 
@@ -47,12 +52,16 @@ Users can provide a URL to a file, and the system will download that file and ho
 **Steps**:
 
 1. Navigate to the file hosting page
-2. Drag and drop a file into the upload zone (or click to select)
-3. Wait for upload to complete
-4. Copy the download link or generate a QR code
-5. Share the link or QR code with others
+2. Choose whether the file should be public or private using the sharing toggle
+3. Drag and drop a file into the upload zone (or click to select)
+4. Wait for upload to complete
+5. Copy the download link or generate a QR code
+6. Share the link or QR code with others (if public)
 
-**Result**: File is accessible to anyone with the link or QR code
+**Result**:
+
+-   **Public files**: File is accessible to anyone with the link or QR code
+-   **Private files**: File is only accessible through the UI, direct links will not work
 
 ### Host a File from URL
 
@@ -61,13 +70,17 @@ Users can provide a URL to a file, and the system will download that file and ho
 **Steps**:
 
 1. Navigate to the file hosting page
-2. Enter a URL to a file in the URL input field
-3. Click "Download and Host" button
-4. Wait for the file to be downloaded and uploaded
-5. Copy the download link or generate a QR code
-6. Share the link or QR code with others
+2. Choose whether the file should be public or private using the sharing toggle
+3. Enter a URL to a file in the URL input field
+4. Click "Download and Host" button
+5. Wait for the file to be downloaded and uploaded
+6. Copy the download link or generate a QR code
+7. Share the link or QR code with others (if public)
 
-**Result**: File from the external URL is downloaded, hosted, and accessible to anyone with the link or QR code
+**Result**:
+
+-   **Public files**: File from the external URL is downloaded, hosted, and accessible to anyone with the link or QR code
+-   **Private files**: File is downloaded and hosted, but only accessible through the UI
 
 ### Generate QR Code for File Link
 
@@ -105,21 +118,27 @@ Users can provide a URL to a file, and the system will download that file and ho
 
 1. Receive a file sharing link
 2. Click the link or paste it in a browser
-3. File downloads automatically
+3. **For public files**: File downloads automatically
+4. **For private files**: Access is denied - user must access the file through the file hosting UI
 
-**Result**: File is downloaded to the user's device
+**Result**:
+
+-   **Public files**: File is downloaded to the user's device
+-   **Private files**: Access is denied when using direct link, file must be accessed through the UI
 
 ## User Capabilities
 
 -   Upload files of any type (images, documents, videos, etc.)
+-   Choose between public and private file sharing for each upload
 -   Host files from external URLs by providing a link
--   Share files instantly via public links
--   Generate QR codes for download links
+-   Share files instantly via public links (for public files)
+-   Restrict file access to UI-only (for private files)
+-   Generate QR codes for download links (for public files)
 -   Download QR codes as images for sharing
 -   Track file access with detailed analytics
 -   View access history and patterns
--   Download files directly from shared links
--   See file metadata (size, type, upload date)
+-   Download files directly from shared links (for public files)
+-   See file metadata (size, type, upload date, sharing status)
 
 ## Use Cases
 

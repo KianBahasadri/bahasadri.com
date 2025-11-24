@@ -11,11 +11,18 @@
         "frontend:typecheck": "pnpm --filter frontend typecheck",
         "frontend:deploy": "pnpm --filter frontend run deploy",
         "backend:dev": "pnpm --filter backend dev",
+        "backend:preview": "pnpm --filter backend preview",
         "backend:lint": "pnpm --filter backend lint",
         "backend:typecheck": "pnpm --filter backend typecheck",
+        "backend:test": "pnpm --filter backend test",
+        "backend:generate-tests": "pnpm --filter backend generate-tests",
         "backend:deploy": "pnpm --filter backend run deploy",
         "typecheck": "pnpm frontend:typecheck && pnpm backend:typecheck",
-        "lint": "pnpm frontend:lint && pnpm backend:lint",
+        "api:lint": "spectral lint \"docs/features/**/*.yml\" --fail-severity info",
+        "lint": "pnpm api:lint && pnpm frontend:lint && pnpm backend:lint",
         "deploy": "pnpm frontend:deploy && pnpm backend:deploy"
+    },
+    "devDependencies": {
+        "@stoplight/spectral-cli": "^6.15.0"
     }
 }

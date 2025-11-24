@@ -1,0 +1,198 @@
+import React, { useState, useRef, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { sendChatMessage, fetchConversationHistory } from "../../../../lib/api";
+import type { ChatMessage } from "../../../../types/home";
+import styles from "./Chatbox.module.css";
+
+interface ChatboxProps {
+    readonly onClose: () => void;
+}
+
+export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
+    const [messageInput, setMessageInput] = useState("");
+    const [conversationId, setConversationId] = useState<string | undefined>(
+        undefined
+    );
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
+
+    const scrollToBottom = (): void => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    const adjustTextareaHeight = (): void => {
+        const textarea = inputRef.current;
+        if (textarea) {
+            textarea.style.height = "auto";
+            const scrollHeight = textarea.scrollHeight;
+            const maxHeight = 400;
+            textarea.style.height = `${String(
+                Math.min(scrollHeight, maxHeight)
+            )}px`;
+            textarea.style.overflowY =
+                scrollHeight > maxHeight ? "auto" : "hidden";
+        }
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    useEffect(() => {
+        inputRef.current?.focus();
+    }, []);
+
+    useEffect(() => {
+        adjustTextareaHeight();
+    }, [messageInput]);
+
+    const { data: historyData } = useQuery({
+        queryKey: ["conversationHistory"],
+        queryFn: fetchConversationHistory,
+    });
+
+    useEffect(() => {
+        if (historyData) {
+            setMessages(historyData.messages);
+            setConversationId(historyData.conversationId);
+        }
+    }, [historyData]);
+
+    const chatMutation = useMutation({
+        mutationFn: async (message: string) => {
+            return await sendChatMessage(message, conversationId);
+        },
+        onSuccess: (data) => {
+            setConversationId(data.conversationId);
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: `agent-${String(Date.now())}`,
+                    role: "agent",
+                    content: data.response,
+                    timestamp: Date.now(),
+                },
+            ]);
+        },
+        onError: (error: Error) => {
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: `error-${String(Date.now())}`,
+                    role: "agent",
+                    content: `Sorry, I couldn't process that. ${error.message} ♡`,
+                    timestamp: Date.now(),
+                },
+            ]);
+        },
+    });
+
+    const handleSubmit = (e: React.FormEvent): void => {
+        e.preventDefault();
+        const trimmedMessage = messageInput.trim();
+        if (!trimmedMessage || chatMutation.isPending) {
+            return;
+        }
+
+        const userMessage: ChatMessage = {
+            id: `user-${String(Date.now())}`,
+            role: "user",
+            content: trimmedMessage,
+            timestamp: Date.now(),
+        };
+
+        setMessages((prev) => [...prev, userMessage]);
+        setMessageInput("");
+        setTimeout(() => {
+            adjustTextareaHeight();
+        }, 0);
+        chatMutation.mutate(trimmedMessage);
+    };
+
+    return (
+        <div className={styles["chatbox"]}>
+            <div className={styles["chatHeader"]}>
+                <h2 className={styles["chatTitle"]}>Chat with me~ ♡</h2>
+                <button
+                    className={styles["closeButton"]}
+                    onClick={onClose}
+                    aria-label="Close chat"
+                    aria-expanded="true"
+                >
+                    💔
+                </button>
+            </div>
+
+            <div className={styles["messagesContainer"]}>
+                {messages.length === 0 ? (
+                    <div className={styles["emptyState"]}>
+                        <p>Send me your first packet, Admin-kun? 📝💾💕</p>
+                    </div>
+                ) : (
+                    <div className={styles["messagesList"]}>
+                        {messages.map((message) => {
+                            const userMessageClass =
+                                styles["userMessage"] ?? "";
+                            const agentMessageClass =
+                                styles["agentMessage"] ?? "";
+                            const messageClass = styles["message"] ?? "";
+                            const className =
+                                message.role === "user"
+                                    ? `${messageClass} ${userMessageClass}`
+                                    : `${messageClass} ${agentMessageClass}`;
+                            return (
+                                <div key={message.id} className={className}>
+                                    <div className={styles["messageContent"]}>
+                                        {message.content}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {chatMutation.isPending ? (
+                            <div
+                                className={`${styles["message"] ?? ""} ${
+                                    styles["agentMessage"] ?? ""
+                                }`}
+                            >
+                                <div className={styles["typingIndicator"]}>
+                                    <span />
+                                    <span />
+                                    <span />
+                                </div>
+                            </div>
+                        ) : null}
+                        <div ref={messagesEndRef} />
+                    </div>
+                )}
+            </div>
+
+            <form className={styles["inputForm"]} onSubmit={handleSubmit}>
+                <textarea
+                    ref={inputRef}
+                    className={styles["messageInput"]}
+                    value={messageInput}
+                    onChange={(e) => {
+                        setMessageInput(e.target.value);
+                    }}
+                    placeholder="Talk to me Admin-kun 💕"
+                    rows={1}
+                    disabled={chatMutation.isPending}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSubmit(e);
+                        }
+                    }}
+                />
+                <button
+                    type="submit"
+                    className={styles["sendButton"]}
+                    disabled={!messageInput.trim() || chatMutation.isPending}
+                >
+                    Transmit 📡
+                </button>
+            </form>
+        </div>
+    );
+}

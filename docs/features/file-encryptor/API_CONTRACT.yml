@@ -1,0 +1,216 @@
+openapi: 3.1.0
+info:
+    title: File Encryptor API
+    description: >-
+        API contract document defining the interface between frontend and backend.
+        This is the ONLY coupling point between frontend and backend.
+        This feature provides file encryption and decryption capabilities. Since encryption/decryption
+        happens client-side for security, the backend is minimal and primarily handles optional
+        temporary file storage if needed. Most operations are client-side only.
+    version: 1.0.0
+    contact:
+        name: API Support
+servers:
+    - url: http://localhost:8787/api
+      description: Development
+    - url: https://bahasadri.com/api
+      description: Production
+
+tags:
+    - name: File Encryptor
+      description: File encryptor endpoints
+
+components:
+    # -------------------------------------------------------------------------
+    # SHARED MODELS
+    # -------------------------------------------------------------------------
+    schemas:
+        UploadTempResponse:
+            type: object
+            required:
+                - fileId
+                - expiresAt
+            properties:
+                fileId:
+                    type: string
+                    description: Unique temporary file identifier
+                    example: "temp_550e8400-e29b-41d4-a716-446655440000"
+                expiresAt:
+                    type: integer
+                    format: int64
+                    description: Unix timestamp in seconds when the file expires
+                    example: 1698765432
+
+        DeleteTempResponse:
+            type: object
+            required:
+                - success
+            properties:
+                success:
+                    type: boolean
+                    description: Whether the deletion was successful
+                    example: true
+
+        ErrorResponse:
+            type: object
+            required:
+                - error
+            properties:
+                error:
+                    type: string
+                    description: Human-readable error message
+                    example: "Invalid file or request format"
+
+    # ---------------------------------------------------------------------------
+    # STANDARD RESPONSES
+    # ---------------------------------------------------------------------------
+    responses:
+        BadRequest:
+            description: Invalid input provided (400).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        invalid_input:
+                            value:
+                                error: "Invalid file or request format"
+
+        PayloadTooLarge:
+            description: File too large (413).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        file_too_large:
+                            value:
+                                error: "File exceeds maximum size limit"
+
+        NotFound:
+            description: Resource not found (404).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        not_found:
+                            value:
+                                error: "File not found or expired"
+
+        InternalError:
+            description: Server error (500).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        server_error:
+                            value:
+                                error: "Server error during processing"
+
+paths:
+    # ---------------------------------------------------------------------------
+    # UPLOAD TEMP ENDPOINT
+    # ---------------------------------------------------------------------------
+    /file-encryptor/upload-temp:
+        post:
+            operationId: uploadTempFile
+            summary: Upload file to temporary storage
+            description: >-
+                Optionally upload a file to temporary storage for processing.
+                This endpoint is optional - encryption/decryption can happen entirely
+                client-side without backend interaction.
+            tags:
+                - File Encryptor
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            required:
+                                - file
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                                    description: The file to upload temporarily
+            responses:
+                "200":
+                    description: File uploaded successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/UploadTempResponse"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "413":
+                    $ref: "#/components/responses/PayloadTooLarge"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # DOWNLOAD TEMP ENDPOINT
+    # ---------------------------------------------------------------------------
+    /file-encryptor/download-temp/{fileId}:
+        get:
+            operationId: downloadTempFile
+            summary: Download temporarily stored file
+            description: >-
+                Download a temporarily stored file. Used if files are stored on
+                backend during processing.
+            tags:
+                - File Encryptor
+            parameters:
+                - name: fileId
+                  in: path
+                  required: true
+                  description: The file ID from upload response
+                  schema:
+                      type: string
+                      example: "temp_550e8400-e29b-41d4-a716-446655440000"
+            responses:
+                "200":
+                    description: File downloaded successfully.
+                    content:
+                        application/octet-stream:
+                            schema:
+                                type: string
+                                format: binary
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # DELETE TEMP ENDPOINT
+    # ---------------------------------------------------------------------------
+    /file-encryptor/temp/{fileId}:
+        delete:
+            operationId: deleteTempFile
+            summary: Delete temporarily stored file
+            description: >-
+                Delete a temporarily stored file. Used to clean up after processing.
+            tags:
+                - File Encryptor
+            parameters:
+                - name: fileId
+                  in: path
+                  required: true
+                  description: The file ID to delete
+                  schema:
+                      type: string
+                      example: "temp_550e8400-e29b-41d4-a716-446655440000"
+            responses:
+                "200":
+                    description: File deleted successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/DeleteTempResponse"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+

@@ -237,19 +237,6 @@ cd backend && pnpm deploy
 
 Uses `wrangler.toml` for configuration.
 
-## Testing
-
-```bash
-pnpm test        # Run all tests
-pnpm test:watch # Watch mode
-```
-
-**Configuration**:
-
--   Framework: Vitest
--   Workers Testing: `@cloudflare/vitest-pool-workers`
--   Test Location: `backend/src/**/*.test.ts`
-
 ## Additional Resources
 
 -   [Cloudflare Workers Docs](https://developers.cloudflare.com/workers/)

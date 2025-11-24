@@ -1,0 +1,135 @@
+.container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: var(--dark-void);
+    overflow: hidden;
+}
+
+.idleState,
+.connectingState,
+.errorState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 2rem;
+    gap: 2rem;
+}
+
+.title {
+    font-size: 2.5rem;
+    color: var(--pink-darker);
+    font-family: "Comic Neue", sans-serif;
+    text-align: center;
+    margin: 0;
+}
+
+.description {
+    font-size: 1.2rem;
+    color: var(--pink-darker);
+    font-family: "Comic Neue", sans-serif;
+    text-align: center;
+}
+
+.createButton,
+.retryButton,
+.backButton {
+    padding: 1rem 2rem;
+    border: 2px solid var(--pink-hot);
+    background: var(--pink-primary);
+    color: var(--pink-darker);
+    border-radius: 1rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: "Comic Neue", sans-serif;
+    box-shadow: 4px 4px 0 var(--pink-light);
+}
+
+.createButton:hover:not(:disabled),
+.retryButton:hover:not(:disabled),
+.backButton:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 6px 6px 0 var(--pink-hot);
+    background: var(--pink-hot);
+    color: white;
+}
+
+.createButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.spinner {
+    font-size: 4rem;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.error {
+    color: var(--blood-red);
+    font-family: "Comic Neue", sans-serif;
+    font-size: 1rem;
+    padding: 1rem;
+    background: rgba(220, 20, 60, 0.1);
+    border-radius: 0.5rem;
+    border: 2px solid var(--blood-red);
+    max-width: 500px;
+    text-align: center;
+}
+
+.errorState {
+    gap: 1rem;
+}
+
+.errorTitle {
+    font-size: 2rem;
+    color: var(--blood-red);
+    font-family: "Comic Neue", sans-serif;
+    margin: 0;
+}
+
+.errorMessage {
+    font-size: 1.1rem;
+    color: var(--pink-darker);
+    font-family: "Comic Neue", sans-serif;
+    text-align: center;
+    max-width: 500px;
+}
+
+.backButton {
+    background: var(--dark-surface);
+    color: var(--pink-light);
+    border-color: var(--pink-primary);
+}
+
+.backButton:hover:not(:disabled) {
+    background: var(--pink-primary);
+    color: var(--pink-darker);
+}
+
+@media (prefers-color-scheme: dark) {
+    .title,
+    .description {
+        color: var(--pink-light);
+    }
+
+    .errorMessage {
+        color: var(--pink-light);
+    }
+}
+

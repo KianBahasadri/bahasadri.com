@@ -473,31 +473,6 @@ function validateDomain(domain: string): { ok: boolean; error?: string } {
 -   [ ] DNS lookup implementation
 -   [ ] Breach database API integration (Have I Been Pwned)
 
-### Testing
-
--   [ ] Unit tests for handlers
--   [ ] Unit tests for validation
--   [ ] Integration tests for external APIs
--   [ ] Error scenario testing
--   [ ] Rate limiting tests
-
-## Testing Considerations
-
-### Unit Tests
-
--   Handler function testing
--   Validation logic testing
--   Error handling testing
--   Rate limiting logic testing
--   Cache logic testing
-
-### Integration Tests
-
--   API endpoint testing (must match API_CONTRACT.md contract)
--   External API integration testing (with mocks)
--   End-to-end flow testing
--   Rate limiting behavior testing
-
 ## Dependencies
 
 ### Workers Libraries

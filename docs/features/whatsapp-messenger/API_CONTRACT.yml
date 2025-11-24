@@ -1,0 +1,664 @@
+openapi: 3.1.0
+info:
+    title: WhatsApp Messenger API
+    description: >-
+        API contract defining the interface between frontend and backend.
+        This is the only coupling point for the WhatsApp messenger feature.
+        Deliver a browser-based WhatsApp experience powered by Twilio WhatsApp API that
+        supports sending, receiving, history, threaded conversations, and contact aliases.
+    version: 1.0.0
+    contact:
+        name: API Support
+servers:
+    - url: http://localhost:8787/api
+      description: Development
+    - url: https://bahasadri.com/api
+      description: Production
+
+tags:
+    - name: WhatsApp Messenger
+      description: WhatsApp messenger endpoints
+
+components:
+    # -------------------------------------------------------------------------
+    # SHARED MODELS
+    # -------------------------------------------------------------------------
+    schemas:
+        MessageDirection:
+            type: string
+            enum: [sent, received]
+            description: Direction of the message
+
+        Message:
+            type: object
+            required:
+                - id
+                - direction
+                - phoneNumber
+                - counterpart
+                - body
+                - timestamp
+            properties:
+                id:
+                    type: string
+                    description: Unique message identifier
+                    example: "msg_123"
+                direction:
+                    $ref: "#/components/schemas/MessageDirection"
+                phoneNumber:
+                    type: string
+                    description: The service's WhatsApp number sending/receiving the message
+                    example: "+1234567890"
+                counterpart:
+                    type: string
+                    description: The other party's E.164 phone number
+                    example: "+1987654321"
+                body:
+                    type: string
+                    description: Message body content
+                    example: "Hello, how are you?"
+                timestamp:
+                    type: integer
+                    format: int64
+                    description: Milliseconds since epoch
+                    example: 1698765432000
+                status:
+                    type: string
+                    enum: [success, failed, pending]
+                    description: Message delivery status
+                errorMessage:
+                    type: string
+                    description: Error message if status is failed
+                contactId:
+                    type: string
+                    format: uuid
+                    description: Associated contact ID if available
+                unread:
+                    type: boolean
+                    description: Whether the message is unread
+
+        ThreadSummary:
+            type: object
+            required:
+                - counterpart
+                - lastMessagePreview
+                - lastMessageTimestamp
+                - lastDirection
+                - messageCount
+                - unreadCount
+            properties:
+                counterpart:
+                    type: string
+                    description: The other party's E.164 phone number
+                    example: "+1987654321"
+                lastMessagePreview:
+                    type: string
+                    description: Preview of the last message
+                    example: "Hello, how are you?"
+                lastMessageTimestamp:
+                    type: integer
+                    format: int64
+                    description: Timestamp of the last message in milliseconds
+                    example: 1698765432000
+                lastDirection:
+                    $ref: "#/components/schemas/MessageDirection"
+                messageCount:
+                    type: integer
+                    description: Total number of messages in the thread
+                    example: 42
+                unreadCount:
+                    type: integer
+                    description: Number of unread messages
+                    example: 3
+                contactId:
+                    type: string
+                    format: uuid
+                    description: Associated contact ID if available
+                contactName:
+                    type: string
+                    description: Display name from contact if available
+                    example: "John Doe"
+
+        Contact:
+            type: object
+            required:
+                - id
+                - phoneNumber
+                - displayName
+                - createdAt
+                - updatedAt
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                    description: Unique contact identifier
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+                phoneNumber:
+                    type: string
+                    description: Phone number in E.164 format
+                    example: "+1987654321"
+                displayName:
+                    type: string
+                    description: Display name alias
+                    example: "John Doe"
+                createdAt:
+                    type: integer
+                    format: int64
+                    description: Creation timestamp in milliseconds
+                    example: 1698765432000
+                updatedAt:
+                    type: integer
+                    format: int64
+                    description: Last update timestamp in milliseconds
+                    example: 1698765432000
+
+        SendWhatsAppRequest:
+            type: object
+            required:
+                - phoneNumber
+                - message
+            properties:
+                phoneNumber:
+                    type: string
+                    description: Recipient phone number in E.164 format
+                    example: "+1987654321"
+                message:
+                    type: string
+                    description: Message body content
+                    example: "Hello, how are you?"
+                contactId:
+                    type: string
+                    format: uuid
+                    description: Optional contact ID to associate with the message
+
+        SendWhatsAppResult:
+            type: object
+            required:
+                - message
+            properties:
+                message:
+                    $ref: "#/components/schemas/Message"
+
+        MessagesResult:
+            type: object
+            required:
+                - messages
+                - listComplete
+            properties:
+                messages:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Message"
+                cursor:
+                    type: string
+                    description: Pagination cursor for the next page
+                listComplete:
+                    type: boolean
+                    description: True when there are no older messages to page through
+
+        MessagesSinceResult:
+            type: object
+            required:
+                - messages
+                - threads
+                - timestamp
+            properties:
+                messages:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Message"
+                    description: Newly received or sent items since the provided timestamp
+                threads:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/ThreadSummary"
+                    description: Threads with activity since the provided timestamp
+                timestamp:
+                    type: integer
+                    format: int64
+                    description: Server clock time in milliseconds to use for the next poll
+                    example: 1698765432000
+
+        ThreadListResult:
+            type: object
+            required:
+                - threads
+            properties:
+                threads:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/ThreadSummary"
+
+        ContactListResult:
+            type: object
+            required:
+                - contacts
+            properties:
+                contacts:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Contact"
+
+        ContactCreatePayload:
+            type: object
+            required:
+                - phoneNumber
+                - displayName
+            properties:
+                phoneNumber:
+                    type: string
+                    description: Phone number in E.164 format
+                    example: "+1987654321"
+                displayName:
+                    type: string
+                    description: Display name alias
+                    example: "John Doe"
+
+        ContactUpdatePayload:
+            type: object
+            required:
+                - displayName
+            properties:
+                displayName:
+                    type: string
+                    description: Updated display name alias
+                    example: "Jane Doe"
+
+        ContactMutationResult:
+            type: object
+            required:
+                - contact
+            properties:
+                contact:
+                    $ref: "#/components/schemas/Contact"
+
+        ApiSuccess:
+            type: object
+            required:
+                - success
+                - data
+            properties:
+                success:
+                    type: boolean
+                    enum: [true]
+                    example: true
+                data:
+                    type: object
+                    description: The response data (varies by endpoint)
+
+        ErrorResponse:
+            type: object
+            required:
+                - success
+                - error
+                - code
+            properties:
+                success:
+                    type: boolean
+                    enum: [false]
+                    example: false
+                error:
+                    type: string
+                    description: Human-readable error message
+                    example: "Invalid phone number format"
+                code:
+                    type: string
+                    enum: [INVALID_INPUT, NOT_FOUND, UNAUTHORIZED, INTERNAL_ERROR, TWILIO_ERROR]
+                    description: Machine-readable error code
+                    example: "INVALID_INPUT"
+
+    # ---------------------------------------------------------------------------
+    # STANDARD RESPONSES
+    # ---------------------------------------------------------------------------
+    responses:
+        BadRequest:
+            description: Invalid input provided (400).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        invalid_input:
+                            value:
+                                success: false
+                                error: "Missing required fields, invalid phone number, or malformed timestamp"
+                                code: "INVALID_INPUT"
+
+        NotFound:
+            description: Resource not found (404).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        not_found:
+                            value:
+                                success: false
+                                error: "Requested resource does not exist"
+                                code: "NOT_FOUND"
+
+        Forbidden:
+            description: Unauthorized access (403).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        unauthorized:
+                            value:
+                                success: false
+                                error: "Twilio webhook signature is invalid"
+                                code: "UNAUTHORIZED"
+
+        BadGateway:
+            description: Twilio error (502).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        twilio_error:
+                            value:
+                                success: false
+                                error: "Twilio rejects the WhatsApp send request"
+                                code: "TWILIO_ERROR"
+
+        InternalError:
+            description: Server error (500).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        server_error:
+                            value:
+                                success: false
+                                error: "Unexpected server failure"
+                                code: "INTERNAL_ERROR"
+
+paths:
+    # ---------------------------------------------------------------------------
+    # SEND WHATSAPP ENDPOINT
+    # ---------------------------------------------------------------------------
+    /whatsapp-messenger/send:
+        post:
+            operationId: sendWhatsApp
+            summary: Send WhatsApp message
+            description: >-
+                Sends a WhatsApp message via Twilio from the service WhatsApp number.
+            tags:
+                - WhatsApp Messenger
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/SendWhatsAppRequest"
+            responses:
+                "200":
+                    description: Message queued and stored successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: "#/components/schemas/ApiSuccess"
+                                    - type: object
+                                      properties:
+                                          data:
+                                            $ref: "#/components/schemas/SendWhatsAppResult"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "502":
+                    $ref: "#/components/responses/BadGateway"
+
+    # ---------------------------------------------------------------------------
+    # GET MESSAGES ENDPOINT
+    # ---------------------------------------------------------------------------
+    /whatsapp-messenger/messages:
+        get:
+            operationId: getMessages
+            summary: Get messages for a thread
+            description: >-
+                Retrieves a page of messages with a given counterpart.
+                Messages are returned newest-first.
+            tags:
+                - WhatsApp Messenger
+            parameters:
+                - name: counterpart
+                  in: query
+                  required: true
+                  description: The other party's phone number in E.164 format
+                  schema:
+                      type: string
+                      example: "+1987654321"
+                - name: cursor
+                  in: query
+                  required: false
+                  description: Pagination cursor from the previous response
+                  schema:
+                      type: string
+                - name: limit
+                  in: query
+                  required: false
+                  description: Number of messages to return (default 50, max 200)
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 200
+                      default: 50
+            responses:
+                "200":
+                    description: Messages retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: "#/components/schemas/ApiSuccess"
+                                    - type: object
+                                      properties:
+                                          data:
+                                            $ref: "#/components/schemas/MessagesResult"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # GET MESSAGES SINCE ENDPOINT
+    # ---------------------------------------------------------------------------
+    /whatsapp-messenger/messages-since:
+        get:
+            operationId: getMessagesSince
+            summary: Poll for new messages
+            description: >-
+                Polls for new activity since a provided timestamp and refreshes thread summaries.
+                Returns newly received or sent items and threads with activity.
+            tags:
+                - WhatsApp Messenger
+            parameters:
+                - name: since
+                  in: query
+                  required: true
+                  description: Unix timestamp in milliseconds; use the timestamp returned by the previous call
+                  schema:
+                      type: integer
+                      format: int64
+                      example: 1698765432000
+            responses:
+                "200":
+                    description: New messages and thread updates retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: "#/components/schemas/ApiSuccess"
+                                    - type: object
+                                      properties:
+                                          data:
+                                            $ref: "#/components/schemas/MessagesSinceResult"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # GET THREADS ENDPOINT
+    # ---------------------------------------------------------------------------
+    /whatsapp-messenger/threads:
+        get:
+            operationId: getThreads
+            summary: Get all conversation threads
+            description: >-
+                Returns summaries for all conversation threads.
+            tags:
+                - WhatsApp Messenger
+            responses:
+                "200":
+                    description: Thread summaries retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: "#/components/schemas/ApiSuccess"
+                                    - type: object
+                                      properties:
+                                          data:
+                                            $ref: "#/components/schemas/ThreadListResult"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # CONTACTS ENDPOINT
+    # ---------------------------------------------------------------------------
+    /whatsapp-messenger/contacts:
+        get:
+            operationId: getContacts
+            summary: List all contacts
+            description: >-
+                Lists all saved contact aliases.
+            tags:
+                - WhatsApp Messenger
+            responses:
+                "200":
+                    description: Contacts retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: "#/components/schemas/ApiSuccess"
+                                    - type: object
+                                      properties:
+                                          data:
+                                            $ref: "#/components/schemas/ContactListResult"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+        post:
+            operationId: createContact
+            summary: Create a new contact
+            description: >-
+                Adds a new contact alias for a phone number.
+            tags:
+                - WhatsApp Messenger
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ContactCreatePayload"
+            responses:
+                "200":
+                    description: Contact created successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: "#/components/schemas/ApiSuccess"
+                                    - type: object
+                                      properties:
+                                          data:
+                                            $ref: "#/components/schemas/ContactMutationResult"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # UPDATE CONTACT ENDPOINT
+    # ---------------------------------------------------------------------------
+    /whatsapp-messenger/contacts/{contactId}:
+        patch:
+            operationId: updateContact
+            summary: Update a contact
+            description: >-
+                Updates the display name of an existing contact.
+            tags:
+                - WhatsApp Messenger
+            parameters:
+                - name: contactId
+                  in: path
+                  required: true
+                  description: Contact ID (UUID)
+                  schema:
+                      type: string
+                      format: uuid
+                      example: "550e8400-e29b-41d4-a716-446655440000"
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ContactUpdatePayload"
+            responses:
+                "200":
+                    description: Contact updated successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: "#/components/schemas/ApiSuccess"
+                                    - type: object
+                                      properties:
+                                          data:
+                                            $ref: "#/components/schemas/ContactMutationResult"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # WEBHOOK ENDPOINT
+    # ---------------------------------------------------------------------------
+    /whatsapp-messenger/webhook:
+        post:
+            operationId: receiveWebhook
+            summary: Twilio webhook endpoint
+            description: >-
+                Twilio posts incoming WhatsApp messages to this endpoint. This is backend-only;
+                the frontend does not call it directly. Validates the X-Twilio-Signature
+                header before processing.
+            tags:
+                - WhatsApp Messenger
+            requestBody:
+                required: true
+                content:
+                    application/x-www-form-urlencoded:
+                        schema:
+                            type: object
+                            description: Twilio webhook payload (From, To, Body, MessageSid, etc.)
+            responses:
+                "200":
+                    description: Webhook processed successfully.
+                    content:
+                        text/xml:
+                            schema:
+                                type: string
+                                description: TwiML Response
+                                example: "<Response></Response>"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+

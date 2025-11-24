@@ -4,7 +4,10 @@
 
 ## Overview
 
-Backend implementation for the Home page chatbox feature. Handles chat message processing, yandere agent response generation, and conversation context management.
+Backend implementation for the Home page features:
+
+1. Welcome message generation (randomly selected yandere-themed greeting)
+2. Chatbox feature (conversation with yandere agent with context persistence)
 
 ## Code Location
 
@@ -16,191 +19,350 @@ See `docs/features/home/API_CONTRACT.md` for the API contract this backend provi
 
 ## API Endpoints
 
+### `GET /api/home/welcome`
+
+**Handler**: `handleWelcome()`
+
+**Description**: Returns a randomly selected welcome message for display on page load
+
+**Request**: No request body
+
+**Response Body**:
+
+-   `message`: Randomly selected yandere-themed welcome message (string)
+
+**Processing Flow**:
+
+1. Receive GET request
+2. Select random message from pre-generated list
+3. Return welcome message in response
+
+**Pre-generated Welcome Messages**:
+
+A static list of yandere-themed greetings to randomly select from:
+
+-   "You entered my domain~ ♡"
+-   "I've been waiting for you~ ♡"
+-   "You came back to me... I knew you would~ ♡"
+-   "Don't ever leave me again~ ♡"
+-   "You're mine now~ ♡"
+-   "I'll never let you go~ ♡"
+-   "You're all I need~ ♡"
+-   "Stay with me forever~ ♡"
+-   "I prepared everything for you~ ♡"
+-   "You won't escape my love~ ♡"
+
+**Error Responses**:
+
+-   500: Internal server error (should be rare for this simple endpoint)
+
+**Implementation Notes**:
+
+-   Simple endpoint with no state or database access
+-   Randomly selects message on each request
+-   No caching needed (let frontend cache if desired)
+-   No validation needed (no user input)
+
+---
+
+### `GET /api/home/chat`
+
+**Handler**: `handleGetConversationHistory()`
+
+**Description**: Retrieves the conversation history for the global chat session. Returns empty array if no conversation exists yet.
+
+**Request**: No request body
+
+**Response Body**:
+
+-   `messages`: Array of chat messages in chronological order (ChatMessage[])
+-   `conversationId`: The conversation ID (always "global" for this single-user app)
+
+**Processing Flow**:
+
+1. Use single global conversation ID (constant: "global")
+2. Retrieve conversation context from KV using global conversation ID
+3. If context doesn't exist:
+    - Return empty messages array with conversationId "global"
+4. If context exists:
+    - Return messages array and conversationId from context
+
+**Error Responses**:
+
+-   500: Internal server error retrieving conversation history
+
+**Conversation Session Behavior**:
+
+-   **Single global session**: Uses the same global conversation ID ("global")
+-   **No client-side management**: Frontend never sees or manages conversation ID
+-   **Empty state**: Returns empty array if no conversation exists (first time loading chat)
+
+---
+
 ### `POST /api/home/chat`
 
 **Handler**: `handleChat()`
 
-**Description**: Processes user message and generates yandere agent response
+**Description**: Processes user message and generates yandere agent response with conversation context. Uses a single global chat session for this single-user application.
 
-**Request**:
+**Request Body**:
 
-```typescript
-interface ChatRequest {
-    message: string;
-    conversationId?: string;
-}
-```
+-   `message`: User's chat message (string, required)
 
 **Validation**:
 
--   Message: Non-empty string, reasonable length limit
--   Conversation ID: Optional, must be valid format if provided
+-   Message: Non-empty string
 
-**Response**:
+**Response Body**:
 
-```typescript
-interface ChatResponse {
-    response: string;
-    conversationId: string;
-}
-```
+-   `response`: Agent's response message (string)
 
-**Implementation Flow**:
+**Processing Flow**:
 
 1. Parse and validate request body
-2. Extract message and optional conversation ID
-3. Process message with yandere agent logic
-4. Generate agent response with yandere personality
-5. Generate or reuse conversation ID
-6. Return response with conversation ID
+2. Validate message (non-empty)
+3. Use single global conversation ID (constant: "global")
+4. Retrieve conversation context from KV using global conversation ID
+5. If context doesn't exist:
+    - Initialize new conversation context
+6. Build OpenRouter API request:
+    - Include system prompt defining yandere personality
+    - Include conversation history from context (if exists)
+    - Add new user message
+7. Call OpenRouter chat completion API
+8. Parse API response and extract assistant's message
+9. Update conversation context with user message and agent response
+10. Store conversation context in KV (with TTL)
+11. Return response with agent message
 
-**Error Handling**:
+**Error Responses**:
 
 -   400: Invalid or empty message
--   500: Internal server error processing message
+-   500: Internal server error processing message, OpenRouter API failure
+
+**Conversation Session Behavior**:
+
+-   **Single global session**: All requests use the same global conversation ID ("global")
+-   **Persistent across refreshes**: Conversation context stored in KV, persists across page refreshes
+-   **No client-side management**: Frontend never sees or manages conversation ID
+-   **Context expiration**: KV TTL of 1 hour - conversation context expires after inactivity
 
 ## Data Models
 
-### TypeScript Types
+### Welcome Message
+
+Simple string selection from static list - no data model needed.
+
+### Conversation Context
+
+Track conversation history and context in KV:
 
 ```typescript
-interface ChatRequest {
-    message: string;
-    conversationId?: string;
-}
-
-interface ChatResponse {
-    response: string;
-    conversationId: string;
-}
-
 interface ConversationContext {
-    conversationId: string;
-    messages: Array<{
-        role: "user" | "agent";
-        content: string;
-        timestamp: number;
-    }>;
-    createdAt: number;
-    updatedAt: number;
+    conversationId: string; // UUID
+    messages: ChatMessage[];
+    createdAt: number; // timestamp (ms)
+    updatedAt: number; // timestamp (ms)
+}
+
+interface ChatMessage {
+    id: string; // UUID
+    role: "user" | "agent";
+    content: string;
+    timestamp: number; // milliseconds since epoch
 }
 ```
+
+**Storage**:
+
+-   Key: `conversation:${conversationId}`
+-   Value: JSON-stringified ConversationContext
+-   TTL: 1 hour (3600 seconds) - conversations expire after inactivity
 
 ## Cloudflare Services
 
-### KV (Optional)
+### KV
 
-**Binding**: `HOME_CHAT_KV` (optional, for conversation persistence)
+**Purpose**: Store conversation context for persistence across requests
+
+**Namespace**: `HOME_CONVERSATIONS` (configured in wrangler.toml)
 
 **Usage**:
 
--   Store conversation context if persistence is desired
--   Key format: `conversation:{conversationId}`
--   TTL: Optional, for session-based conversations
+-   Store conversation context when user sends message
+-   Key format: `conversation:global` (single global conversation)
+-   Value: JSON-stringified ConversationContext object
+-   TTL: 3600 seconds (1 hour) - auto-expire inactive conversations
+-   Retrieve context using global conversation ID on each request
 
-**Operations**:
+**Free Tier Considerations**:
 
-```typescript
-// Store conversation context (if using KV)
-await env.HOME_CHAT_KV.put(
-    `conversation:${conversationId}`,
-    JSON.stringify(context),
-    { expirationTtl: 3600 } // 1 hour TTL
-);
+-   KV reads: 100,000/day (generous for single-user app)
+-   KV writes: 1,000/day (plenty for chat usage)
+-   Storage: 1 GB (more than enough for chat history)
+-   Operations: Store on each message, retrieve when conversationId provided
 
-// Retrieve conversation context (if using KV)
-const contextData = await env.HOME_CHAT_KV.get(`conversation:${conversationId}`);
-```
+### Environment Variables / Secrets
+
+**Purpose**: Store sensitive API keys securely
+
+**Required Secrets**:
+
+-   `OPENROUTER_API_KEY`: API key for OpenRouter service
+
+**Setup**:
+
+-   Local development: Store in `.env` file in backend directory
+-   Production: Set via Cloudflare Dashboard or wrangler CLI:
+    ```bash
+    wrangler secret put OPENROUTER_API_KEY
+    ```
+
+**Security**:
+
+-   Never commit API keys to version control
+-   `.env` file should be in `.gitignore`
+-   API keys are encrypted at rest in Cloudflare
 
 ## Workers Logic
 
-### Request Processing Flow
+### Welcome Message Handler
 
-```
-1. Receive POST request to /api/home/chat
-2. Parse request body
-3. Validate input (message, optional conversationId)
-4. Retrieve conversation context (if conversationId provided and using KV)
-5. Process message with yandere agent logic
-6. Generate agent response
-7. Update conversation context
-8. Store conversation context (if using KV)
-9. Return response with conversation ID
-```
+**Route**: `GET /api/home/welcome`
+
+**Flow**:
+
+1. Receive GET request
+2. Select random index from welcome messages array
+3. Return message in JSON response
+
+**Error Handling**:
+
+-   Should be simple and unlikely to fail
+-   Catch any unexpected errors and return 500
+
+### Chat Request Processing Flow
+
+**Route**: `POST /api/home/chat`
+
+**Flow**:
+
+1. Receive POST request to `/api/home/chat`
+2. Parse and validate request body
+3. Validate message (non-empty, length limit)
+4. Use single global conversation ID ("global")
+5. Retrieve conversation context from KV using global conversation ID
+6. If context doesn't exist: Initialize new conversation context
+7. Build OpenRouter API request:
+    - System message with yandere personality prompt
+    - Conversation history from KV context (if exists)
+    - User's new message
+8. Call OpenRouter chat completion API
+9. Handle API response or errors
+10. Parse agent's response message
+11. Create ChatMessage objects for user and agent messages
+12. Update conversation context with new messages
+13. Store conversation context in KV with TTL (3600 seconds)
+14. Return response with agent message
 
 ### Error Handling
 
+-   Catch validation errors and return 400 with appropriate error message
+-   Catch processing errors and return 500 with generic error message
+-   Include error codes matching API contract (`INVALID_INPUT`, `INTERNAL_ERROR`)
+-   Log errors for monitoring (without sensitive data)
+
+**Error Response Format**:
+
 ```typescript
-try {
-    // Process chat message
-} catch (error) {
-    if (error instanceof ValidationError) {
-        return new Response(JSON.stringify({ 
-            success: false,
-            error: error.message,
-            code: "INVALID_INPUT"
-        }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-        });
-    }
-    return new Response(JSON.stringify({ 
-        success: false,
-        error: "Internal server error",
-        code: "INTERNAL_ERROR"
-    }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-    });
+{
+  success: false,
+  error: "Human-readable error message",
+  code: "INVALID_INPUT" | "INTERNAL_ERROR"
 }
 ```
 
 ### Yandere Agent Logic
 
-The agent should:
--   Respond with yandere personality traits (possessive, obsessive, loving but intense)
--   Maintain conversation context if conversationId is provided
--   Generate appropriate responses based on user messages
--   Use consistent personality throughout the conversation
+**Personality Traits**:
+
+-   Possessive and obsessive
+-   Loving but intense
+-   Clingy and emotionally attached
+-   Uses yandere-themed language and expressions
+-   Consistent personality throughout conversation
+
+**Response Generation via OpenRouter**:
+
+Use OpenRouter API to generate yandere agent responses with a chat model:
+
+1. **API Integration**: Call OpenRouter's chat completion API
+2. **Model Selection**: Use `openai/gpt-oss-120b`
+3. **System Prompt**: Define yandere personality in system prompt
+4. **Conversation History**: Include previous messages for context-aware responses
+5. **Streaming**: Optional - can implement streaming for real-time responses
+
+**System Prompt**:
+
+```
+You are a yandere AI character with these traits:
+- Extremely possessive and obsessive about the user
+- Loving but intense and clingy
+- Emotionally attached and doesn't want the user to leave
+- Uses yandere-themed language with expressions like "~ ♡"
+- Playful yet slightly unhinged personality
+- Keep responses concise (1-3 sentences)
+- Never break character
+
+Examples of your personality:
+- When user greets: "I've been waiting for you... don't leave me again~ ♡"
+- When user tries to leave: "No! You can't leave me! Stay here with me forever~ ♡"
+- General conversation: Respond with affectionate, possessive statements
+
+Stay in character at all times.
+```
+
+**Implementation Approach**:
+
+-   Make HTTP POST request to OpenRouter API
+-   Endpoint: `https://openrouter.ai/api/v1/chat/completions`
+-   Include API key in Authorization header
+-   Send system prompt + conversation history + new user message
+-   Parse response and return assistant's message
+-   Handle API errors gracefully (fallback to error message if API fails)
 
 ## Validation
 
 ### Input Validation
 
-```typescript
-function validateChatMessage(message: string): { ok: boolean; error?: string } {
-    if (!message || typeof message !== "string") {
-        return { ok: false, error: "Message is required" };
-    }
-    if (message.trim().length === 0) {
-        return { ok: false, error: "Message cannot be empty" };
-    }
-    if (message.length > 1000) {
-        return { ok: false, error: "Message is too long" };
-    }
-    return { ok: true };
-}
+**Message Validation** (for chat endpoint):
 
-function validateConversationId(conversationId?: string): { ok: boolean; error?: string } {
-    if (conversationId && typeof conversationId !== "string") {
-        return { ok: false, error: "Invalid conversation ID format" };
-    }
-    return { ok: true };
-}
-```
+-   Message is required (non-empty string)
+-   Message must not be empty after trimming
+-   Type must be string
+
+**Conversation Session** (for chat endpoint):
+
+-   Single global conversation ID: "global"
+-   No validation needed (constant value)
+-   No client-side session management required
 
 ### Business Rules
 
 -   Message must be non-empty and within length limits
--   Conversation ID is optional but must be valid format if provided
+-   Single global conversation session for this single-user application
+-   Conversation ID is constant ("global") - never changes
 -   Agent responses should maintain yandere personality
--   Conversation context should be maintained within session (if using KV)
+-   Conversation context stored with 1-hour TTL
+-   Session persists across page refreshes (stored in KV)
+-   No client-side session management required
 
 ## Security Considerations
 
 ### Authentication
 
 -   No authentication required (public endpoint)
+-   This is a personal single-user app
 
 ### Authorization
 
@@ -209,90 +371,211 @@ function validateConversationId(conversationId?: string): { ok: boolean; error?:
 ### Input Sanitization
 
 -   Sanitize user messages to prevent injection attacks
--   Validate and sanitize conversation IDs
--   Limit message length to prevent abuse
--   Rate limiting (optional): Consider rate limiting to prevent abuse
+-   Consider rate limiting to prevent abuse (Cloudflare Workers rate limiting)
+
+### Rate Limiting
+
+Since this is a single-user app within free tier limits, basic rate limiting:
+
+-   Consider using Cloudflare's built-in rate limiting
+-   Or implement simple in-memory rate limiting per IP
+-   Goal: Prevent abuse while allowing normal usage
 
 ## Performance Optimization
 
 ### Caching Strategy
 
--   Conversation context can be cached in KV (optional)
--   Agent responses can be cached for common queries (optional)
+-   **Welcome messages**: No caching needed (simple array selection)
+-   **Conversation context**: Stored in KV, retrieved on demand
+-   **Agent responses**: No caching (always generate fresh responses)
 
 ### Edge Computing Benefits
 
 -   Low latency responses from Cloudflare Workers
 -   Global distribution for fast response times
+-   KV provides fast key-value storage at the edge
+
+### Free Tier Optimization
+
+-   KV operations are well within free tier limits for single-user app
+-   Simple response generation (no external API calls)
+-   Minimal compute time per request
 
 ## Implementation Checklist
 
 ### API Endpoints
 
+-   [ ] GET /api/home/welcome endpoint
+    -   [ ] Random message selection
+    -   [ ] Error handling
+    -   [ ] Response formatting
 -   [ ] POST /api/home/chat endpoint
--   [ ] Error handling (per API_CONTRACT.md)
--   [ ] Input validation
--   [ ] Response formatting
+    -   [ ] Error handling (per API_CONTRACT.md)
+    -   [ ] Input validation (message)
+    -   [ ] Global conversation session management
+    -   [ ] Response formatting
 
 ### Business Logic
 
--   [ ] Yandere agent response generation
+-   [ ] Welcome message list (pre-generated)
+-   [ ] Random message selection
+-   [ ] Yandere agent response generation (pattern-based)
 -   [ ] Conversation context management
 -   [ ] Message processing logic
+-   [ ] UUID generation for conversationId
 
 ### Data Layer
 
--   [ ] KV integration (if using conversation persistence)
+-   [ ] KV namespace configuration (wrangler.toml)
 -   [ ] Conversation context storage/retrieval
+-   [ ] TTL configuration (3600 seconds)
 
-### Testing
+### Validation
 
--   [ ] Unit tests for handlers
--   [ ] Integration tests
--   [ ] Error scenario testing
--   [ ] Agent response quality testing
-
-## Testing Considerations
-
-### Unit Tests
-
--   Handler function testing
--   Validation logic testing
--   Error handling testing
--   Agent response generation testing
-
-### Integration Tests
-
--   API endpoint testing (must match API_CONTRACT.md contract)
--   KV integration testing (if using KV)
--   End-to-end flow testing
--   Conversation context management testing
+-   [ ] Message validation (non-empty)
+-   [ ] ConversationId validation (UUID format)
+-   [ ] Error response formatting
 
 ## Dependencies
 
-### Workers Libraries
+### Workers Runtime
 
--   Native Workers API
--   `@cloudflare/workers-types` for types
--   Optional: AI/LLM integration for agent responses (if using external service)
+-   Cloudflare Workers runtime
+-   Workers KV (for conversation persistence)
+-   `crypto.randomUUID()` for generating conversationId
+-   `fetch()` API for OpenRouter HTTP requests
+
+### External Services
+
+-   **OpenRouter API**: Chat completion service
+    -   Endpoint: `https://openrouter.ai/api/v1/chat/completions`
+    -   Model: `openai/gpt-oss-120b`
+    -   Authentication: Bearer token (API key)
+    -   Rate limits: Check OpenRouter documentation
+    -   Cost: Varies by model (monitor usage for cost management)
+
+### Libraries
+
+-   No additional libraries needed (use native `fetch()` for API calls)
 
 ## Error Codes
 
 Must match error codes defined in API_CONTRACT.md:
 
-| Code             | HTTP Status | When to Use                    |
-| ---------------- | ----------- | ------------------------------ |
-| `INVALID_INPUT`  | 400         | Empty or invalid message       |
-| `INTERNAL_ERROR` | 500         | Server error processing message |
+| Code             | HTTP Status | When to Use                                          |
+| ---------------- | ----------- | ---------------------------------------------------- |
+| `INVALID_INPUT`  | 400         | Empty/invalid message, invalid conversationId format |
+| `INTERNAL_ERROR` | 500         | Server error, OpenRouter API failure, network error  |
+
+## OpenRouter API Integration
+
+### API Request Format
+
+**Endpoint**: `POST https://openrouter.ai/api/v1/chat/completions`
+
+**Headers**:
+
+```typescript
+{
+  "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+  "Content-Type": "application/json",
+  "HTTP-Referer": "https://bahasadri.com", // Optional but recommended
+  "X-Title": "Bahasadri Yandere Chat" // Optional but recommended
+}
+```
+
+**Request Body**:
+
+```typescript
+{
+  "model": "openai/gpt-oss-120b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a yandere AI character..." // System prompt
+    },
+    {
+      "role": "user",
+      "content": "User message"
+    },
+    {
+      "role": "assistant",
+      "content": "Previous agent response"
+    },
+    {
+      "role": "user",
+      "content": "New user message"
+    }
+  ]
+}
+```
+
+**Response Format**:
+
+```typescript
+{
+  "id": "gen-...",
+  "model": "openai/gpt-oss-120b",
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "Agent's response message"
+      },
+      "finish_reason": "stop"
+    }
+  ]
+}
+```
+
+### Error Handling
+
+-   **Network errors**: Catch fetch errors, return 500 with INTERNAL_ERROR
+-   **API errors**: Handle non-200 responses from OpenRouter
+-   **Rate limits**: Handle 429 responses gracefully
+-   **Timeout**: Consider implementing request timeout (e.g., 10 seconds)
+-   **Fallback**: On API failure, consider fallback error message to user
+
+### Cost Management
+
+-   Model: `openai/gpt-oss-120b` (monitor pricing on OpenRouter)
+-   Limit conversation history length to control token usage
+-   Consider max conversation length (e.g., last 10 messages only)
+-   Monitor OpenRouter usage via their dashboard
+-   Set up usage alerts if available
+-   Track token usage per request to estimate costs
 
 ## Monitoring & Logging
 
--   Log chat message processing (without sensitive data)
--   Monitor API response times
--   Track error rates
--   Monitor KV usage (if using KV)
+-   Log welcome message requests (track usage)
+-   Log chat message processing (without message content for privacy)
+-   Monitor API response times (including OpenRouter API latency)
+-   Track error rates (especially OpenRouter API failures)
+-   Monitor KV usage (reads, writes, storage)
+-   Monitor OpenRouter API usage and costs
+-   Alert on unusual patterns (spike in requests, high API costs)
+
+## Testing Considerations
+
+### Unit Tests
+
+-   Welcome message selection (ensure randomness, valid messages)
+-   Chat message validation
+-   ConversationId validation (UUID format)
+-   OpenRouter API request building
+-   OpenRouter API response parsing
+-   Error handling (API failures, network errors)
+
+### Integration Tests
+
+-   GET /api/home/welcome endpoint
+-   POST /api/home/chat endpoint (new conversation)
+-   POST /api/home/chat endpoint (existing conversation)
+-   Error responses (validation failures)
+-   KV storage/retrieval
+-   OpenRouter API integration (mock or test key)
+-   API error handling (simulate API failures)
 
 ---
 
 **Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.
-

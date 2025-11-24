@@ -65,8 +65,8 @@ backend/src/
 
 ## Development
 
--   **Local Dev**: `pnpm dev` (runs Wrangler dev server)
--   **Build**: `pnpm build` (compiles TypeScript)
+-   **Local Dev**: `pnpm dev` (runs Wrangler dev server with local bindings)
+-   **Preview**: `pnpm preview` (runs Wrangler dev server with remote Cloudflare resources - production-like testing)
 -   **Deploy**: `pnpm deploy` (deploys to Cloudflare)
 
 ## Deployment
@@ -82,6 +82,7 @@ backend/src/
 -   [Cloudflare KV](https://developers.cloudflare.com/kv/llms-full.txt)
 -   [Cloudflare R2](https://developers.cloudflare.com/r2/llms-full.txt)
 -   [Cloudflare D1](https://developers.cloudflare.com/d1/llms-full.txt)
+-   [OpenRouter](https://openrouter.ai/docs/llms.txt)
 -   [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/commands/)
 -   [TypeScript](https://www.typescriptlang.org/docs/handbook/intro.html)
 

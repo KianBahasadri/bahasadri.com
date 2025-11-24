@@ -12,7 +12,7 @@ Backend implementation for the Video Call utility. Handles RealtimeKit API integ
 
 ## API Contract Reference
 
-See `docs/features/video-call/API_CONTRACT.md` for the API contract this backend provides.
+See `docs/features/video-call/API_CONTRACT.yml` for the API contract this backend provides.
 
 ## API Endpoints
 
@@ -45,7 +45,7 @@ interface GlobalRoomResponse {
 
 **Handler**: `createSession()`
 
-**Description**: Creates a new meeting session via RealtimeKit API
+**Description**: Creates a new meeting via RealtimeKit's REST API. This corresponds to RealtimeKit's "Create Meeting" endpoint. Returns a meeting ID that can be used to generate participant tokens.
 
 **Request Body**:
 
@@ -83,7 +83,7 @@ interface CreateSessionResponse {
 
 **Handler**: `generateToken()`
 
-**Description**: Generates participant authentication token via RealtimeKit API
+**Description**: Generates a participant authentication token via RealtimeKit's REST API. This corresponds to RealtimeKit's "Add Participant" endpoint, which creates a participant entry for the meeting and returns an authToken. Each participant needs their own token.
 
 **Request Body**:
 
@@ -121,8 +121,9 @@ interface GenerateTokenResponse {
 
 **Error Handling**:
 
--   400: Missing meeting_id
--   500: RealtimeKit API error or missing config
+-   400: Missing meeting_id (INVALID_INPUT)
+-   404: Meeting does not exist (NOT_FOUND)
+-   500: RealtimeKit API error (REALTIMEKIT_ERROR) or missing config (INTERNAL_ERROR)
 
 ## Data Models
 
@@ -168,8 +169,8 @@ interface RealtimeKitTokenResponse {
 
 **API Endpoints**:
 
--   `POST https://api.cloudflare.com/client/v4/accounts/{accountId}/realtime/meetings`
--   `POST https://api.cloudflare.com/client/v4/accounts/{accountId}/realtime/meetings/{meetingId}/tokens`
+-   `POST https://api.cloudflare.com/client/v4/accounts/{accountId}/realtime/meetings` - Create Meeting
+-   `POST https://api.cloudflare.com/client/v4/accounts/{accountId}/realtime/meetings/{meetingId}/tokens` - Add Participant (returns authToken)
 
 **Configuration**:
 
@@ -198,26 +199,67 @@ interface RealtimeKitTokenResponse {
 
 ### Error Handling
 
+All error responses must match the ErrorResponse schema from the API contract:
+
 ```typescript
+interface ErrorResponse {
+    error: string; // Human-readable error message
+    code:
+        | "INVALID_INPUT"
+        | "NOT_FOUND"
+        | "INTERNAL_ERROR"
+        | "REALTIMEKIT_ERROR";
+}
+
 try {
     // Operation
 } catch (error) {
     if (error instanceof ValidationError) {
-        return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-        });
-    }
-    if (error instanceof RealtimeKitError) {
         return new Response(
-            JSON.stringify({ error: "RealtimeKit API error" }),
-            { status: 500, headers: { "Content-Type": "application/json" } }
+            JSON.stringify({
+                error: error.message,
+                code: "INVALID_INPUT",
+            }),
+            {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+            }
         );
     }
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-    });
+    if (error instanceof RealtimeKitError) {
+        if (error.status === 404) {
+            return new Response(
+                JSON.stringify({
+                    error: "Meeting does not exist",
+                    code: "NOT_FOUND",
+                }),
+                {
+                    status: 404,
+                    headers: { "Content-Type": "application/json" },
+                }
+            );
+        }
+        return new Response(
+            JSON.stringify({
+                error: "RealtimeKit API error",
+                code: "REALTIMEKIT_ERROR",
+            }),
+            {
+                status: 500,
+                headers: { "Content-Type": "application/json" },
+            }
+        );
+    }
+    return new Response(
+        JSON.stringify({
+            error: "Internal server error",
+            code: "INTERNAL_ERROR",
+        }),
+        {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+        }
+    );
 }
 ```
 
@@ -287,7 +329,7 @@ function validateGenerateTokenRequest(body: unknown): {
 -   [ ] GET /global-room endpoint
 -   [ ] POST /session endpoint
 -   [ ] POST /token endpoint
--   [ ] Error handling (per API_CONTRACT.md)
+-   [ ] Error handling (per API_CONTRACT.yml)
 
 ### External Integration
 
@@ -302,27 +344,6 @@ function validateGenerateTokenRequest(body: unknown): {
 -   [ ] Config validation
 -   [ ] Response formatting
 
-### Testing
-
--   [ ] Unit tests for handlers
--   [ ] RealtimeKit API mocking
--   [ ] Error scenario testing
-
-## Testing Considerations
-
-### Unit Tests
-
--   Handler function testing
--   Validation logic testing
--   Error handling testing
--   Config validation
-
-### Integration Tests
-
--   API endpoint testing (must match API_CONTRACT.md contract)
--   RealtimeKit API integration (mocked)
--   Environment variable handling
-
 ## Dependencies
 
 ### Workers Libraries
@@ -336,7 +357,7 @@ function validateGenerateTokenRequest(body: unknown): {
 
 ## Error Codes
 
-Must match error codes defined in API_CONTRACT.md:
+Must match error codes defined in API_CONTRACT.yml:
 
 | Code                | HTTP Status | When to Use             |
 | ------------------- | ----------- | ----------------------- |
@@ -354,4 +375,4 @@ Must match error codes defined in API_CONTRACT.md:
 
 ---
 
-**Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.
+**Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.yml couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.yml.
