@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchThreads, fetchContacts } from "../../../lib/api";
 import SMSInterface from "./components/SMSInterface/sms-interface";
@@ -10,20 +10,7 @@ const queryKeys = {
     contacts: ["sms-messenger", "contacts"] as const,
 };
 
-const terminalLines = [
-    "> Initializing SMS protocol...",
-    "> Connecting to message server...",
-    "> Loading conversations...",
-    "> Ready to send messages~ ♡",
-];
-
 export default function SMSMessenger(): React.JSX.Element {
-    const [terminalText, setTerminalText] = useState("");
-    const [currentLineIndex, setCurrentLineIndex] = useState(0);
-    const [showCursor, setShowCursor] = useState(true);
-    const [isTerminalFinished, setIsTerminalFinished] = useState(false);
-    const [shouldHideTerminal, setShouldHideTerminal] = useState(false);
-
     const { data: threadsData } = useQuery({
         queryKey: queryKeys.threads,
         queryFn: async () => await fetchThreads(),
@@ -39,85 +26,11 @@ export default function SMSMessenger(): React.JSX.Element {
     const initialCounterpart: string | undefined =
         initialThreads.length > 0 ? initialThreads[0]?.counterpart : undefined;
 
-    useEffect(() => {
-        if (currentLineIndex >= terminalLines.length) {
-            if (!isTerminalFinished) {
-                setIsTerminalFinished(true);
-                setTimeout(() => {
-                    setShouldHideTerminal(true);
-                }, 4000);
-            }
-            return;
-        }
-
-        const line = terminalLines[currentLineIndex];
-        if (line === undefined) {
-            return;
-        }
-
-        let charIndex = 0;
-        const updateTerminalText = (prev: string): string => {
-            const lines = prev === "" ? [] : prev.split("\n");
-            while (lines.length <= currentLineIndex) {
-                lines.push("");
-            }
-            lines[currentLineIndex] = line.slice(0, charIndex + 1);
-            return lines.join("\n");
-        };
-
-        const handleTyping = (): void => {
-            if (charIndex < line.length) {
-                setTerminalText(updateTerminalText);
-                charIndex++;
-            } else {
-                clearInterval(typingInterval);
-                const nextIndex = currentLineIndex + 1;
-                const advanceLine = (): void => {
-                    setCurrentLineIndex(nextIndex);
-                };
-                setTimeout(advanceLine, 500);
-            }
-        };
-
-        const typingInterval = setInterval(handleTyping, 50);
-
-        return (): void => {
-            clearInterval(typingInterval);
-        };
-    }, [currentLineIndex, isTerminalFinished]);
-
-    useEffect(() => {
-        const cursorInterval = setInterval(() => {
-            setShowCursor((prev) => !prev);
-        }, 530);
-
-        return (): void => {
-            clearInterval(cursorInterval);
-        };
-    }, []);
-
     return (
         <>
             {/* Terminal Scanline Background */}
             <div className={styles["bgTerminal"]} />
             <div className={styles["scanlines"]} />
-
-            {/* Terminal Lines */}
-            {shouldHideTerminal ? null : (
-                <div
-                    className={`${String(styles["terminalLines"])} ${
-                        isTerminalFinished ? String(styles["fadeOut"]) : ""
-                    }`}
-                >
-                    <pre className={styles["terminalText"]}>
-                        {terminalText}
-                        {showCursor &&
-                        currentLineIndex < terminalLines.length ? (
-                            <span className={styles["terminalCursor"]}>_</span>
-                        ) : null}
-                    </pre>
-                </div>
-            )}
 
             {/* Particle System */}
             <div className={styles["particles"]}>

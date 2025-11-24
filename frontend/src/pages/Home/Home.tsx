@@ -32,7 +32,7 @@ const toolPopups: Record<string, ToolPopup> = {
         ascii: "(o_O)",
     },
     "video-call": {
-        text: "Soon we can see each other~ I'm waiting! 📹💖",
+        text: "Click me, darling~ Let's see each other! 📹💖",
         ascii: "(〜￣▽￣)〜",
     },
 };
@@ -364,13 +364,17 @@ export default function Home(): React.JSX.Element {
                                     </h3>
                                 </button>
 
-                                <button
+                                <Link
+                                    to="/video-call"
                                     className={styles["cardMenhera"]}
-                                    disabled
                                     onMouseEnter={(e) => {
                                         handleCardHover("video-call", e);
+                                        startHeartbeat(e.currentTarget);
                                     }}
-                                    onMouseLeave={handleCardLeave}
+                                    onMouseLeave={() => {
+                                        handleCardLeave();
+                                        stopHeartbeat();
+                                    }}
                                 >
                                     <span className={styles["cardIcon"]}>
                                         📹
@@ -378,7 +382,7 @@ export default function Home(): React.JSX.Element {
                                     <h3 className={styles["cardTitle"]}>
                                         Video Call
                                     </h3>
-                                </button>
+                                </Link>
                             </div>
 
                             {/* Cute Popup */}

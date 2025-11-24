@@ -145,7 +145,7 @@ A static list of yandere-themed greetings to randomly select from:
 -   **Single global session**: All requests use the same global conversation ID ("global")
 -   **Persistent across refreshes**: Conversation context stored in KV, persists across page refreshes
 -   **No client-side management**: Frontend never sees or manages conversation ID
--   **Context expiration**: KV TTL of 1 hour - conversation context expires after inactivity
+-   **Context expiration**: KV TTL of 3 hours - conversation context expires after inactivity
 
 ## Data Models
 
@@ -177,7 +177,7 @@ interface ChatMessage {
 
 -   Key: `conversation:${conversationId}`
 -   Value: JSON-stringified ConversationContext
--   TTL: 1 hour (3600 seconds) - conversations expire after inactivity
+-   TTL: 3 hours (10800 seconds) - conversations expire after inactivity
 
 ## Cloudflare Services
 
@@ -192,7 +192,7 @@ interface ChatMessage {
 -   Store conversation context when user sends message
 -   Key format: `conversation:global` (single global conversation)
 -   Value: JSON-stringified ConversationContext object
--   TTL: 3600 seconds (1 hour) - auto-expire inactive conversations
+-   TTL: 10800 seconds (3 hours) - auto-expire inactive conversations
 -   Retrieve context using global conversation ID on each request
 
 **Free Tier Considerations**:
@@ -262,7 +262,7 @@ interface ChatMessage {
 10. Parse agent's response message
 11. Create ChatMessage objects for user and agent messages
 12. Update conversation context with new messages
-13. Store conversation context in KV with TTL (3600 seconds)
+13. Store conversation context in KV with TTL (10800 seconds)
 14. Return response with agent message
 
 ### Error Handling
@@ -353,7 +353,7 @@ Stay in character at all times.
 -   Single global conversation session for this single-user application
 -   Conversation ID is constant ("global") - never changes
 -   Agent responses should maintain yandere personality
--   Conversation context stored with 1-hour TTL
+-   Conversation context stored with 3-hour TTL
 -   Session persists across page refreshes (stored in KV)
 -   No client-side session management required
 
@@ -428,7 +428,7 @@ Since this is a single-user app within free tier limits, basic rate limiting:
 
 -   [ ] KV namespace configuration (wrangler.toml)
 -   [ ] Conversation context storage/retrieval
--   [ ] TTL configuration (3600 seconds)
+-   [ ] TTL configuration (10800 seconds)
 
 ### Validation
 
