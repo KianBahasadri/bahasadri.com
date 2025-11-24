@@ -13,16 +13,17 @@ export default function Display({
   isOn,
 }: DisplayProps): React.JSX.Element {
   const displayValue = isOn ? value : "";
-  const displayEquation = isOn && equation && equation !== "" ? equation : "";
-  const showContent = displayEquation !== "" ? displayEquation : displayValue;
+  const displayEquation = isOn && equation ? equation : "";
+  const displayText = displayEquation === "" ? displayValue : displayEquation;
+  const content = displayText === "" ? "\u00A0" : displayText;
   return (
     <div
       className={styles["display"]}
       role="status"
       aria-live="polite"
-      aria-label={`Calculator display: ${showContent || "off"}`}
+      aria-label={`Calculator display: ${displayText || "off"}`}
     >
-      {showContent}
+      {content}
     </div>
   );
 }

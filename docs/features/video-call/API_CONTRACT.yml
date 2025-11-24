@@ -1,13 +1,13 @@
 openapi: 3.1.0
 info:
-    title: Video Call Control Center API
+    title: Video Call API
     description: >-
         API contract document defining the interface between frontend and backend.
         This is the ONLY coupling point between frontend and backend.
-        Video call control center using Cloudflare RealtimeKit. Allows users to create
-        video conference sessions, generate participant links, monitor participants, and
-        control call settings. The control center operator manages the call but does not
-        join as a participant.
+        Video call utility using Cloudflare RealtimeKit. Allows users to create
+        meetings and generate participant authentication tokens to join them.
+        This API wraps RealtimeKit's REST API endpoints for meeting creation
+        and participant token generation.
     version: 1.0.0
     contact:
         name: API Support
@@ -19,60 +19,22 @@ servers:
 
 tags:
     - name: Video Call
-      description: Video call control center endpoints
+      description: Video call endpoints
 
 components:
     # -------------------------------------------------------------------------
     # SHARED MODELS
     # -------------------------------------------------------------------------
     schemas:
-        SessionStatus:
-            type: string
-            enum: [active, ended]
-            description: Status of the video call session
-
-        ConnectionQuality:
-            type: string
-            enum: [excellent, good, fair, poor]
-            description: Participant connection quality
-
-        ParticipantInfo:
+        GlobalRoomResponse:
             type: object
             required:
-                - participant_id
-                - joined_at
-                - is_muted
-                - is_camera_on
-                - is_screen_sharing
-                - connection_quality
+                - room_id
             properties:
-                participant_id:
+                room_id:
                     type: string
-                    description: Unique participant identifier
-                    example: "participant_123"
-                name:
-                    type: string
-                    description: Optional participant display name
-                    example: "John Doe"
-                joined_at:
-                    type: string
-                    format: date-time
-                    description: ISO 8601 timestamp when participant joined
-                    example: "2023-10-27T10:00:00Z"
-                is_muted:
-                    type: boolean
-                    description: Whether participant is muted
-                    example: false
-                is_camera_on:
-                    type: boolean
-                    description: Whether participant camera is on
-                    example: true
-                is_screen_sharing:
-                    type: boolean
-                    description: Whether participant is sharing screen
-                    example: false
-                connection_quality:
-                    $ref: "#/components/schemas/ConnectionQuality"
+                    description: Global room identifier
+                    example: "room_550e8400-e29b-41d4-a716-446655440000"
 
         CreateSessionRequest:
             type: object
@@ -85,301 +47,44 @@ components:
         CreateSessionResponse:
             type: object
             required:
-                - session_id
-                - created_at
+                - meeting_id
             properties:
-                session_id:
+                meeting_id:
                     type: string
-                    description: Unique session identifier
-                    example: "session_550e8400-e29b-41d4-a716-446655440000"
-                created_at:
-                    type: string
-                    format: date-time
-                    description: ISO 8601 timestamp when session was created
-                    example: "2023-10-27T10:00:00Z"
+                    description: Unique meeting identifier returned from RealtimeKit
+                    example: "meeting_550e8400-e29b-41d4-a716-446655440000"
 
-        SessionDetailsResponse:
+        GenerateTokenRequest:
             type: object
             required:
-                - session_id
-                - created_at
-                - status
-                - participants
+                - meeting_id
             properties:
-                session_id:
+                meeting_id:
                     type: string
-                    description: Unique session identifier
-                    example: "session_550e8400-e29b-41d4-a716-446655440000"
+                    description: The meeting identifier to join (from createSession response)
+                    example: "meeting_550e8400-e29b-41d4-a716-446655440000"
                 name:
                     type: string
-                    description: Optional session name
-                    example: "Team Meeting"
-                created_at:
-                    type: string
-                    format: date-time
-                    description: ISO 8601 timestamp when session was created
-                    example: "2023-10-27T10:00:00Z"
-                status:
-                    $ref: "#/components/schemas/SessionStatus"
-                participants:
-                    type: array
-                    items:
-                        $ref: "#/components/schemas/ParticipantInfo"
-                    description: List of participants in the session
-
-        GenerateParticipantTokenRequest:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: Optional participant name
+                    description: Optional participant display name
                     example: "John Doe"
+                custom_participant_id:
+                    type: string
+                    description: Optional custom participant identifier. If not provided, RealtimeKit generates one.
+                    example: "participant_123"
+                preset_name:
+                    type: string
+                    description: 'Optional preset name defining participant permissions and UI configuration. Default: "group_call_participant"'
+                    example: "group_call_participant"
 
-        GenerateParticipantTokenResponse:
+        GenerateTokenResponse:
             type: object
             required:
-                - token
-                - join_url
-                - expires_at
+                - auth_token
             properties:
-                token:
+                auth_token:
                     type: string
-                    description: Participant authentication token
+                    description: Authentication token returned from RealtimeKit. This token is used to initialize the RealtimeKit SDK on the frontend to join the meeting.
                     example: "token_abc123"
-                join_url:
-                    type: string
-                    format: uri
-                    description: Full URL participants can use to join
-                    example: "https://bahasadri.com/video-call/join?token=token_abc123"
-                expires_at:
-                    type: string
-                    format: date-time
-                    description: ISO 8601 timestamp when token expires
-                    example: "2023-10-27T11:00:00Z"
-
-        GenerateControlTokenResponse:
-            type: object
-            required:
-                - token
-                - expires_at
-            properties:
-                token:
-                    type: string
-                    description: Control center authentication token
-                    example: "control_token_abc123"
-                expires_at:
-                    type: string
-                    format: date-time
-                    description: ISO 8601 timestamp when token expires
-                    example: "2023-10-27T11:00:00Z"
-
-        MuteParticipantRequest:
-            type: object
-            required:
-                - participant_id
-            properties:
-                participant_id:
-                    type: string
-                    description: ID of the participant to mute
-                    example: "participant_123"
-
-        MuteParticipantResponse:
-            type: object
-            required:
-                - success
-                - participant_id
-                - is_muted
-            properties:
-                success:
-                    type: boolean
-                    description: Whether the operation was successful
-                    example: true
-                participant_id:
-                    type: string
-                    description: ID of the participant
-                    example: "participant_123"
-                is_muted:
-                    type: boolean
-                    description: Current mute status
-                    example: true
-
-        UnmuteParticipantRequest:
-            type: object
-            required:
-                - participant_id
-            properties:
-                participant_id:
-                    type: string
-                    description: ID of the participant to unmute
-                    example: "participant_123"
-
-        UnmuteParticipantResponse:
-            type: object
-            required:
-                - success
-                - participant_id
-                - is_muted
-            properties:
-                success:
-                    type: boolean
-                    description: Whether the operation was successful
-                    example: true
-                participant_id:
-                    type: string
-                    description: ID of the participant
-                    example: "participant_123"
-                is_muted:
-                    type: boolean
-                    description: Current mute status
-                    example: false
-
-        EndSessionResponse:
-            type: object
-            required:
-                - success
-                - session_id
-                - ended_at
-            properties:
-                success:
-                    type: boolean
-                    description: Whether the operation was successful
-                    example: true
-                session_id:
-                    type: string
-                    description: ID of the ended session
-                    example: "session_550e8400-e29b-41d4-a716-446655440000"
-                ended_at:
-                    type: string
-                    format: date-time
-                    description: ISO 8601 timestamp when session was ended
-                    example: "2023-10-27T11:00:00Z"
-
-        ScreenShare:
-            type: object
-            required:
-                - share_id
-                - participant_id
-                - started_at
-                - stream_url
-            properties:
-                share_id:
-                    type: string
-                    description: Unique screen share identifier
-                    example: "share_123"
-                participant_id:
-                    type: string
-                    description: ID of the participant sharing screen
-                    example: "participant_123"
-                participant_name:
-                    type: string
-                    description: Name of the participant sharing screen
-                    example: "John Doe"
-                started_at:
-                    type: string
-                    format: date-time
-                    description: ISO 8601 timestamp when screen share started
-                    example: "2023-10-27T10:30:00Z"
-                stream_url:
-                    type: string
-                    description: WebRTC stream identifier
-                    example: "stream_abc123"
-
-        ScreenSharesResponse:
-            type: object
-            required:
-                - screen_shares
-            properties:
-                screen_shares:
-                    type: array
-                    items:
-                        $ref: "#/components/schemas/ScreenShare"
-                    description: List of active screen shares
-
-        VideoFileInfo:
-            type: object
-            required:
-                - file_id
-                - filename
-                - uploaded_by
-                - uploaded_at
-                - size
-                - duration
-                - url
-            properties:
-                file_id:
-                    type: string
-                    description: Unique file identifier
-                    example: "file_123"
-                filename:
-                    type: string
-                    description: Original filename
-                    example: "presentation.mp4"
-                uploaded_by:
-                    type: string
-                    description: ID of the participant who uploaded the file
-                    example: "participant_123"
-                uploaded_at:
-                    type: string
-                    format: date-time
-                    description: ISO 8601 timestamp when file was uploaded
-                    example: "2023-10-27T10:15:00Z"
-                size:
-                    type: integer
-                    format: int64
-                    description: File size in bytes
-                    example: 10485760
-                duration:
-                    type: number
-                    description: Video duration in seconds
-                    example: 300.5
-                url:
-                    type: string
-                    format: uri
-                    description: Playback URL for the video file
-                    example: "https://bahasadri.com/api/video-call/video-files/file_123"
-
-        VideoFileUploadResponse:
-            type: object
-            required:
-                - file_id
-                - filename
-                - size
-                - duration
-                - url
-            properties:
-                file_id:
-                    type: string
-                    description: Unique file identifier
-                    example: "file_123"
-                filename:
-                    type: string
-                    description: Original filename
-                    example: "presentation.mp4"
-                size:
-                    type: integer
-                    format: int64
-                    description: File size in bytes
-                    example: 10485760
-                duration:
-                    type: number
-                    description: Video duration in seconds
-                    example: 300.5
-                url:
-                    type: string
-                    format: uri
-                    description: Playback URL for the video file
-                    example: "https://bahasadri.com/api/video-call/video-files/file_123"
-
-        VideoFilesResponse:
-            type: object
-            required:
-                - files
-            properties:
-                files:
-                    type: array
-                    items:
-                        $ref: "#/components/schemas/VideoFileInfo"
-                    description: List of video files shared in the session
 
         ErrorResponse:
             type: object
@@ -390,12 +95,18 @@ components:
                 error:
                     type: string
                     description: Human-readable error message
-                    example: "Session does not exist"
+                    example: "Meeting does not exist"
                 code:
                     type: string
-                    enum: [INVALID_INPUT, SESSION_NOT_FOUND, PARTICIPANT_NOT_FOUND, UNAUTHORIZED, FILE_TOO_LARGE, INVALID_FILE_TYPE, REALTIMEKIT_ERROR, INTERNAL_ERROR]
+                    enum:
+                        [
+                            INVALID_INPUT,
+                            NOT_FOUND,
+                            INTERNAL_ERROR,
+                            REALTIMEKIT_ERROR,
+                        ]
                     description: Machine-readable error code
-                    example: "SESSION_NOT_FOUND"
+                    example: "NOT_FOUND"
 
     # ---------------------------------------------------------------------------
     # STANDARD RESPONSES
@@ -412,10 +123,6 @@ components:
                             value:
                                 error: "Missing or invalid request fields"
                                 code: "INVALID_INPUT"
-                        invalid_file_type:
-                            value:
-                                error: "File type not supported"
-                                code: "INVALID_FILE_TYPE"
 
         NotFound:
             description: Resource not found (404).
@@ -424,26 +131,10 @@ components:
                     schema:
                         $ref: "#/components/schemas/ErrorResponse"
                     examples:
-                        session_not_found:
+                        not_found:
                             value:
-                                error: "Session does not exist"
-                                code: "SESSION_NOT_FOUND"
-                        participant_not_found:
-                            value:
-                                error: "Participant does not exist"
-                                code: "PARTICIPANT_NOT_FOUND"
-
-        PayloadTooLarge:
-            description: File too large (413).
-            content:
-                application/json:
-                    schema:
-                        $ref: "#/components/schemas/ErrorResponse"
-                    examples:
-                        file_too_large:
-                            value:
-                                error: "Uploaded file exceeds size limit"
-                                code: "FILE_TOO_LARGE"
+                                error: "Meeting does not exist"
+                                code: "NOT_FOUND"
 
         InternalError:
             description: Server error (500).
@@ -463,15 +154,38 @@ components:
 
 paths:
     # ---------------------------------------------------------------------------
+    # GET GLOBAL ROOM ENDPOINT
+    # ---------------------------------------------------------------------------
+    /video-call/global-room:
+        get:
+            operationId: getGlobalRoom
+            summary: Get global room ID
+            description: >-
+                Returns the hard-coded global room ID for direct video calls.
+            tags:
+                - Video Call
+            responses:
+                "200":
+                    description: Global room ID retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/GlobalRoomResponse"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
     # CREATE SESSION ENDPOINT
     # ---------------------------------------------------------------------------
     /video-call/session:
         post:
             operationId: createSession
-            summary: Create a new video call session
+            summary: Create a new video call meeting
             description: >-
-                Creates a new video call session and returns the session ID.
-                The control center operator uses this to start a new call.
+                Creates a new meeting via RealtimeKit's REST API. This corresponds to
+                RealtimeKit's "Create Meeting" endpoint. Returns a meeting ID that can
+                be used to generate participant tokens. The meeting persists until
+                all participants leave or it is explicitly ended.
             tags:
                 - Video Call
             requestBody:
@@ -491,318 +205,36 @@ paths:
                     $ref: "#/components/responses/InternalError"
 
     # ---------------------------------------------------------------------------
-    # GET SESSION DETAILS ENDPOINT
+    # GENERATE TOKEN ENDPOINT
     # ---------------------------------------------------------------------------
-    /video-call/session/{session_id}:
-        get:
-            operationId: getSessionDetails
-            summary: Get session details
-            description: >-
-                Gets details about an active session, including participant list and status.
-            tags:
-                - Video Call
-            parameters:
-                - name: session_id
-                  in: path
-                  required: true
-                  description: The unique session identifier
-                  schema:
-                      type: string
-                      example: "session_550e8400-e29b-41d4-a716-446655440000"
-            responses:
-                "200":
-                    description: Session details retrieved successfully.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/SessionDetailsResponse"
-                "404":
-                    $ref: "#/components/responses/NotFound"
-                "500":
-                    $ref: "#/components/responses/InternalError"
-
-        delete:
-            operationId: endSession
-            summary: End a video call session
-            description: >-
-                Ends a video call session, disconnecting all participants.
-            tags:
-                - Video Call
-            parameters:
-                - name: session_id
-                  in: path
-                  required: true
-                  description: The session identifier to end
-                  schema:
-                      type: string
-                      example: "session_550e8400-e29b-41d4-a716-446655440000"
-            responses:
-                "200":
-                    description: Session ended successfully.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/EndSessionResponse"
-                "404":
-                    $ref: "#/components/responses/NotFound"
-                "500":
-                    $ref: "#/components/responses/InternalError"
-
-    # ---------------------------------------------------------------------------
-    # GENERATE PARTICIPANT TOKEN ENDPOINT
-    # ---------------------------------------------------------------------------
-    /video-call/session/{session_id}/participant-token:
+    /video-call/token:
         post:
-            operationId: generateParticipantToken
-            summary: Generate participant token
+            operationId: generateToken
+            summary: Generate participant authentication token
             description: >-
-                Generates a participant authentication token for joining a specific session.
-                This token is embedded in the participant join link.
+                Generates a participant authentication token via RealtimeKit's REST API.
+                This corresponds to RealtimeKit's "Add Participant" endpoint, which
+                creates a participant entry for the meeting and returns an authToken.
+                The token is used to initialize the RealtimeKit SDK on the frontend
+                to join the meeting. Each participant needs their own token.
             tags:
                 - Video Call
-            parameters:
-                - name: session_id
-                  in: path
-                  required: true
-                  description: The session identifier the participant will join
-                  schema:
-                      type: string
-                      example: "session_550e8400-e29b-41d4-a716-446655440000"
             requestBody:
-                required: false
+                required: true
                 content:
                     application/json:
                         schema:
-                            $ref: "#/components/schemas/GenerateParticipantTokenRequest"
+                            $ref: "#/components/schemas/GenerateTokenRequest"
             responses:
                 "200":
                     description: Token generated successfully.
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/GenerateParticipantTokenResponse"
-                "404":
-                    $ref: "#/components/responses/NotFound"
-                "500":
-                    $ref: "#/components/responses/InternalError"
-
-    # ---------------------------------------------------------------------------
-    # GENERATE CONTROL TOKEN ENDPOINT
-    # ---------------------------------------------------------------------------
-    /video-call/session/{session_id}/control-token:
-        post:
-            operationId: generateControlToken
-            summary: Generate control center token
-            description: >-
-                Generates a control center authentication token for managing a specific session.
-                This token grants administrative privileges.
-            tags:
-                - Video Call
-            parameters:
-                - name: session_id
-                  in: path
-                  required: true
-                  description: The session identifier to control
-                  schema:
-                      type: string
-                      example: "session_550e8400-e29b-41d4-a716-446655440000"
-            responses:
-                "200":
-                    description: Control token generated successfully.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/GenerateControlTokenResponse"
-                "404":
-                    $ref: "#/components/responses/NotFound"
-                "500":
-                    $ref: "#/components/responses/InternalError"
-
-    # ---------------------------------------------------------------------------
-    # MUTE PARTICIPANT ENDPOINT
-    # ---------------------------------------------------------------------------
-    /video-call/session/{session_id}/mute:
-        post:
-            operationId: muteParticipant
-            summary: Mute a participant
-            description: >-
-                Remotely mutes a specific participant in the session.
-            tags:
-                - Video Call
-            parameters:
-                - name: session_id
-                  in: path
-                  required: true
-                  description: The session identifier
-                  schema:
-                      type: string
-                      example: "session_550e8400-e29b-41d4-a716-446655440000"
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: "#/components/schemas/MuteParticipantRequest"
-            responses:
-                "200":
-                    description: Participant muted successfully.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/MuteParticipantResponse"
+                                $ref: "#/components/schemas/GenerateTokenResponse"
                 "400":
                     $ref: "#/components/responses/BadRequest"
                 "404":
                     $ref: "#/components/responses/NotFound"
                 "500":
                     $ref: "#/components/responses/InternalError"
-
-    # ---------------------------------------------------------------------------
-    # UNMUTE PARTICIPANT ENDPOINT
-    # ---------------------------------------------------------------------------
-    /video-call/session/{session_id}/unmute:
-        post:
-            operationId: unmuteParticipant
-            summary: Unmute a participant
-            description: >-
-                Remotely unmutes a specific participant in the session.
-            tags:
-                - Video Call
-            parameters:
-                - name: session_id
-                  in: path
-                  required: true
-                  description: The session identifier
-                  schema:
-                      type: string
-                      example: "session_550e8400-e29b-41d4-a716-446655440000"
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: "#/components/schemas/UnmuteParticipantRequest"
-            responses:
-                "200":
-                    description: Participant unmuted successfully.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/UnmuteParticipantResponse"
-                "400":
-                    $ref: "#/components/responses/BadRequest"
-                "404":
-                    $ref: "#/components/responses/NotFound"
-                "500":
-                    $ref: "#/components/responses/InternalError"
-
-    # ---------------------------------------------------------------------------
-    # GET SCREEN SHARES ENDPOINT
-    # ---------------------------------------------------------------------------
-    /video-call/session/{session_id}/screen-shares:
-        get:
-            operationId: getScreenShares
-            summary: Get active screen shares
-            description: >-
-                Gets a list of active screen shares in the session.
-            tags:
-                - Video Call
-            parameters:
-                - name: session_id
-                  in: path
-                  required: true
-                  description: The session identifier
-                  schema:
-                      type: string
-                      example: "session_550e8400-e29b-41d4-a716-446655440000"
-            responses:
-                "200":
-                    description: Screen shares retrieved successfully.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/ScreenSharesResponse"
-                "404":
-                    $ref: "#/components/responses/NotFound"
-                "500":
-                    $ref: "#/components/responses/InternalError"
-
-    # ---------------------------------------------------------------------------
-    # UPLOAD VIDEO FILE ENDPOINT
-    # ---------------------------------------------------------------------------
-    /video-call/session/{session_id}/video-file:
-        post:
-            operationId: uploadVideoFile
-            summary: Upload video file to session
-            description: >-
-                Uploads a video file to be shared with all participants in the session.
-            tags:
-                - Video Call
-            parameters:
-                - name: session_id
-                  in: path
-                  required: true
-                  description: The session identifier
-                  schema:
-                      type: string
-                      example: "session_550e8400-e29b-41d4-a716-446655440000"
-            requestBody:
-                required: true
-                content:
-                    multipart/form-data:
-                        schema:
-                            type: object
-                            required:
-                                - file
-                            properties:
-                                file:
-                                    type: string
-                                    format: binary
-                                    description: The video file to upload
-            responses:
-                "200":
-                    description: Video file uploaded successfully.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/VideoFileUploadResponse"
-                "400":
-                    $ref: "#/components/responses/BadRequest"
-                "404":
-                    $ref: "#/components/responses/NotFound"
-                "413":
-                    $ref: "#/components/responses/PayloadTooLarge"
-                "500":
-                    $ref: "#/components/responses/InternalError"
-
-    # ---------------------------------------------------------------------------
-    # GET VIDEO FILES ENDPOINT
-    # ---------------------------------------------------------------------------
-    /video-call/session/{session_id}/video-files:
-        get:
-            operationId: getVideoFiles
-            summary: Get video files in session
-            description: >-
-                Gets a list of video files shared in the session.
-            tags:
-                - Video Call
-            parameters:
-                - name: session_id
-                  in: path
-                  required: true
-                  description: The session identifier
-                  schema:
-                      type: string
-                      example: "session_550e8400-e29b-41d4-a716-446655440000"
-            responses:
-                "200":
-                    description: Video files retrieved successfully.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/VideoFilesResponse"
-                "404":
-                    $ref: "#/components/responses/NotFound"
-                "500":
-                    $ref: "#/components/responses/InternalError"
-

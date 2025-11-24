@@ -65,6 +65,16 @@ export default function SMSInterface({
   const [showContactForm, setShowContactForm] = useState(false);
   const [contactFormPhoneNumber, setContactFormPhoneNumber] = useState("");
 
+  // Update threads when initialThreads prop changes (e.g., when query completes)
+  useEffect(() => {
+    setThreads([...initialThreads]);
+  }, [initialThreads]);
+
+  // Update contacts when initialContacts prop changes (e.g., when query completes)
+  useEffect(() => {
+    setContacts([...initialContacts]);
+  }, [initialContacts]);
+
   // Fetch messages for active counterpart
   const { data: messagesData } = useQuery({
     queryKey: ["sms-messenger", "messages", activeCounterpart],

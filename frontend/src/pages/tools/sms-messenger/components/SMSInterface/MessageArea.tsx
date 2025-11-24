@@ -77,6 +77,14 @@ export function MessageArea({
                 onChange={(event) => {
                   onMessageBodyChange(event.target.value);
                 }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    if (messageBody.trim() && !sending) {
+                      onSend(event);
+                    }
+                  }
+                }}
                 placeholder="Type a message..."
                 rows={3}
                 disabled={sending}
@@ -101,6 +109,12 @@ export function MessageArea({
               value={draftNumber}
               onChange={(event) => {
                 onDraftNumberChange(event.target.value);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  onStartConversation();
+                }
               }}
               placeholder="Enter phone number (E.164 format)"
             />
