@@ -76,7 +76,9 @@ export function ThreadSidebar({
               <div className={styles["threadName"]}>
                 {thread.contactName ?? thread.counterpart}
               </div>
-              <div className={styles["threadPreview"]}>{thread.lastMessagePreview}</div>
+              <div className={styles["threadPreview"]}>
+                {thread.lastMessagePreview || (thread.messageCount === 0 ? "No messages yet" : "")}
+              </div>
               <div className={styles["threadTime"]}>
                 {formatTimestamp(thread.lastMessageTimestamp)}
               </div>

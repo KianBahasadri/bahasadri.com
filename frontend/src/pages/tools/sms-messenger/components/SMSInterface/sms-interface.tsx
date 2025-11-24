@@ -93,6 +93,51 @@ export default function SMSInterface({
     return messageCache[activeCounterpart] ?? [];
   }, [activeCounterpart, messageCache]);
 
+  // Merge threads with contacts to show all contacts in conversations tab
+  const allThreads = useMemo(() => {
+    const threadMap = new Map<string, ThreadSummary>();
+    
+    // Add all existing threads
+    for (const thread of threads) {
+      threadMap.set(thread.counterpart, thread);
+    }
+    
+    // Add contacts that don't have threads
+    for (const contact of contacts) {
+      if (!threadMap.has(contact.phoneNumber)) {
+        threadMap.set(contact.phoneNumber, {
+          counterpart: contact.phoneNumber,
+          lastMessagePreview: "",
+          lastMessageTimestamp: contact.createdAt,
+          lastDirection: "sent",
+          messageCount: 0,
+          contactId: contact.id,
+          contactName: contact.displayName,
+        });
+      }
+    }
+    
+    // Convert to array and sort: threads with messages first (by timestamp), then contacts without messages (by name)
+    const allThreadsArray = [...threadMap.values()];
+    allThreadsArray.sort((a, b) => {
+      // Threads with messages (messageCount > 0) come first
+      if (a.messageCount > 0 && b.messageCount === 0) return -1;
+      if (a.messageCount === 0 && b.messageCount > 0) return 1;
+      
+      // If both have messages or both don't, sort by timestamp (most recent first)
+      if (a.messageCount > 0 && b.messageCount > 0) {
+        return b.lastMessageTimestamp - a.lastMessageTimestamp;
+      }
+      
+      // If both don't have messages, sort by contact name (alphabetically)
+      const nameA = a.contactName ?? a.counterpart;
+      const nameB = b.contactName ?? b.counterpart;
+      return nameA.localeCompare(nameB);
+    });
+    
+    return allThreadsArray;
+  }, [threads, contacts]);
+
 
   // Handle polling response
   const handlePollResponse = useCallback(
@@ -203,7 +248,7 @@ export default function SMSInterface({
   return (
     <div className={styles["container"]}>
       <ThreadSidebar
-        threads={threads}
+        threads={allThreads}
         activeCounterpart={activeCounterpart}
         showContactForm={showContactForm}
         contactFormPhoneNumber={contactFormPhoneNumber}
