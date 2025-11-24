@@ -79,32 +79,97 @@ components:
         Session:
             type: object
             required:
-                - meeting_id
+                - id
             properties:
-                meeting_id:
+                id:
                     type: string
-                    description: Unique meeting identifier
-                    example: "meeting_550e8400-e29b-41d4-a716-446655440000"
-                name:
+                    description: Unique session identifier
+                    example: "string"
+                associated_id:
                     type: string
-                    description: Optional session name
-                    example: "Team Meeting"
+                    description: Associated meeting or entity identifier
+                    example: "string"
+                meeting_display_name:
+                    type: string
+                    description: Display name for the meeting associated with this session
+                    example: "string"
+                type:
+                    type: string
+                    description: Type of session (e.g., "meeting")
+                    example: "meeting"
+                status:
+                    type: string
+                    description: Current status of the session (e.g., "LIVE")
+                    example: "LIVE"
+                live_participants:
+                    type: integer
+                    description: Number of currently active participants
+                    example: 0
+                max_concurrent_participants:
+                    type: integer
+                    description: Maximum number of concurrent participants
+                    example: 0
+                minutes_consumed:
+                    type: integer
+                    description: Total minutes consumed for this session
+                    example: 0
+                organization_id:
+                    type: string
+                    description: Organization identifier
+                    example: "string"
+                started_at:
+                    type: string
+                    format: date-time
+                    description: Session start timestamp
+                    example: "2024-01-15T10:30:00Z"
                 created_at:
                     type: string
                     format: date-time
-                    description: Meeting creation timestamp
+                    description: Session creation timestamp
                     example: "2024-01-15T10:30:00Z"
+                updated_at:
+                    type: string
+                    format: date-time
+                    description: Session last update timestamp
+                    example: "2024-01-15T10:30:00Z"
+                ended_at:
+                    type: string
+                    format: date-time
+                    description: Session end timestamp (if ended)
+                    example: "2024-01-15T11:30:00Z"
+                meta:
+                    type: object
+                    description: Additional metadata for the session
+                    additionalProperties: true
+                    example: {}
+                breakout_rooms:
+                    type: array
+                    description: List of breakout rooms associated with this session
+                    items:
+                        type: object
+                        additionalProperties: true
+                    example: []
 
         ListSessionsResponse:
             type: object
             required:
-                - sessions
+                - success
+                - data
             properties:
-                sessions:
-                    type: array
-                    description: List of ongoing/active video call sessions
-                    items:
-                        $ref: "#/components/schemas/Session"
+                success:
+                    type: boolean
+                    description: Indicates if the request was successful
+                    example: true
+                data:
+                    type: object
+                    required:
+                        - sessions
+                    properties:
+                        sessions:
+                            type: array
+                            description: List of ongoing/active video call sessions
+                            items:
+                                $ref: "#/components/schemas/Session"
 
         Meeting:
             type: object
@@ -151,7 +216,7 @@ components:
                     example: true
                 status:
                     type: string
-                    description: Current status of the meeting
+                    description: Current status of the meeting (e.g., "ACTIVE")
                     example: "ACTIVE"
 
         Paging:
@@ -191,6 +256,58 @@ components:
                         $ref: "#/components/schemas/Meeting"
                 paging:
                     $ref: "#/components/schemas/Paging"
+
+        Preset:
+            type: object
+            required:
+                - id
+            properties:
+                id:
+                    type: string
+                    description: Unique preset identifier
+                    example: "497f6eca-6276-4993-bfeb-53cbbbba6f08"
+                name:
+                    type: string
+                    description: Preset name
+                    example: "string"
+                created_at:
+                    type: string
+                    format: date-time
+                    description: Preset creation timestamp
+                    example: "2019-08-24T14:15:22Z"
+                updated_at:
+                    type: string
+                    format: date-time
+                    description: Preset last update timestamp
+                    example: "2019-08-24T14:15:22Z"
+
+        ListPresetsResponse:
+            type: object
+            required:
+                - success
+                - data
+            properties:
+                success:
+                    type: boolean
+                    description: Indicates if the request was successful
+                    example: true
+                data:
+                    type: array
+                    description: List of all presets for the organization
+                    items:
+                        $ref: "#/components/schemas/Preset"
+                paging:
+                    $ref: "#/components/schemas/Paging"
+
+        DeleteMeetingResponse:
+            type: object
+            required:
+                - success
+            properties:
+                success:
+                    type: boolean
+                    description: Indicates if the meeting was deleted successfully
+                    example: true
 
         ErrorResponse:
             type: object
@@ -298,10 +415,23 @@ paths:
             summary: List ongoing video call sessions
             description: >-
                 Retrieves a list of ongoing/active video call sessions from RealtimeKit.
-                This corresponds to RealtimeKit's "List Sessions" endpoint. Returns all
-                sessions that are currently active (have participants or are available to join).
+                This corresponds to RealtimeKit's "List Sessions" endpoint (GET /v2/sessions).
+                Returns all sessions that are currently active (have participants or are available to join).
+                Sessions represent active meeting instances, while meetings are the persistent
+                meeting configurations.
             tags:
                 - Video Call
+            parameters:
+                - name: status
+                  in: query
+                  description: Filter sessions by status. Defaults to LIVE to return only active sessions.
+                  required: false
+                  schema:
+                      type: string
+                      enum:
+                          - LIVE
+                          - ENDED
+                      default: LIVE
             responses:
                 "200":
                     description: Sessions retrieved successfully.
@@ -321,8 +451,9 @@ paths:
             summary: List all meetings for the organization
             description: >-
                 Retrieves a list of all meetings for the organization from RealtimeKit.
-                This corresponds to RealtimeKit's "Get All Meetings" endpoint. Returns all
-                meetings associated with the organization, regardless of their current state.
+                This corresponds to RealtimeKit's "Get All Meetings" endpoint (GET /v2/meetings).
+                Returns all meetings associated with the organization, regardless of their current state.
+                Meetings are persistent meeting configurations, while sessions are active meeting instances.
             tags:
                 - Video Call
             responses:
@@ -332,6 +463,64 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ListMeetingsResponse"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # DELETE MEETING ENDPOINT
+    # ---------------------------------------------------------------------------
+    /video-call/meetings/{meeting_id}:
+        delete:
+            operationId: deleteMeeting
+            summary: Deactivate a meeting
+            description: >-
+                Deactivates a meeting by setting its status to INACTIVE. This corresponds
+                to RealtimeKit's "Update Meeting" endpoint (PATCH /v2/meetings/{meeting_id}).
+                RealtimeKit does not support deleting meetings, so this endpoint sets the
+                meeting status to INACTIVE, which prevents users from joining the meeting.
+            tags:
+                - Video Call
+            parameters:
+                - name: meeting_id
+                  in: path
+                  required: true
+                  description: The meeting identifier to delete
+                  schema:
+                      type: string
+                      example: "497f6eca-6276-4993-bfeb-53cbbbba6f08"
+            responses:
+                "200":
+                    description: Meeting deleted successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/DeleteMeetingResponse"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # LIST ALL PRESETS ENDPOINT
+    # ---------------------------------------------------------------------------
+    /video-call/presets:
+        get:
+            operationId: listAllPresets
+            summary: List all presets for the organization
+            description: >-
+                Retrieves a list of all presets for the organization from RealtimeKit.
+                This corresponds to RealtimeKit's "Get All Presets" endpoint (GET /v2/presets).
+                Returns all presets associated with the organization. Presets define participant
+                permissions and UI configuration for meetings.
+            tags:
+                - Video Call
+            responses:
+                "200":
+                    description: Presets retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ListPresetsResponse"
                 "500":
                     $ref: "#/components/responses/InternalError"
 

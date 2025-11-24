@@ -19,7 +19,11 @@ export interface GenerateTokenResponse {
 
 export interface ErrorResponse {
     error: string;
-    code: "INVALID_INPUT" | "NOT_FOUND" | "INTERNAL_ERROR" | "REALTIMEKIT_ERROR";
+    code:
+        | "INVALID_INPUT"
+        | "NOT_FOUND"
+        | "INTERNAL_ERROR"
+        | "REALTIMEKIT_ERROR";
 }
 
 export interface Participant {
@@ -30,12 +34,18 @@ export interface Participant {
     stream?: MediaStream;
 }
 
-export type RoomState = "idle" | "connecting" | "connected" | "error" | "disconnected";
+export type RoomState =
+    | "idle"
+    | "connecting"
+    | "connected"
+    | "error"
+    | "disconnected";
 
 export interface Session {
     meeting_id: string;
     name?: string;
     created_at: string;
+    status?: "LIVE" | "ENDED";
 }
 
 export interface ListSessionsResponse {
@@ -52,7 +62,7 @@ export interface Meeting {
     live_stream_on_start?: boolean;
     persist_chat?: boolean;
     summarize_on_end?: boolean;
-    status?: string;
+    status?: "ACTIVE" | "INACTIVE";
 }
 
 export interface Paging {
@@ -67,3 +77,19 @@ export interface ListMeetingsResponse {
     paging?: Paging;
 }
 
+export interface Preset {
+    id: string;
+    name?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ListPresetsResponse {
+    success: boolean;
+    data: Preset[];
+    paging?: Paging;
+}
+
+export interface DeleteMeetingResponse {
+    success: boolean;
+}

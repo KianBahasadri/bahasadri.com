@@ -48,6 +48,26 @@ describe("video-call API Contract Tests", () => {
         expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
+    it("deleteMeeting satisfies OpenAPI spec", async () => {
+        
+        const res = await app.request("/api/video-call/meetings/497f6eca-6276-4993-bfeb-53cbbbba6f08", {
+            method: "DELETE",
+        });
+        expect([200, 404, 500]).toContain(res.status);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/meetings/497f6eca-6276-4993-bfeb-53cbbbba6f08", "DELETE");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
+    });
+
+    it("listAllPresets satisfies OpenAPI spec", async () => {
+        
+        const res = await app.request("/api/video-call/presets", {
+            method: "GET",
+        });
+        expect([200, 500]).toContain(res.status);
+        const formattedRes = await formatResponseForValidation(res, "/api/video-call/presets", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
+    });
+
     it("generateToken satisfies OpenAPI spec", async () => {
         
         const res = await app.request("/api/video-call/token", {

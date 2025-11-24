@@ -12,12 +12,15 @@ import type {
     GenerateTokenResponse,
     ListSessionsResponse,
     ListMeetingsResponse,
+    ListPresetsResponse,
+    DeleteMeetingResponse,
     Session,
     ErrorResponse,
     RealtimeKitConfig,
     RealtimeKitMeetingResponse,
     RealtimeKitTokenResponse,
     RealtimeKitListAllMeetingsResponse,
+    RealtimeKitListAllPresetsResponse,
     RealtimeKitListSessionsResponse,
 } from "./types";
 
@@ -150,9 +153,14 @@ async function generateRealtimeKitToken(
 
 async function listRealtimeKitMeetings(
     orgId: string,
-    apiKey: string
+    apiKey: string,
+    status?: "LIVE" | "ENDED"
 ): Promise<Session[]> {
     const url = new URL("https://api.realtime.cloudflare.com/v2/sessions");
+
+    if (status) {
+        url.searchParams.set("status", status);
+    }
 
     const credentials = `${orgId}:${apiKey}`;
     const base64Credentials = btoa(credentials);
@@ -189,6 +197,10 @@ async function listRealtimeKitMeetings(
                 meeting_id: session.id,
                 name: session.meeting_display_name,
                 created_at: session.created_at,
+                status:
+                    session.status === "LIVE" || session.status === "ENDED"
+                        ? session.status
+                        : undefined,
             });
         }
     }
@@ -265,6 +277,107 @@ async function listAllRealtimeKitMeetings(
         data: meetings,
         paging,
     };
+}
+
+async function listAllRealtimeKitPresets(
+    orgId: string,
+    apiKey: string,
+    queryParams?: {
+        page_no?: number;
+        per_page?: number;
+    }
+): Promise<ListPresetsResponse> {
+    const url = new URL("https://api.realtime.cloudflare.com/v2/presets");
+
+    if (queryParams) {
+        if (queryParams.page_no !== undefined) {
+            url.searchParams.set("page_no", String(queryParams.page_no));
+        }
+        if (queryParams.per_page !== undefined) {
+            url.searchParams.set("per_page", String(queryParams.per_page));
+        }
+    }
+
+    const credentials = `${orgId}:${apiKey}`;
+    const base64Credentials = btoa(credentials);
+
+    const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+            Authorization: `Basic ${base64Credentials}`,
+            Accept: "application/json",
+        },
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+            `RealtimeKit API error: ${String(response.status)} ${errorText}`
+        );
+    }
+
+    const data = (await response.json()) as RealtimeKitListAllPresetsResponse;
+
+    if (!data.success) {
+        throw new Error(
+            `RealtimeKit API error: ${JSON.stringify(data.errors)}`
+        );
+    }
+
+    const presets = data.data ?? [];
+    const paging = data.paging ?? {
+        total_count: presets.length,
+        start_offset: 0,
+        end_offset: presets.length,
+    };
+
+    return {
+        success: true,
+        data: presets,
+        paging,
+    };
+}
+
+async function deleteRealtimeKitMeeting(
+    orgId: string,
+    apiKey: string,
+    meetingId: string
+): Promise<void> {
+    const url = `https://api.realtime.cloudflare.com/v2/meetings/${meetingId}`;
+
+    const credentials = `${orgId}:${apiKey}`;
+    const base64Credentials = btoa(credentials);
+
+    // RealtimeKit doesn't support DELETE, so we set status to INACTIVE instead
+    const response = await fetch(url, {
+        method: "PATCH",
+        headers: {
+            Authorization: `Basic ${base64Credentials}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            status: "INACTIVE",
+        }),
+    });
+
+    if (!response.ok) {
+        if (response.status === 404) {
+            throw new Error("NOT_FOUND");
+        }
+        const errorText = await response.text();
+        throw new Error(
+            `RealtimeKit API error: ${String(response.status)} ${errorText}`
+        );
+    }
+
+    const data = (await response.json()) as RealtimeKitMeetingResponse;
+
+    if (!data.success || !data.data) {
+        throw new Error(
+            `RealtimeKit API error: ${JSON.stringify(data.errors)}`
+        );
+    }
 }
 
 app.post("/session", async (c) => {
@@ -423,10 +536,17 @@ app.get("/sessions", async (c) => {
             );
         }
 
+        const statusQuery = c.req.query("status");
+        let status: "LIVE" | "ENDED" | undefined = "LIVE";
+        if (statusQuery === "LIVE" || statusQuery === "ENDED") {
+            status = statusQuery;
+        }
+
         const v2Credentials = getRealtimeKitV2Credentials(c.env);
         const sessions = await listRealtimeKitMeetings(
             v2Credentials.orgId,
-            v2Credentials.apiKey
+            v2Credentials.apiKey,
+            status
         );
 
         return c.json<ListSessionsResponse>({ sessions }, 200);
@@ -524,6 +644,148 @@ app.get("/meetings", async (c) => {
         const { response, status } = handleError(error, {
             endpoint: "/api/video-call/meetings",
             method: "GET",
+        });
+        return c.json<ErrorResponse>(
+            {
+                error: response.error,
+                code: response.code as VideoCallErrorCode,
+            },
+            status as HttpStatusCode
+        );
+    }
+});
+
+app.get("/presets", async (c) => {
+    try {
+        const config = getRealtimeKitConfig(c.env);
+
+        if (!config.accountId || !config.orgId || !config.apiToken) {
+            const { response, status } = handleError(
+                new Error("RealtimeKit configuration missing"),
+                {
+                    endpoint: "/api/video-call/presets",
+                    method: "GET",
+                    defaultMessage: "RealtimeKit configuration missing",
+                    additionalInfo: {
+                        hasAccountId: !!config.accountId,
+                        hasOrgId: !!config.orgId,
+                        hasApiToken: !!config.apiToken,
+                    },
+                }
+            );
+            return c.json<ErrorResponse>(
+                {
+                    error: response.error,
+                    code: response.code as VideoCallErrorCode,
+                },
+                status as HttpStatusCode
+            );
+        }
+
+        const queryParams: {
+            page_no?: number;
+            per_page?: number;
+        } = {};
+
+        const pageNo = c.req.query("page_no");
+        if (pageNo) {
+            const pageNoNum = Number.parseInt(pageNo, 10);
+            if (!Number.isNaN(pageNoNum) && pageNoNum >= 0) {
+                queryParams.page_no = pageNoNum;
+            }
+        }
+
+        const perPage = c.req.query("per_page");
+        if (perPage) {
+            const perPageNum = Number.parseInt(perPage, 10);
+            if (!Number.isNaN(perPageNum) && perPageNum >= 0) {
+                queryParams.per_page = perPageNum;
+            }
+        }
+
+        const v2Credentials = getRealtimeKitV2Credentials(c.env);
+
+        const result = await listAllRealtimeKitPresets(
+            v2Credentials.orgId,
+            v2Credentials.apiKey,
+            Object.keys(queryParams).length > 0 ? queryParams : undefined
+        );
+
+        return c.json<ListPresetsResponse>(result, 200);
+    } catch (error) {
+        const { response, status } = handleError(error, {
+            endpoint: "/api/video-call/presets",
+            method: "GET",
+        });
+        return c.json<ErrorResponse>(
+            {
+                error: response.error,
+                code: response.code as VideoCallErrorCode,
+            },
+            status as HttpStatusCode
+        );
+    }
+});
+
+app.delete("/meetings/:meeting_id", async (c) => {
+    try {
+        const meetingId = c.req.param("meeting_id");
+
+        if (!meetingId) {
+            const { response, status } = handleError(
+                new Error("Missing meeting_id"),
+                {
+                    endpoint: "/api/video-call/meetings/:meeting_id",
+                    method: "DELETE",
+                    defaultMessage: "Missing meeting_id",
+                }
+            );
+            return c.json<ErrorResponse>(
+                {
+                    error: response.error,
+                    code: response.code as VideoCallErrorCode,
+                },
+                status as HttpStatusCode
+            );
+        }
+
+        const config = getRealtimeKitConfig(c.env);
+
+        if (!config.accountId || !config.orgId || !config.apiToken) {
+            const { response, status } = handleError(
+                new Error("RealtimeKit configuration missing"),
+                {
+                    endpoint: "/api/video-call/meetings/:meeting_id",
+                    method: "DELETE",
+                    defaultMessage: "RealtimeKit configuration missing",
+                    additionalInfo: {
+                        hasAccountId: !!config.accountId,
+                        hasOrgId: !!config.orgId,
+                        hasApiToken: !!config.apiToken,
+                    },
+                }
+            );
+            return c.json<ErrorResponse>(
+                {
+                    error: response.error,
+                    code: response.code as VideoCallErrorCode,
+                },
+                status as HttpStatusCode
+            );
+        }
+
+        const v2Credentials = getRealtimeKitV2Credentials(c.env);
+        await deleteRealtimeKitMeeting(
+            v2Credentials.orgId,
+            v2Credentials.apiKey,
+            meetingId
+        );
+
+        return c.json<DeleteMeetingResponse>({ success: true }, 200);
+    } catch (error) {
+        const { response, status } = handleError(error, {
+            endpoint: "/api/video-call/meetings/:meeting_id",
+            method: "DELETE",
         });
         return c.json<ErrorResponse>(
             {

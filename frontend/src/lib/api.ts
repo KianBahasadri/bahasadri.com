@@ -27,6 +27,8 @@ import type {
     GenerateTokenResponse,
     ListSessionsResponse,
     ListMeetingsResponse,
+    ListPresetsResponse,
+    DeleteMeetingResponse,
 } from "../types/video-call";
 
 const API_BASE_URL =
@@ -316,4 +318,43 @@ export const listAllMeetings = async (): Promise<ListMeetingsResponse> => {
     }
 
     return response.json() as Promise<ListMeetingsResponse>;
+};
+
+export const listAllPresets = async (): Promise<ListPresetsResponse> => {
+    const response = await fetch(`${API_BASE_URL}/video-call/presets`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "listAllPresets",
+            "Failed to list presets"
+        );
+    }
+
+    return response.json() as Promise<ListPresetsResponse>;
+};
+
+export const deleteMeeting = async (
+    meetingId: string
+): Promise<DeleteMeetingResponse> => {
+    const response = await fetch(
+        `${API_BASE_URL}/video-call/meetings/${meetingId}`,
+        {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+        }
+    );
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "deleteMeeting",
+            "Failed to delete meeting"
+        );
+    }
+
+    return response.json() as Promise<DeleteMeetingResponse>;
 };

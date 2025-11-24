@@ -110,7 +110,11 @@ export function handleError(
         userMessage = "Division by zero";
     } else if (errorMessage.includes("RealtimeKit")) {
         code = "REALTIMEKIT_ERROR";
-        userMessage = "RealtimeKit API error";
+        if (errorMessage.includes("does not support")) {
+            userMessage = errorMessage;
+        } else {
+            userMessage = "RealtimeKit API error";
+        }
     } else if (errorMessage === "NOT_FOUND") {
         code = "NOT_FOUND";
         status = 404;

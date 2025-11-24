@@ -1,0 +1,238 @@
+.container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sectionTitle {
+    font-size: 1.8rem;
+    color: var(--pink-darker);
+    font-family: "Comic Neue", sans-serif;
+    text-align: center;
+    margin: 0;
+}
+
+.loading,
+.empty,
+.error {
+    text-align: center;
+    padding: 2rem;
+    color: var(--pink-darker);
+    font-family: "Comic Neue", sans-serif;
+    font-size: 1.2rem;
+}
+
+.error {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+.retryButton {
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--pink-hot);
+    background: var(--pink-primary);
+    color: var(--pink-darker);
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: "Comic Neue", sans-serif;
+    box-shadow: 2px 2px 0 var(--pink-light);
+}
+
+.retryButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 var(--pink-hot);
+    background: var(--pink-hot);
+    color: white;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.meetingItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0;
+    border: 2px solid var(--pink-hot);
+    background: var(--pink-primary);
+    border-radius: 1rem;
+    transition: all 0.3s ease;
+    font-family: "Comic Neue", sans-serif;
+    box-shadow: 4px 4px 0 var(--pink-light);
+    width: 100%;
+}
+
+.meetingItem:hover {
+    transform: translateY(-2px);
+    box-shadow: 6px 6px 0 var(--pink-hot);
+}
+
+.meetingContent {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    flex: 1;
+    cursor: pointer;
+    text-align: left;
+    background: transparent;
+    border: none;
+    font-family: inherit;
+    color: inherit;
+    transition: all 0.3s ease;
+}
+
+.meetingItem:hover .meetingContent {
+    background: var(--pink-hot);
+    color: white;
+}
+
+.meetingInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.meetingName {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--pink-darker);
+}
+
+.meetingContent .meetingName {
+    color: var(--pink-darker);
+}
+
+.meetingItem:hover .meetingContent .meetingName {
+    color: white;
+}
+
+.meetingMeta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+    color: var(--pink-darker);
+    opacity: 0.8;
+}
+
+.meetingItem:hover .meetingContent .meetingMeta {
+    color: white;
+    opacity: 1;
+}
+
+.meetingId {
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+.meetingDate {
+    font-size: 0.85rem;
+}
+
+.meetingStatus {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.joinButton {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--pink-darker);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.meetingItem:hover .meetingContent .joinButton {
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.deleteButton {
+    padding: 0.75rem 1rem;
+    border: none;
+    background: transparent;
+    color: var(--pink-darker);
+    border-radius: 0 1rem 1rem 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3rem;
+}
+
+.deleteButton:hover:not(:disabled) {
+    background: var(--blood-red);
+    color: white;
+}
+
+.deleteButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.meetingItem:hover .deleteButton {
+    color: var(--pink-darker);
+}
+
+.meetingItem:hover .deleteButton:hover:not(:disabled) {
+    background: var(--blood-red);
+    color: white;
+}
+
+@media (prefers-color-scheme: dark) {
+    .sectionTitle {
+        color: var(--pink-light);
+    }
+
+    .loading,
+    .empty,
+    .error {
+        color: var(--pink-light);
+    }
+
+    .meetingItem {
+        background: var(--dark-surface);
+        border-color: var(--pink-hot);
+    }
+
+    .meetingContent .meetingName {
+        color: var(--pink-light);
+    }
+
+    .meetingMeta {
+        color: var(--pink-light);
+    }
+
+    .joinButton {
+        color: var(--pink-light);
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .deleteButton {
+        color: var(--pink-light);
+    }
+}
+

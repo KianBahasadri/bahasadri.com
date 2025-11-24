@@ -21,6 +21,7 @@ export interface Session {
     meeting_id: string;
     name?: string;
     created_at?: string;
+    status?: "LIVE" | "ENDED";
 }
 
 export interface ListSessionsResponse {
@@ -29,7 +30,11 @@ export interface ListSessionsResponse {
 
 export interface ErrorResponse {
     error: string;
-    code: "INVALID_INPUT" | "NOT_FOUND" | "INTERNAL_ERROR" | "REALTIMEKIT_ERROR";
+    code:
+        | "INVALID_INPUT"
+        | "NOT_FOUND"
+        | "INTERNAL_ERROR"
+        | "REALTIMEKIT_ERROR";
 }
 
 export interface RealtimeKitConfig {
@@ -125,3 +130,26 @@ export interface RealtimeKitListSessionsResponse {
     errors?: unknown[];
 }
 
+export interface Preset {
+    id: string;
+    name: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ListPresetsResponse {
+    success: boolean;
+    data: Preset[];
+    paging: Paging;
+}
+
+export interface RealtimeKitListAllPresetsResponse {
+    success: boolean;
+    data?: Preset[];
+    paging?: Paging;
+    errors?: unknown[];
+}
+
+export interface DeleteMeetingResponse {
+    success: boolean;
+}
