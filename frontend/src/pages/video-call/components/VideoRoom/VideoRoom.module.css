@@ -27,6 +27,23 @@
     padding-top: 3rem;
 }
 
+.listsContainer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+@media (max-width: 1200px) {
+    .listsContainer {
+        grid-template-columns: 1fr;
+        max-width: 800px;
+    }
+}
+
 .title {
     font-size: 2.5rem;
     color: var(--pink-darker);
@@ -35,22 +52,6 @@
     margin: 0;
 }
 
-.description {
-    font-size: 1.2rem;
-    color: var(--pink-darker);
-    font-family: "Comic Neue", sans-serif;
-    text-align: center;
-}
-
-.buttonGroup {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.createButton,
 .retryButton,
 .backButton {
     padding: 1rem 2rem;
@@ -66,18 +67,12 @@
     box-shadow: 4px 4px 0 var(--pink-light);
 }
 
-.createButton:hover:not(:disabled),
 .retryButton:hover:not(:disabled),
 .backButton:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 6px 6px 0 var(--pink-hot);
     background: var(--pink-hot);
     color: white;
-}
-
-.createButton:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
 }
 
 .spinner {
@@ -137,8 +132,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-    .title,
-    .description {
+    .title {
         color: var(--pink-light);
     }
 

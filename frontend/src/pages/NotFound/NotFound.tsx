@@ -7,6 +7,12 @@ export default function NotFound(): React.JSX.Element {
     const [trail, setTrail] = useState<Array<{ x: number; y: number; id: number }>>([]);
     const trailIdRef = useRef(0);
     const containerRef = useRef<HTMLDivElement>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const oscillatorsRef = useRef<Array<OscillatorNode>>([]);
+    const gainNodesRef = useRef<Array<GainNode>>([]);
+    const hasInteractedRef = useRef(false);
+    const interactionListenersRef = useRef<Array<() => void>>([]);
+    const isPlayingRef = useRef(false);
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent): void => {
@@ -28,6 +34,177 @@ export default function NotFound(): React.JSX.Element {
 
         return () => {
             window.removeEventListener("mousemove", handleMouseMove);
+        };
+    }, []);
+
+    useEffect(() => {
+        const createAudioContext = (): AudioContext | null => {
+            if (audioContextRef.current) {
+                return audioContextRef.current;
+            }
+
+            try {
+                const webkitAudioContext = (
+                    globalThis as { webkitAudioContext?: typeof AudioContext }
+                ).webkitAudioContext;
+                const AudioContextClass =
+                    webkitAudioContext ?? globalThis.AudioContext;
+                audioContextRef.current = new AudioContextClass();
+                return audioContextRef.current;
+            } catch {
+                return null;
+            }
+        };
+
+        const stopMusic = (): void => {
+            oscillatorsRef.current.forEach((osc) => {
+                try {
+                    osc.stop();
+                } catch {
+                    // Oscillator already stopped
+                }
+            });
+            oscillatorsRef.current = [];
+            gainNodesRef.current = [];
+            isPlayingRef.current = false;
+        };
+
+        const playMusic = async (): Promise<void> => {
+            if (isPlayingRef.current) {
+                return;
+            }
+
+            let audioContext = audioContextRef.current;
+            if (!audioContext) {
+                audioContext = createAudioContext();
+                if (!audioContext) {
+                    return;
+                }
+            }
+
+            if (audioContext.state === "suspended") {
+                try {
+                    await audioContext.resume();
+                } catch (error) {
+                    throw error;
+                }
+            }
+
+            // Ambient music: soft, melancholic tones fitting the kawaii/yami kawaii aesthetic
+            // Using a minor chord progression with gentle harmonics
+            const frequencies = [
+                220.0, // A3 - base tone
+                261.63, // C4 - minor third
+                293.66, // D4 - perfect fourth
+                329.63, // E4 - perfect fifth
+                392.0, // G4 - minor seventh
+            ];
+
+            const createOscillator = (
+                frequency: number,
+                type: OscillatorType,
+                gainValue: number,
+                delay: number
+            ): void => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                const lfo = audioContext.createOscillator();
+                const lfoGain = audioContext.createGain();
+
+                oscillator.type = type;
+                oscillator.frequency.value = frequency;
+
+                lfo.type = "sine";
+                lfo.frequency.value = 0.1 + Math.random() * 0.2;
+                lfoGain.gain.value = frequency * 0.02;
+
+                lfo.connect(lfoGain);
+                lfoGain.connect(oscillator.frequency);
+
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime + delay);
+                gainNode.gain.linearRampToValueAtTime(
+                    gainValue,
+                    audioContext.currentTime + delay + 0.5
+                );
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.start(audioContext.currentTime + delay);
+                lfo.start(audioContext.currentTime + delay);
+
+                oscillatorsRef.current.push(oscillator, lfo);
+                gainNodesRef.current.push(gainNode, lfoGain);
+            };
+
+            // Create layered ambient tones
+            frequencies.forEach((freq, index) => {
+                const gain = 0.08 - index * 0.01;
+                const delay = index * 0.2;
+                createOscillator(freq, "sine", gain, delay);
+            });
+
+            // Add some harmonics for texture
+            frequencies.slice(0, 3).forEach((freq, index) => {
+                const harmonicFreq = freq * 2;
+                const gain = 0.03 - index * 0.005;
+                const delay = 1 + index * 0.15;
+                createOscillator(harmonicFreq, "triangle", gain, delay);
+            });
+
+            isPlayingRef.current = true;
+            hasInteractedRef.current = true;
+
+            interactionListenersRef.current.forEach((cleanup) => {
+                cleanup();
+            });
+            interactionListenersRef.current = [];
+        };
+
+        const handleInteraction = (): void => {
+            void playMusic();
+        };
+
+        const setupInteractionListeners = (): void => {
+            const events = ["click", "keydown", "touchstart", "mousedown"];
+            const cleanups: Array<() => void> = [];
+
+            events.forEach((eventType) => {
+                window.addEventListener(eventType, handleInteraction, {
+                    once: true,
+                });
+                cleanups.push(() => {
+                    window.removeEventListener(eventType, handleInteraction);
+                });
+            });
+
+            interactionListenersRef.current = cleanups;
+        };
+
+        const tryPlayMusic = async (): Promise<void> => {
+            try {
+                await playMusic();
+            } catch (error) {
+                if (
+                    error instanceof Error &&
+                    (error.name === "NotAllowedError" ||
+                        error.name === "NotSupportedError")
+                ) {
+                    setupInteractionListeners();
+                } else {
+                    setupInteractionListeners();
+                }
+            }
+        };
+
+        void tryPlayMusic();
+
+        return () => {
+            stopMusic();
+            interactionListenersRef.current.forEach((cleanup) => {
+                cleanup();
+            });
+            interactionListenersRef.current = [];
         };
     }, []);
 

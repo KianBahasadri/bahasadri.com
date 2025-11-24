@@ -75,6 +75,9 @@ importers:
       '@cloudflare/realtimekit':
         specifier: ^1.0.0
         version: 1.2.1
+      '@cloudflare/realtimekit-react':
+        specifier: ^1.2.1
+        version: 1.2.1(react@19.2.0)
       '@tanstack/react-query':
         specifier: ^5.90.10
         version: 5.90.10(react@19.2.0)
@@ -167,6 +170,15 @@ packages:
     dependencies:
       mime: 3.0.0
     dev: true
+
+  /@cloudflare/realtimekit-react@1.2.1(react@19.2.0):
+    resolution: {integrity: sha512-wu022fPdr0INlRzSfLB1HdX6+CwJ3IvVZyjdhEupVJK+DiobwCStpsI4Mtbh2qzW7c/wgn+QrMfKSqraVjagPA==}
+    peerDependencies:
+      react: '>=16.8.6'
+    dependencies:
+      '@cloudflare/realtimekit': 1.2.1
+      react: 19.2.0
+    dev: false
 
   /@cloudflare/realtimekit@1.2.1:
     resolution: {integrity: sha512-HbFD4LVjyarShADoa/hw1hqmimdx7GIgEOmelNdqx0nH4HgDju9Me8jGd/XWKlg0dUegAh5hzdgupMpIRUWR1g==}

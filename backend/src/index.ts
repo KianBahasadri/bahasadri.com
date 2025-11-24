@@ -24,7 +24,7 @@ app.use(
             }
             // Default: deny (returning nothing denies the request)
         },
-        allowMethods: ["GET", "POST", "PATCH", "OPTIONS"],
+        allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allowHeaders: ["Content-Type", "X-Twilio-Signature"],
         exposeHeaders: ["Content-Length"],
         maxAge: 86_400,
