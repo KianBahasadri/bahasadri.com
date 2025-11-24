@@ -2,6 +2,8 @@
 
 **Backend-specific design and implementation requirements. This document is independent of frontend implementation details.**
 
+**IMPORTANT**: This document is downstream from `API_CONTRACT.yml`. Do NOT duplicate request/response schemas, error codes, or validation rules already defined in the API contract. Reference the contract and focus on implementation-specific details only.
+
 ## Overview
 
 Backend implementation for the calculator utility. The backend handles expression evaluation for arithmetic operations of any length (addition, subtraction, multiplication, division). It validates expressions, performs calculations with proper operator precedence, and returns results or appropriate error messages.
@@ -12,9 +14,14 @@ Backend implementation for the calculator utility. The backend handles expressio
 
 ## API Contract Reference
 
-See `docs/features/calculator/API_CONTRACT.md` for the API contract this backend provides.
+**All request/response schemas, error codes, and validation rules are defined in:**
+`docs/features/calculator/API_CONTRACT.yml`
+
+This document focuses solely on backend implementation details not covered in the API contract.
 
 ## API Endpoints
+
+> **Note**: Request/response schemas are defined in `API_CONTRACT.yml`. This section focuses on implementation details only.
 
 ### `POST /api/calculator/calculate`
 
@@ -22,70 +29,53 @@ See `docs/features/calculator/API_CONTRACT.md` for the API contract this backend
 
 **Description**: Evaluates an arithmetic expression of any length and returns the result
 
-**Request**:
-
--   Content-Type: `application/json`
--   Body: `{ expression: string }`
--   Expression format: Supports equations of any length with multiple operations (e.g., `"2 + 3"`, `"10 - 5"`, `"5 + 3 * 2 - 1"`, `"10 / 2 + 5 * 3 - 1"`)
-
-**Validation**:
-
--   Expression must be a non-empty string
--   Expression must be a valid arithmetic expression with proper syntax
--   Supported operators: `+`, `-`, `*`, `/`
--   Operands must be valid numbers (integers or decimals)
--   Expression must respect operator precedence (multiplication and division before addition and subtraction)
--   Division by zero must be caught and rejected
--   Expression length should be reasonable (e.g., max 1000 characters) to prevent abuse
-
-**Response**:
-
-```typescript
-interface CalculateResponse {
-    result: number;
-    expression: string;
-}
-```
-
 **Implementation Flow**:
 
-1. Parse request body and extract expression
-2. Validate expression format and structure
+1. Parse request body and extract expression (per API contract)
+2. Validate expression format and structure (per API contract + business logic)
 3. Parse expression into tokens (numbers and operators)
 4. Validate all operands are valid numbers
 5. Evaluate expression with proper operator precedence
 6. Check for division by zero during evaluation
-7. Perform arithmetic operations
+7. Format response per API contract
 8. Return result with original expression
+
+**Implementation Notes**:
+
+-   Expression format: Supports equations of any length with multiple operations
+-   Supported operators: `+`, `-`, `*`, `/`
+-   Operator precedence: multiplication and division before addition and subtraction
+-   Expression length limit: 1000 characters (to prevent abuse)
+-   Stateless computation - no database or storage needed
 
 **Error Handling**:
 
--   `INVALID_INPUT` (400): Invalid expression format, syntax error, or invalid operands
--   `DIVISION_BY_ZERO` (400): Attempted division by zero
--   `INTERNAL_ERROR` (500): Unexpected error during evaluation
+-   Invalid expression format, syntax error, invalid operands → `INVALID_INPUT` (400)
+-   Attempted division by zero → `DIVISION_BY_ZERO` (400)
+-   Unexpected error during evaluation → `INTERNAL_ERROR` (500)
 
 ## Data Models
+
+> **Note**: API request/response types are defined in `API_CONTRACT.yml`. This section covers internal data models only.
 
 ### Database Schema
 
 No database required. Calculator is stateless - each request is independent.
 
-### TypeScript Types
+### Internal TypeScript Types
+
+> Only include types NOT defined in the API contract (e.g., AST nodes, parsing utilities)
 
 ```typescript
-interface CalculateRequest {
-    expression: string;
+// Expression parsing internal types
+interface ExpressionNode {
+    type: "number" | "operator";
+    value: number | string;
+    left?: ExpressionNode;
+    right?: ExpressionNode;
 }
 
-interface CalculateResponse {
-    result: number;
-    expression: string;
-}
-
-interface ErrorResponse {
-    error: string;
-    code: string;
-}
+type Operator = "+" | "-" | "*" | "/";
 ```
 
 ## Cloudflare Services
@@ -107,6 +97,8 @@ No Cloudflare services required. Calculator performs stateless computation only.
 
 ### Error Handling
 
+> Error response format is defined in `API_CONTRACT.yml`. Focus on error catching and mapping logic.
+
 ```typescript
 try {
     const { expression } = await request.json();
@@ -119,64 +111,50 @@ try {
         headers: { "Content-Type": "application/json" },
     });
 } catch (error) {
+    // Map implementation errors to API contract error codes
     if (error instanceof ValidationError) {
-        return new Response(
-            JSON.stringify({
-                error: error.message,
-                code: "INVALID_INPUT",
-            }),
-            {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-            }
-        );
+        return errorResponse(400, "INVALID_INPUT", error.message);
     }
     if (error instanceof DivisionByZeroError) {
-        return new Response(
-            JSON.stringify({
-                error: "Division by zero",
-                code: "DIVISION_BY_ZERO",
-            }),
-            {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-            }
-        );
+        return errorResponse(400, "DIVISION_BY_ZERO", "Division by zero");
     }
-    return new Response(
-        JSON.stringify({
-            error: "Internal server error",
-            code: "INTERNAL_ERROR",
-        }),
-        {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-        }
-    );
+    return errorResponse(500, "INTERNAL_ERROR", "Internal server error");
+}
+
+// Helper function that formats errors per API contract
+function errorResponse(status: number, code: string, message: string) {
+    return new Response(JSON.stringify({ error: message, code }), {
+        status,
+        headers: { "Content-Type": "application/json" },
+    });
 }
 ```
 
 ## Validation
 
-### Input Validation
+> **Note**: Basic validation rules (required fields, types, formats) are defined in `API_CONTRACT.yml`. This section covers implementation-specific validation only.
+
+### Implementation-Specific Validation
 
 ```typescript
+// Business logic validation beyond basic schema validation
 function validateExpression(expression: string): {
     ok: boolean;
     error?: string;
 } {
-    if (!expression || typeof expression !== "string") {
-        return { ok: false, error: "Expression must be a non-empty string" };
-    }
+    // Basic validation (non-empty string) is in API contract
+    // This adds business logic validation
 
     // Check input length to prevent abuse
     if (expression.length > 1000) {
-        return { ok: false, error: "Expression too long (max 1000 characters)" };
+        return {
+            ok: false,
+            error: "Expression too long (max 1000 characters)",
+        };
     }
 
     // Validate expression syntax (must be valid arithmetic expression)
     // This should use a proper expression parser that handles operator precedence
-    // For now, placeholder for full expression validation
     if (!isValidArithmeticExpression(expression)) {
         return { ok: false, error: "Invalid expression format" };
     }
@@ -202,28 +180,21 @@ function evaluateExpression(expression: string): number {
 
 ### Business Rules
 
--   Arithmetic operations are supported: addition (+), subtraction (-), multiplication (\*), division (/)
--   Expressions of any length are supported (e.g., "5 + 3 * 2 - 1")
+> Focus on business logic rules not expressed in the API contract
+
 -   Operator precedence must be respected: multiplication and division are evaluated before addition and subtraction
--   Operands must be valid numbers (integers or decimals)
 -   Division by zero is not allowed and must return a `DIVISION_BY_ZERO` error
--   Expression must be a valid arithmetic expression with proper syntax
--   Results are returned as numbers (JavaScript number type)
-
-### Input Sanitization
-
--   Expression string is validated using a proper expression parser to prevent code injection
--   Only numeric operands and basic arithmetic operators are allowed
--   No evaluation of arbitrary JavaScript code - only parsing and arithmetic operations
+-   Expression length limit: 1000 characters (to prevent abuse)
 -   Expression parser must handle operator precedence correctly
--   Input length should be reasonable (e.g., max 1000 characters) to prevent abuse
+-   No evaluation of arbitrary JavaScript code - only parsing and arithmetic operations
+-   Results are returned as numbers (JavaScript number type)
 
 ## Implementation Checklist
 
 ### API Endpoints
 
 -   [ ] POST /api/calculator/calculate endpoint
--   [ ] Error handling (per API_CONTRACT.md)
+-   [ ] Error handling (per API_CONTRACT.yml)
 -   [ ] CORS configuration
 
 ### Data Layer
@@ -248,13 +219,17 @@ function evaluateExpression(expression: string): number {
 
 ## Error Codes
 
-Must match error codes defined in API_CONTRACT.md:
+> **All error codes are defined in `API_CONTRACT.yml`.** This section explains implementation-specific error mapping only.
 
-| Code               | HTTP Status | When to Use                               |
-| ------------------ | ----------- | ----------------------------------------- |
-| `INVALID_INPUT`    | 400         | Invalid expression format or syntax error |
-| `DIVISION_BY_ZERO` | 400         | Attempted division by zero                |
-| `INTERNAL_ERROR`   | 500         | Server error during expression evaluation |
+### Error Mapping
+
+How to map internal errors to API contract error codes:
+
+-   Invalid expression format or syntax error → `INVALID_INPUT` (400)
+-   Invalid operands → `INVALID_INPUT` (400)
+-   Expression too long → `INVALID_INPUT` (400)
+-   Attempted division by zero → `DIVISION_BY_ZERO` (400)
+-   Unexpected error during evaluation → `INTERNAL_ERROR` (500)
 
 ## Monitoring & Logging
 
@@ -265,4 +240,12 @@ Must match error codes defined in API_CONTRACT.md:
 
 ---
 
-**Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.
+**Note**: This document is downstream from `API_CONTRACT.yml` and independent of frontend implementation.
+
+**Key principles**:
+
+-   **DO NOT** duplicate request/response schemas from the API contract
+-   **DO NOT** duplicate error codes or validation rules from the API contract
+-   **DO** focus on implementation-specific details (database queries, external services, business logic)
+-   **DO** reference the API contract when discussing endpoints or data structures
+-   All API responses **MUST** match the contract defined in `API_CONTRACT.yml`

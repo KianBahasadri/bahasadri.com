@@ -2,6 +2,8 @@
 
 **Backend-specific design and implementation requirements. This document is independent of frontend implementation details.**
 
+**IMPORTANT**: This document is downstream from `API_CONTRACT.yml`. Do NOT duplicate request/response schemas, error codes, or validation rules already defined in the API contract. Reference the contract and focus on implementation-specific details only.
+
 ## Overview
 
 Backend implementation for the WhatsApp Messenger utility. Handles WhatsApp message sending via Twilio WhatsApp API, message storage in KV, webhook processing, and contact management.
@@ -12,7 +14,10 @@ Backend implementation for the WhatsApp Messenger utility. Handles WhatsApp mess
 
 ## API Contract Reference
 
-See `docs/features/whatsapp-messenger/API_CONTRACT.md` for the API contract this backend provides.
+**All request/response schemas, error codes, and validation rules are defined in:**
+`docs/features/whatsapp-messenger/API_CONTRACT.yml`
+
+This document focuses solely on backend implementation details not covered in the API contract.
 
 ## API Endpoints
 
@@ -496,15 +501,19 @@ function validateMessage(message: string): { ok: boolean; error?: string } {
 
 ## Error Codes
 
-Must match error codes defined in API_CONTRACT.md:
+> **All error codes are defined in `API_CONTRACT.yml`.** This section explains implementation-specific error mapping only.
 
-| Code             | HTTP Status | When to Use                     |
-| ---------------- | ----------- | ------------------------------- |
-| `INVALID_INPUT`  | 400         | Invalid phone number or message |
-| `NOT_FOUND`      | 404         | Contact not found               |
-| `UNAUTHORIZED`   | 403         | Invalid Twilio signature        |
-| `INTERNAL_ERROR` | 500         | Server error                    |
-| `TWILIO_ERROR`   | 502         | Twilio API error                |
+### Error Mapping
+
+How to map internal errors to API contract error codes:
+
+-   Invalid phone number or message → `INVALID_INPUT` (400)
+-   Duplicate contact phone number → `INVALID_INPUT` (400)
+-   Contact not found → `NOT_FOUND` (404)
+-   Invalid Twilio signature → `UNAUTHORIZED` (403)
+-   Twilio API errors → `TWILIO_ERROR` (502)
+-   KV storage errors → `INTERNAL_ERROR` (500)
+-   Unexpected server errors → `INTERNAL_ERROR` (500)
 
 ## Monitoring & Logging
 
@@ -516,5 +525,13 @@ Must match error codes defined in API_CONTRACT.md:
 
 ---
 
-**Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.
+**Note**: This document is downstream from `API_CONTRACT.yml` and independent of frontend implementation.
+
+**Key principles**:
+
+-   **DO NOT** duplicate request/response schemas from the API contract
+-   **DO NOT** duplicate error codes or validation rules from the API contract
+-   **DO** focus on implementation-specific details (database queries, external services, business logic)
+-   **DO** reference the API contract when discussing endpoints or data structures
+-   All API responses **MUST** match the contract defined in `API_CONTRACT.yml`
 

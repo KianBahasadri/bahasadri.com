@@ -2,6 +2,8 @@
 
 **Backend-specific design and implementation requirements. This document is independent of frontend implementation details.**
 
+**IMPORTANT**: This document is downstream from `API_CONTRACT.yml`. Do NOT duplicate request/response schemas, error codes, or validation rules already defined in the API contract. Reference the contract and focus on implementation-specific details only.
+
 ## Overview
 
 Backend implementation for the SMS Messenger utility. Handles SMS sending via Twilio, message storage in KV, webhook processing, and contact management.
@@ -12,9 +14,14 @@ Backend implementation for the SMS Messenger utility. Handles SMS sending via Tw
 
 ## API Contract Reference
 
-See `docs/features/sms-messenger/API_CONTRACT.md` for the API contract this backend provides.
+**All request/response schemas, error codes, and validation rules are defined in:**
+`docs/features/sms-messenger/API_CONTRACT.yml`
+
+This document focuses solely on backend implementation details not covered in the API contract.
 
 ## API Endpoints
+
+> **Note**: Request/response schemas are defined in `API_CONTRACT.yml`. This section focuses on implementation details only.
 
 ### `POST /api/sms-messenger/send`
 
@@ -22,44 +29,26 @@ See `docs/features/sms-messenger/API_CONTRACT.md` for the API contract this back
 
 **Description**: Sends SMS via Twilio API and stores message in KV
 
-**Request Body**:
-
-```typescript
-interface SendSMSRequest {
-    phoneNumber: string; // E.164 format
-    message: string;
-}
-```
-
-**Validation**:
-
--   Phone number: Must be valid E.164 format
--   Message: Non-empty, length limits (Twilio: 1600 chars)
--   Required: Both fields must be present
-
-**Response**:
-
-```typescript
-interface SendSMSResponse {
-    success: boolean;
-    message?: Message;
-    error?: string;
-}
-```
-
 **Implementation Flow**:
 
-1. Parse and validate request body
-2. Normalize phone number to E.164
+1. Parse and validate request body (per API contract)
+2. Normalize phone number to E.164 format
 3. Call Twilio API to send SMS
 4. Store message in KV with key: `msg:counterpart:timestamp:id`
 5. Update thread summary in KV
-6. Return success response with message
+6. Format response per API contract
+7. Return success response with message
+
+**Implementation Notes**:
+
+-   KV key format: `msg:{counterpart}:{timestamp}:{id}`
+-   Thread summary updated on each message
+-   Message stored with direction "sent"
 
 **Error Handling**:
 
--   400: Invalid phone number or message
--   502: Twilio API error
+-   Invalid phone number or message → `INVALID_INPUT` (400)
+-   Twilio API error → `TWILIO_ERROR` (502)
 
 ### `GET /api/sms-messenger/messages`
 
@@ -67,28 +56,19 @@ interface SendSMSResponse {
 
 **Description**: Retrieves messages for a specific counterpart
 
-**Request**:
-
--   Query: `counterpart` (required), `cursor` (optional), `limit` (optional)
-
-**Response**:
-
-```typescript
-interface MessagesResponse {
-    success: boolean;
-    messages: Message[];
-    cursor?: string;
-    listComplete: boolean;
-}
-```
-
 **Implementation Flow**:
 
-1. Validate counterpart parameter
+1. Validate counterpart parameter (per API contract)
 2. Query KV for messages with prefix `msg:counterpart:`
 3. Sort by timestamp DESC
-4. Apply pagination
-5. Return messages and cursor
+4. Apply pagination (cursor-based)
+5. Format response per API contract
+6. Return messages and cursor
+
+**Implementation Notes**:
+
+-   KV prefix: `msg:{counterpart}:`
+-   Messages sorted by timestamp DESC (newest first)
 
 ### `GET /api/sms-messenger/messages-since`
 
@@ -96,27 +76,18 @@ interface MessagesResponse {
 
 **Description**: Returns new messages since a timestamp (polling endpoint)
 
-**Request**:
-
--   Query: `since` (required, Unix timestamp in ms)
-
-**Response**:
-
-```typescript
-interface MessagesSinceResponse {
-    success: boolean;
-    messages: Message[];
-    threads: ThreadSummary[];
-    timestamp: number;
-}
-```
-
 **Implementation Flow**:
 
-1. Validate timestamp parameter
+1. Validate timestamp parameter (per API contract)
 2. Query KV for all messages with timestamp > since
-3. Get thread summaries
-4. Return messages, threads, and current timestamp
+3. Get thread summaries for threads with activity
+4. Format response per API contract
+5. Return messages, threads, and current server timestamp
+
+**Implementation Notes**:
+
+-   Returns server clock time for next poll
+-   Includes both new messages and updated thread summaries
 
 ### `GET /api/sms-messenger/threads`
 
@@ -124,21 +95,17 @@ interface MessagesSinceResponse {
 
 **Description**: Returns list of all conversation threads
 
-**Request**: None
-
-**Response**:
-
-```typescript
-interface ThreadListResponse {
-    threads: ThreadSummary[];
-}
-```
-
 **Implementation Flow**:
 
-1. Query KV for thread summaries
+1. Query KV for thread summaries with prefix `thread:`
 2. Sort by last message timestamp DESC
-3. Return threads
+3. Format response per API contract
+4. Return threads
+
+**Implementation Notes**:
+
+-   KV prefix: `thread:`
+-   Thread summaries include contact information if available
 
 ### `GET /api/sms-messenger/contacts`
 
@@ -146,20 +113,16 @@ interface ThreadListResponse {
 
 **Description**: Returns all contacts
 
-**Request**: None
-
-**Response**:
-
-```typescript
-interface ContactListResponse {
-    contacts: Contact[];
-}
-```
-
 **Implementation Flow**:
 
 1. Query KV for contacts with prefix `contact:`
-2. Return contacts list
+2. Format response per API contract
+3. Return contacts list
+
+**Implementation Notes**:
+
+-   KV prefix: `contact:`
+-   Contacts indexed by phone number for lookups
 
 ### `POST /api/sms-messenger/contacts`
 
@@ -167,38 +130,24 @@ interface ContactListResponse {
 
 **Description**: Creates a new contact
 
-**Request Body**:
-
-```typescript
-interface ContactCreatePayload {
-    phoneNumber: string;
-    displayName: string;
-}
-```
-
-**Validation**:
-
--   Phone number: Valid E.164 format
--   Display name: Non-empty
--   Duplicate check: Phone number must be unique
-
-**Response**:
-
-```typescript
-interface ContactMutationResult {
-    success: boolean;
-    contact?: Contact;
-    error?: string;
-}
-```
-
 **Implementation Flow**:
 
-1. Validate input
-2. Check for duplicate phone number
+1. Validate input (per API contract)
+2. Check for duplicate phone number (business logic validation)
 3. Generate contact ID (UUID)
 4. Store in KV with key: `contact:{id}`
-5. Return contact
+5. Format response per API contract
+6. Return contact
+
+**Implementation Notes**:
+
+-   Phone number must be unique (business rule)
+-   KV key format: `contact:{id}`
+
+**Error Handling**:
+
+-   Duplicate phone number → `INVALID_INPUT` (400)
+-   Invalid input → `INVALID_INPUT` (400)
 
 ### `PATCH /api/sms-messenger/contacts/[contactId]`
 
@@ -206,56 +155,57 @@ interface ContactMutationResult {
 
 **Description**: Updates an existing contact
 
-**Request**:
-
--   Path: `contactId` (UUID)
--   Body: `{ displayName: string }`
-
-**Response**:
-
-```typescript
-interface ContactMutationResult {
-    success: boolean;
-    contact?: Contact;
-    error?: string;
-}
-```
-
 **Implementation Flow**:
 
-1. Validate contactId and input
+1. Validate contactId and input (per API contract)
 2. Get contact from KV
-3. Update display name
-4. Update timestamp
-5. Store back in KV
-6. Return updated contact
+3. If not found, return 404
+4. Update display name
+5. Update timestamp
+6. Store back in KV
+7. Format response per API contract
+8. Return updated contact
+
+**Implementation Notes**:
+
+-   Only displayName can be updated
+-   Updated timestamp reflects modification time
+
+**Error Handling**:
+
+-   Contact not found → `NOT_FOUND` (404)
+-   Invalid input → `INVALID_INPUT` (400)
 
 ### `POST /api/sms-messenger/webhook`
 
 **Handler**: `handleWebhook()`
 
-**Description**: Processes incoming SMS from Twilio webhook
-
-**Request**:
-
--   Content-Type: `application/x-www-form-urlencoded`
--   Body: Twilio webhook form data
-
-**Response**:
-
--   Content-Type: `text/xml`
--   Body: TwiML response
+**Description**: Processes incoming SMS from Twilio webhook (backend-only endpoint)
 
 **Implementation Flow**:
 
-1. Parse form data
-2. Validate Twilio signature
-3. Extract message data (From, To, Body, etc.)
-4. Store incoming message in KV
+1. Parse form data (application/x-www-form-urlencoded)
+2. Validate Twilio signature (security check)
+3. Extract message data (From, To, Body, MessageSid, etc.)
+4. Store incoming message in KV with direction "received"
 5. Update thread summary
-6. Return TwiML response
+6. Return TwiML response (text/xml)
+
+**Implementation Notes**:
+
+-   Frontend does not call this endpoint directly
+-   Twilio signature validation required (X-Twilio-Signature header)
+-   Message stored with direction "received"
+-   Returns TwiML XML response
+
+**Error Handling**:
+
+-   Invalid Twilio signature → `UNAUTHORIZED` (403)
+-   Processing errors → `INTERNAL_ERROR` (500)
 
 ## Data Models
+
+> **Note**: API request/response types are defined in `API_CONTRACT.yml`. This section covers internal data models only.
 
 ### KV Storage Structure
 
@@ -263,48 +213,36 @@ interface ContactMutationResult {
 
 -   Stores individual messages
 -   Sorted by timestamp for efficient queries
+-   Prefix queries: `msg:{counterpart}:`
 
 **Thread Summary Keys**: `thread:{counterpart}`
 
 -   Stores thread metadata
 -   Updated on each message
+-   Includes contact information if available
 
 **Contact Keys**: `contact:{id}`
 
 -   Stores contact information
 -   Indexed by phone number for lookups
 
-### TypeScript Types
+### Internal TypeScript Types
+
+> Only include types NOT defined in the API contract (e.g., KV storage helpers, internal utilities)
 
 ```typescript
-interface Message {
-    id: string;
-    direction: "sent" | "received";
-    phoneNumber: string;
-    counterpart: string;
-    body: string;
-    timestamp: number;
-    status?: "success" | "failed" | "pending";
-    errorMessage?: string;
-    contactId?: string;
-}
+// KV key builders (internal utilities)
+type MessageKey = `msg:${string}:${number}:${string}`;
+type ThreadKey = `thread:${string}`;
+type ContactKey = `contact:${string}`;
 
-interface ThreadSummary {
-    counterpart: string;
-    lastMessagePreview: string;
-    lastMessageTimestamp: number;
-    lastDirection: "sent" | "received";
-    messageCount: number;
-    contactId?: string;
-    contactName?: string;
-}
-
-interface Contact {
-    id: string;
-    phoneNumber: string;
-    displayName: string;
-    createdAt: number;
-    updatedAt: number;
+// Twilio webhook payload (internal)
+interface TwilioWebhookPayload {
+    From: string;
+    To: string;
+    Body: string;
+    MessageSid: string;
+    // ... other Twilio fields
 }
 ```
 
@@ -371,56 +309,65 @@ await env.SMS_MESSAGES.put(
 
 ### Error Handling
 
+> Error response format is defined in `API_CONTRACT.yml`. Focus on error catching and mapping logic.
+
 ```typescript
 try {
-    // Operation
+    // Business logic implementation
 } catch (error) {
+    // Map implementation errors to API contract error codes
     if (error instanceof ValidationError) {
-        return new Response(
-            JSON.stringify({ success: false, error: error.message }),
-            { status: 400, headers: { "Content-Type": "application/json" } }
-        );
+        return errorResponse(400, "INVALID_INPUT", error.message);
     }
     if (error instanceof TwilioError) {
-        return new Response(
-            JSON.stringify({ success: false, error: "Twilio API error" }),
-            { status: 502, headers: { "Content-Type": "application/json" } }
-        );
+        return errorResponse(502, "TWILIO_ERROR", "Twilio API error");
     }
+    if (error instanceof NotFoundError) {
+        return errorResponse(404, "NOT_FOUND", error.message);
+    }
+    if (error instanceof UnauthorizedError) {
+        return errorResponse(403, "UNAUTHORIZED", error.message);
+    }
+    return errorResponse(500, "INTERNAL_ERROR", "Internal server error");
+}
+
+// Helper function that formats errors per API contract
+function errorResponse(status: number, code: string, message: string) {
     return new Response(
-        JSON.stringify({ success: false, error: "Internal server error" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: message, code }),
+        { status, headers: { "Content-Type": "application/json" } }
     );
 }
 ```
 
 ## Validation
 
-### Input Validation
+> **Note**: Basic validation rules (required fields, types, formats) are defined in `API_CONTRACT.yml`. This section covers implementation-specific validation only.
+
+### Implementation-Specific Validation
 
 ```typescript
-function validatePhoneNumber(phone: string): boolean {
+// Business logic validation beyond basic schema validation
+function validatePhoneNumberE164(phone: string): boolean {
     // E.164 format: +[country code][number]
     return /^\+[1-9]\d{1,14}$/.test(phone);
 }
 
-function validateMessage(message: string): { ok: boolean; error?: string } {
-    if (!message || message.trim().length === 0) {
-        return { ok: false, error: "Message cannot be empty" };
-    }
-    if (message.length > 1600) {
-        return { ok: false, error: "Message too long" };
-    }
-    return { ok: true };
+function checkDuplicateContact(phoneNumber: string): Promise<boolean> {
+    // Check if contact with phone number already exists
+    // This is business logic validation, not schema validation
+    return checkKVForExistingContact(phoneNumber);
 }
 ```
 
 ### Business Rules
 
--   Phone numbers must be E.164 format
--   Messages limited to 1600 characters (Twilio limit)
--   Thread summaries updated on every message
--   Contact phone numbers must be unique
+> Focus on business logic rules not expressed in the API contract
+
+-   Contact phone numbers must be unique (checked during creation)
+-   Thread summaries updated on every message (sent or received)
+-   Messages limited to 1600 characters (Twilio limit, enforced beyond schema)
+-   Phone number normalization to E.164 format before storage
 
 ## Security Considerations
 
@@ -464,7 +411,7 @@ function validateMessage(message: string): { ok: boolean; error?: string } {
 -   [ ] POST /contacts endpoint
 -   [ ] PATCH /contacts/[id] endpoint
 -   [ ] POST /webhook endpoint
--   [ ] Error handling (per API_CONTRACT.md)
+-   [ ] Error handling (per API_CONTRACT.yml)
 
 ### Data Layer
 
@@ -496,15 +443,19 @@ function validateMessage(message: string): { ok: boolean; error?: string } {
 
 ## Error Codes
 
-Must match error codes defined in API_CONTRACT.md:
+> **All error codes are defined in `API_CONTRACT.yml`.** This section explains implementation-specific error mapping only.
 
-| Code             | HTTP Status | When to Use                     |
-| ---------------- | ----------- | ------------------------------- |
-| `INVALID_INPUT`  | 400         | Invalid phone number or message |
-| `NOT_FOUND`      | 404         | Contact not found               |
-| `UNAUTHORIZED`   | 403         | Invalid Twilio signature        |
-| `INTERNAL_ERROR` | 500         | Server error                    |
-| `TWILIO_ERROR`   | 502         | Twilio API error                |
+### Error Mapping
+
+How to map internal errors to API contract error codes:
+
+-   Invalid phone number or message → `INVALID_INPUT` (400)
+-   Duplicate contact phone number → `INVALID_INPUT` (400)
+-   Contact not found → `NOT_FOUND` (404)
+-   Invalid Twilio signature → `UNAUTHORIZED` (403)
+-   Twilio API errors → `TWILIO_ERROR` (502)
+-   KV storage errors → `INTERNAL_ERROR` (500)
+-   Unexpected server errors → `INTERNAL_ERROR` (500)
 
 ## Monitoring & Logging
 
@@ -516,4 +467,12 @@ Must match error codes defined in API_CONTRACT.md:
 
 ---
 
-**Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.
+**Note**: This document is downstream from `API_CONTRACT.yml` and independent of frontend implementation.
+
+**Key principles**:
+
+-   **DO NOT** duplicate request/response schemas from the API contract
+-   **DO NOT** duplicate error codes or validation rules from the API contract
+-   **DO** focus on implementation-specific details (database queries, external services, business logic)
+-   **DO** reference the API contract when discussing endpoints or data structures
+-   All API responses **MUST** match the contract defined in `API_CONTRACT.yml`

@@ -2,6 +2,8 @@
 
 **Backend-specific design and implementation requirements. This document is independent of frontend implementation details.**
 
+**IMPORTANT**: This document is downstream from `API_CONTRACT.yml`. Do NOT duplicate request/response schemas, error codes, or validation rules already defined in the API contract. Reference the contract and focus on implementation-specific details only.
+
 ## Overview
 
 Backend implementation for the File Encryptor utility. Since encryption/decryption happens client-side for security, the backend is minimal and only provides optional temporary file storage if needed. Most operations are client-side only and don't require backend interaction.
@@ -12,7 +14,10 @@ Backend implementation for the File Encryptor utility. Since encryption/decrypti
 
 ## API Contract Reference
 
-See `docs/features/file-encryptor/API_CONTRACT.md` for the API contract this backend provides.
+**All request/response schemas, error codes, and validation rules are defined in:**
+`docs/features/file-encryptor/API_CONTRACT.yml`
+
+This document focuses solely on backend implementation details not covered in the API contract.
 
 ## API Endpoints
 
@@ -346,14 +351,17 @@ function validateFileId(fileId: string): { ok: boolean; error?: string } {
 
 ## Error Codes
 
-Must match error codes defined in API_CONTRACT.md:
+> **All error codes are defined in `API_CONTRACT.yml`.** This section explains implementation-specific error mapping only.
 
-| Code             | HTTP Status | When to Use                    |
-| ---------------- | ----------- | ------------------------------ |
-| `INVALID_INPUT`  | 400         | Invalid file or request format |
-| `FILE_TOO_LARGE` | 413         | File exceeds maximum size      |
-| `NOT_FOUND`      | 404         | File not found or expired      |
-| `INTERNAL_ERROR` | 500         | Server error                   |
+### Error Mapping
+
+How to map internal errors to API contract error codes:
+
+-   Invalid file or request format → `INVALID_INPUT` (400)
+-   File exceeds maximum size → `FILE_TOO_LARGE` (413)
+-   File not found or expired → `NOT_FOUND` (404)
+-   R2 storage errors → `INTERNAL_ERROR` (500)
+-   Unexpected server errors → `INTERNAL_ERROR` (500)
 
 ## Monitoring & Logging
 
@@ -373,5 +381,13 @@ Must match error codes defined in API_CONTRACT.md:
 
 ---
 
-**Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.
+**Note**: This document is downstream from `API_CONTRACT.yml` and independent of frontend implementation.
+
+**Key principles**:
+
+-   **DO NOT** duplicate request/response schemas from the API contract
+-   **DO NOT** duplicate error codes or validation rules from the API contract
+-   **DO** focus on implementation-specific details (database queries, external services, business logic)
+-   **DO** reference the API contract when discussing endpoints or data structures
+-   All API responses **MUST** match the contract defined in `API_CONTRACT.yml`
 

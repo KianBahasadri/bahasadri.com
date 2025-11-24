@@ -2,6 +2,8 @@
 
 **Backend-specific design and implementation requirements. This document is independent of frontend implementation details.**
 
+**IMPORTANT**: This document is downstream from `API_CONTRACT.yml`. Do NOT duplicate request/response schemas, error codes, or validation rules already defined in the API contract. Reference the contract and focus on implementation-specific details only.
+
 ## Overview
 
 Backend implementation for the [Feature Name] utility. [Brief description of what the backend handles]
@@ -12,43 +14,42 @@ Backend implementation for the [Feature Name] utility. [Brief description of wha
 
 ## API Contract Reference
 
-See `docs/features/[feature-name]/API_CONTRACT.md` for the API contract this backend provides.
+**All request/response schemas, error codes, and validation rules are defined in:**
+`docs/features/[feature-name]/API_CONTRACT.yml`
+
+This document focuses solely on backend implementation details not covered in the API contract.
 
 ## API Endpoints
+
+> **Note**: Request/response schemas are defined in `API_CONTRACT.yml`. This section focuses on implementation details only.
 
 ### `[METHOD] /api/[feature-name]/[endpoint]`
 
 **Handler**: `[handlerName]()`
 
-**Description**: [What this endpoint does]
-
-**Request**:
-
--   [Request details]
-
-**Validation**:
-
--   [Validation rules]
-
-**Response**:
-
-```typescript
-interface [ResponseName] {
-    // Response fields
-}
-```
+**Description**: [What this endpoint does from an implementation perspective]
 
 **Implementation Flow**:
 
-1. [Step 1]
-2. [Step 2]
-3. [Step 3]
+1. [Step 1 - e.g., Parse and extract request data]
+2. [Step 2 - e.g., Call external service/database]
+3. [Step 3 - e.g., Transform and return response per API contract]
+4. [Additional implementation-specific steps]
+
+**Implementation Notes**:
+
+-   [Any implementation-specific details not in the API contract]
+-   [Database queries, external API calls, caching strategies]
+-   [Business logic details beyond basic validation]
 
 **Error Handling**:
 
--   [Error codes and handling]
+-   [Implementation-specific error handling logic]
+-   [How to map external service errors to API contract error codes]
 
 ## Data Models
+
+> **Note**: API request/response types are defined in `API_CONTRACT.yml`. This section covers internal data models only.
 
 ### Database Schema
 
@@ -57,14 +58,23 @@ interface [ResponseName] {
 CREATE TABLE [table_name] (
     [column definitions]
 );
+
+-- Indexes for query performance
+CREATE INDEX idx_[name] ON [table_name] ([columns]);
 ```
 
-### TypeScript Types
+### Internal TypeScript Types
+
+> Only include types NOT defined in the API contract (e.g., database row types, internal service types, utility types)
 
 ```typescript
-interface [ModelName] {
-    // Model fields
+// Database row type (internal representation)
+interface [ModelName]Row {
+    // Database-specific fields (snake_case, internal IDs, etc.)
 }
+
+// Helper types for business logic
+type [HelperType] = [definition];
 ```
 
 ## Cloudflare Services
@@ -99,18 +109,31 @@ await env.[BINDING_NAME].[operation]([params]);
 
 ### Error Handling
 
+> Error response format is defined in `API_CONTRACT.yml`. Focus on error catching and mapping logic.
+
 ```typescript
 try {
-    // Operation
+    // Business logic implementation
 } catch (error) {
-    if (error instanceof ValidationError) {
-        return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-        });
+    // Map implementation errors to API contract error codes
+    if (error instanceof [ServiceSpecificError]) {
+        return errorResponse(400, "INVALID_INPUT", error.message);
     }
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-        status: 500,
+    if (error instanceof [DatabaseError]) {
+        return errorResponse(
+            500,
+            "INTERNAL_ERROR",
+            "Database operation failed"
+        );
+    }
+    // Handle other error types...
+    return errorResponse(500, "INTERNAL_ERROR", "Unexpected error");
+}
+
+// Helper function that formats errors per API contract
+function errorResponse(status: number, code: string, message: string) {
+    return new Response(JSON.stringify({ error: message, code }), {
+        status,
         headers: { "Content-Type": "application/json" },
     });
 }
@@ -118,19 +141,25 @@ try {
 
 ## Validation
 
-### Input Validation
+> **Note**: Basic validation rules (required fields, types, formats) are defined in `API_CONTRACT.yml`. This section covers implementation-specific validation only.
+
+### Implementation-Specific Validation
 
 ```typescript
-function validate[Input](input: [Type]): { ok: boolean; error?: string } {
-    // Validation logic
+// Business logic validation beyond basic schema validation
+function validate[BusinessLogic](input: [Type]): { ok: boolean; error?: string } {
+    // Example: Check if resource exists, validate business constraints, etc.
     return { ok: true };
 }
 ```
 
 ### Business Rules
 
--   [Business rule 1]
--   [Business rule 2]
+> Focus on business logic rules not expressed in the API contract
+
+-   [Business rule 1 - e.g., "User must have completed X before doing Y"]
+-   [Business rule 2 - e.g., "Resource limits per account"]
+-   [Complex validation involving external services or database queries]
 
 ## Security Considerations
 
@@ -161,7 +190,7 @@ function validate[Input](input: [Type]): { ok: boolean; error?: string } {
 ### API Endpoints
 
 -   [ ] [METHOD] /[endpoint] endpoint
--   [ ] Error handling (per API_CONTRACT.md)
+-   [ ] Error handling (per API_CONTRACT.yml)
 
 ### Data Layer
 
@@ -180,13 +209,17 @@ function validate[Input](input: [Type]): { ok: boolean; error?: string } {
 
 ## Error Codes
 
-Must match error codes defined in API_CONTRACT.md:
+> **All error codes are defined in `API_CONTRACT.yml`.** This section explains implementation-specific error mapping only.
 
-| Code             | HTTP Status | When to Use             |
-| ---------------- | ----------- | ----------------------- |
-| `INVALID_INPUT`  | 400         | [Description]           |
-| `NOT_FOUND`      | 404         | [Description]           |
-| `INTERNAL_ERROR` | 500         | [Description]           |
+### Error Mapping
+
+How to map internal errors to API contract error codes:
+
+-   Database errors → `INTERNAL_ERROR` (500)
+-   External service errors → [Map to appropriate contract error code]
+-   Validation failures → `INVALID_INPUT` (400)
+-   Resource not found → `NOT_FOUND` (404)
+-   [Other service-specific mappings]
 
 ## Monitoring & Logging
 
@@ -194,5 +227,12 @@ Must match error codes defined in API_CONTRACT.md:
 
 ---
 
-**Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.
+**Note**: This document is downstream from `API_CONTRACT.yml` and independent of frontend implementation.
 
+**Key principles**:
+
+-   **DO NOT** duplicate request/response schemas from the API contract
+-   **DO NOT** duplicate error codes or validation rules from the API contract
+-   **DO** focus on implementation-specific details (database queries, external services, business logic)
+-   **DO** reference the API contract when discussing endpoints or data structures
+-   All API responses **MUST** match the contract defined in `API_CONTRACT.yml`

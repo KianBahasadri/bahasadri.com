@@ -2,6 +2,8 @@
 
 **Backend-specific design and implementation requirements. This document is independent of frontend implementation details.**
 
+**IMPORTANT**: This document is downstream from `API_CONTRACT.yml`. Do NOT duplicate request/response schemas, error codes, or validation rules already defined in the API contract. Reference the contract and focus on implementation-specific details only.
+
 ## Overview
 
 Backend implementation for the File Hosting utility. Handles file uploads to R2, metadata storage in D1, access logging, and file downloads.
@@ -12,9 +14,14 @@ Backend implementation for the File Hosting utility. Handles file uploads to R2,
 
 ## API Contract Reference
 
-See `docs/features/file-hosting/API_CONTRACT.md` for the API contract this backend provides.
+**All request/response schemas, error codes, and validation rules are defined in:**
+`docs/features/file-hosting/API_CONTRACT.yml`
+
+This document focuses solely on backend implementation details not covered in the API contract.
 
 ## API Endpoints
+
+> **Note**: Request/response schemas are defined in `API_CONTRACT.yml`. This section focuses on implementation details only.
 
 ### `POST /api/file-hosting/upload`
 
@@ -22,45 +29,29 @@ See `docs/features/file-hosting/API_CONTRACT.md` for the API contract this backe
 
 **Description**: Accepts multipart file upload, stores in R2, saves metadata to D1
 
-**Request**:
-
--   Content-Type: `multipart/form-data`
--   Body: Form data with:
-    -   `file` field (required)
-    -   `isPublic` field (optional, boolean, default: `true`)
-
-**Validation**:
-
--   File size limit: 100MB (configurable)
--   File type: Any (no restrictions)
--   Required: File field must be present
--   `isPublic`: Parse as boolean (default to `true` if not provided)
-
-**Response**:
-
-```typescript
-interface UploadResponse {
-    fileId: string;
-    downloadUrl: string;
-    compressionStatus: "pending" | "processing" | "done" | "failed";
-}
-```
-
 **Implementation Flow**:
 
 1. Parse multipart form data
-2. Validate file (size, presence)
+2. Validate file (size, presence - per API contract)
 3. Extract `isPublic` field (default to `true` if not provided)
 4. Generate unique file ID (UUID)
 5. Sanitize filename
 6. Upload to R2 with proper content type
 7. Store metadata in D1 (including `isPublic` field)
-8. Return file ID and download URL
+8. Format response per API contract
+9. Return file ID and download URL
+
+**Implementation Notes**:
+
+-   File size limit: 100MB (configurable)
+-   R2 key format: `{fileId}/{sanitized-filename}`
+-   Compression status starts as "pending"
 
 **Error Handling**:
 
--   400: Missing file or invalid file
--   500: R2 upload failure or database error
+-   Missing file or invalid file → `INVALID_INPUT` (400)
+-   R2 upload failure → `INTERNAL_ERROR` (500)
+-   Database error → `INTERNAL_ERROR` (500)
 
 ### `POST /api/file-hosting/upload-from-url`
 
@@ -68,33 +59,10 @@ interface UploadResponse {
 
 **Description**: Downloads a file from a URL, stores it in R2, saves metadata to D1
 
-**Request**:
-
--   Content-Type: `application/json`
--   Body: JSON with `url` field and optional `isPublic` field
-
-**Validation**:
-
--   URL format: Must be a valid HTTP/HTTPS URL
--   File size limit: 100MB (configurable, same as regular upload)
--   Required: URL field must be present and valid
--   URL accessibility: Must return a downloadable file (status 200)
--   `isPublic`: Optional boolean (default to `true` if not provided)
-
-**Response**:
-
-```typescript
-interface UploadResponse {
-    fileId: string;
-    downloadUrl: string;
-    compressionStatus: "pending" | "processing" | "done" | "failed";
-}
-```
-
 **Implementation Flow**:
 
-1. Parse JSON request body
-2. Validate URL format
+1. Parse JSON request body (per API contract)
+2. Validate URL format (per API contract)
 3. Extract `isPublic` field (default to `true` if not provided)
 4. Fetch file from URL
 5. Validate response (status 200, content-type, size)
@@ -103,13 +71,20 @@ interface UploadResponse {
 8. Sanitize filename
 9. Upload to R2 with proper content type
 10. Store metadata in D1 (including `isPublic` field)
-11. Return file ID and download URL
+11. Format response per API contract
+12. Return file ID and download URL
+
+**Implementation Notes**:
+
+-   File size limit: 100MB (same as regular upload)
+-   URL must return status 200 with downloadable content
+-   Filename extracted from URL path or Content-Disposition header
 
 **Error Handling**:
 
--   400: Invalid URL, missing URL, or URL does not point to a downloadable file
--   404: File at URL not found
--   500: Download failure, R2 upload failure, or database error
+-   Invalid URL, missing URL → `INVALID_INPUT` (400)
+-   URL returns 404 → `NOT_FOUND` (404)
+-   Download failure, R2 upload failure, database error → `INTERNAL_ERROR` (500)
 
 ### `GET /api/file-hosting/download/[fileId]`
 
@@ -117,36 +92,31 @@ interface UploadResponse {
 
 **Description**: Retrieves file from R2, logs access, returns file content. Enforces access control for private files.
 
-**Request**:
-
--   Path parameter: `fileId` (UUID)
--   Query parameter: `uiAccess` (optional, boolean): Set to `true` when accessing from the UI
-
-**Response**:
-
--   Content-Type: Based on file mime type
--   Body: File content (binary stream)
--   Headers: Content-Disposition with filename
-
 **Implementation Flow**:
 
-1. Validate fileId format
+1. Validate fileId format (per API contract)
 2. Query D1 for file metadata
 3. Check if file exists and not deleted
 4. Check access permissions:
-    -   If file is public (`isPublic = true`): Allow access
-    -   If file is private (`isPublic = false`): Only allow if `uiAccess=true` query parameter is present
+    - If file is public (`isPublic = true`): Allow access
+    - If file is private (`isPublic = false`): Only allow if `uiAccess=true` query parameter is present
 5. If access denied, return 403 Forbidden
 6. Increment access count in D1
-7. Log access entry (IP, timestamp, user agent, referrer)
+7. Log access entry (IP, timestamp, user agent, referrer, geolocation)
 8. Retrieve file from R2
-9. Return file with proper headers
+9. Return file with proper headers (Content-Type, Content-Disposition)
+
+**Implementation Notes**:
+
+-   Access control enforced based on `isPublic` field
+-   Access logging includes WHOIS data (country, organization, ASN)
+-   Supports compressed file download via query parameter
 
 **Error Handling**:
 
--   403: Private file accessed without UI access (direct link access denied)
--   404: File not found or deleted
--   500: R2 retrieval failure or database error
+-   Private file accessed without UI access → `FORBIDDEN` (403)
+-   File not found or deleted → `NOT_FOUND` (404)
+-   R2 retrieval failure or database error → `INTERNAL_ERROR` (500)
 
 ### `GET /api/file-hosting/files`
 
@@ -154,26 +124,14 @@ interface UploadResponse {
 
 **Description**: Returns paginated list of all uploaded files
 
-**Request**:
-
--   Query: `cursor` (optional), `limit` (optional, default: 50)
-
-**Response**:
-
-```typescript
-interface FileListResponse {
-    files: FileMetadata[];
-    nextCursor?: string;
-}
-```
-
 **Implementation Flow**:
 
-1. Parse query parameters
+1. Parse query parameters (per API contract)
 2. Query D1 for files (exclude deleted)
 3. Order by upload_time DESC
 4. Apply pagination
-5. Return files and next cursor
+5. Format response per API contract
+6. Return files and next cursor
 
 ### `GET /api/file-hosting/files/[fileId]`
 
@@ -181,23 +139,17 @@ interface FileListResponse {
 
 **Description**: Returns detailed metadata for a specific file
 
-**Request**:
-
--   Path parameter: `fileId` (UUID)
-
-**Response**:
-
-```typescript
-interface FileMetadata {
-    // Full file metadata structure
-}
-```
-
 **Implementation Flow**:
 
-1. Validate fileId
+1. Validate fileId (per API contract)
 2. Query D1 for file by ID
-3. Return file metadata or 404
+3. If not found, return 404
+4. Format response per API contract
+5. Return file metadata
+
+**Error Handling**:
+
+-   File not found → `NOT_FOUND` (404)
 
 ### `GET /api/file-hosting/access-logs/[fileId]`
 
@@ -205,28 +157,19 @@ interface FileMetadata {
 
 **Description**: Returns paginated access logs for a file
 
-**Request**:
-
--   Path parameter: `fileId` (UUID)
--   Query: `cursor` (optional), `limit` (optional)
-
-**Response**:
-
-```typescript
-interface AccessLogResponse {
-    entries: AccessLogEntry[];
-    nextCursor?: string;
-}
-```
-
 **Implementation Flow**:
 
-1. Validate fileId
+1. Validate fileId (per API contract)
 2. Verify file exists
 3. Query D1 for access logs
 4. Order by timestamp DESC
 5. Apply pagination
-6. Return entries and next cursor
+6. Format response per API contract
+7. Return entries and next cursor
+
+**Error Handling**:
+
+-   File not found → `NOT_FOUND` (404)
 
 ## Data Models
 
@@ -270,36 +213,39 @@ CREATE INDEX idx_files_upload_time ON files (upload_time DESC);
 CREATE INDEX idx_access_logs_file_timestamp ON access_logs (file_id, timestamp DESC);
 ```
 
-### TypeScript Types
+### Internal TypeScript Types
+
+> Only include types NOT defined in the API contract (e.g., database row types, internal service types)
 
 ```typescript
-interface FileMetadata {
+// Database row type (internal representation)
+interface FileRow {
     id: string;
     name: string;
-    originalSize: number;
-    compressedSize?: number | null;
-    mimeType: string;
-    uploadTime: string;
-    compressionStatus: "pending" | "processing" | "done" | "failed";
-    originalUrl: string;
-    compressedUrl?: string | null;
-    compressionRatio?: number | null;
-    accessCount: number;
-    lastAccessed?: string | null;
-    deleted: boolean;
-    isPublic: boolean;
+    original_size: number;
+    compressed_size: number | null;
+    mime_type: string;
+    upload_time: string;
+    compression_status: string;
+    original_url: string;
+    compressed_url: string | null;
+    compression_ratio: number | null;
+    access_count: number;
+    last_accessed: string | null;
+    deleted: number; // 0 or 1 (boolean in SQLite)
+    is_public: number; // 0 or 1 (boolean in SQLite)
 }
 
-interface AccessLogEntry {
+interface AccessLogRow {
     id: string;
-    fileId: string;
-    ipAddress: string;
+    file_id: string;
+    ip_address: string;
     timestamp: string;
-    userAgent?: string | null;
-    referrer?: string | null;
-    country?: string | null;
-    organization?: string | null;
-    asn?: string | null;
+    user_agent: string | null;
+    referrer: string | null;
+    country: string | null;
+    organization: string | null;
+    asn: string | null;
 }
 ```
 
@@ -511,14 +457,18 @@ function validateUrl(url: string): { ok: boolean; error?: string } {
 
 ## Error Codes
 
-Must match error codes defined in API_CONTRACT.md:
+> **All error codes are defined in `API_CONTRACT.yml`.** This section explains implementation-specific error mapping only.
 
-| Code             | HTTP Status | When to Use                    |
-| ---------------- | ----------- | ------------------------------ |
-| `INVALID_INPUT`  | 400         | Invalid file or missing fields |
-| `FORBIDDEN`      | 403         | Private file accessed without UI access |
-| `NOT_FOUND`      | 404         | File doesn't exist             |
-| `INTERNAL_ERROR` | 500         | Server error                   |
+### Error Mapping
+
+How to map internal errors to API contract error codes:
+
+-   Invalid file or missing fields → `INVALID_INPUT` (400)
+-   Private file accessed without UI access → `FORBIDDEN` (403)
+-   File not found or deleted → `NOT_FOUND` (404)
+-   R2 upload/retrieval failures → `INTERNAL_ERROR` (500)
+-   Database errors → `INTERNAL_ERROR` (500)
+-   URL download failures → `INTERNAL_ERROR` (500)
 
 ## Monitoring & Logging
 
@@ -530,4 +480,12 @@ Must match error codes defined in API_CONTRACT.md:
 
 ---
 
-**Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.
+**Note**: This document is downstream from `API_CONTRACT.yml` and independent of frontend implementation.
+
+**Key principles**:
+
+-   **DO NOT** duplicate request/response schemas from the API contract
+-   **DO NOT** duplicate error codes or validation rules from the API contract
+-   **DO** focus on implementation-specific details (database queries, external services, business logic)
+-   **DO** reference the API contract when discussing endpoints or data structures
+-   All API responses **MUST** match the contract defined in `API_CONTRACT.yml`

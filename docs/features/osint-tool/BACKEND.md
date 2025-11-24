@@ -2,6 +2,8 @@
 
 **Backend-specific design and implementation requirements. This document is independent of frontend implementation details.**
 
+**IMPORTANT**: This document is downstream from `API_CONTRACT.yml`. Do NOT duplicate request/response schemas, error codes, or validation rules already defined in the API contract. Reference the contract and focus on implementation-specific details only.
+
 ## Overview
 
 Backend implementation for the OSINT Tool utility. Handles gathering publicly available information from various sources including social media platforms, domain registrars, and data breach databases.
@@ -12,7 +14,10 @@ Backend implementation for the OSINT Tool utility. Handles gathering publicly av
 
 ## API Contract Reference
 
-See `docs/features/osint-tool/API_CONTRACT.md` for the API contract this backend provides.
+**All request/response schemas, error codes, and validation rules are defined in:**
+`docs/features/osint-tool/API_CONTRACT.yml`
+
+This document focuses solely on backend implementation details not covered in the API contract.
 
 ## API Endpoints
 
@@ -483,14 +488,17 @@ function validateDomain(domain: string): { ok: boolean; error?: string } {
 
 ## Error Codes
 
-Must match error codes defined in API_CONTRACT.md:
+> **All error codes are defined in `API_CONTRACT.yml`.** This section explains implementation-specific error mapping only.
 
-| Code             | HTTP Status | When to Use                           |
-| ---------------- | ----------- | ------------------------------------- |
-| `INVALID_INPUT`  | 400         | Invalid input format                  |
-| `RATE_LIMIT`     | 429         | Rate limit exceeded                   |
-| `NOT_FOUND`      | 404         | Domain or resource not found          |
-| `INTERNAL_ERROR` | 500         | Server error during processing        |
+### Error Mapping
+
+How to map internal errors to API contract error codes:
+
+-   Invalid input format → `INVALID_INPUT` (400)
+-   Rate limit exceeded → `RATE_LIMIT` (429)
+-   Domain or resource not found → `NOT_FOUND` (404)
+-   External API errors → `INTERNAL_ERROR` (500)
+-   Unexpected server errors → `INTERNAL_ERROR` (500)
 
 ## Monitoring & Logging
 
@@ -502,5 +510,13 @@ Must match error codes defined in API_CONTRACT.md:
 
 ---
 
-**Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.
+**Note**: This document is downstream from `API_CONTRACT.yml` and independent of frontend implementation.
+
+**Key principles**:
+
+-   **DO NOT** duplicate request/response schemas from the API contract
+-   **DO NOT** duplicate error codes or validation rules from the API contract
+-   **DO** focus on implementation-specific details (database queries, external services, business logic)
+-   **DO** reference the API contract when discussing endpoints or data structures
+-   All API responses **MUST** match the contract defined in `API_CONTRACT.yml`
 

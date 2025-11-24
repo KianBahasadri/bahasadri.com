@@ -2,6 +2,8 @@
 
 **Backend-specific design and implementation requirements. This document is independent of frontend implementation details.**
 
+**IMPORTANT**: This document is downstream from `API_CONTRACT.yml`. Do NOT duplicate request/response schemas, error codes, or validation rules already defined in the API contract. Reference the contract and focus on implementation-specific details only.
+
 ## Overview
 
 Backend implementation for the Video Call utility. Handles RealtimeKit API integration for creating meetings and generating participant tokens.
@@ -12,105 +14,83 @@ Backend implementation for the Video Call utility. Handles RealtimeKit API integ
 
 ## API Contract Reference
 
-See `docs/features/video-call/API_CONTRACT.yml` for the API contract this backend provides.
+**All request/response schemas, error codes, and validation rules are defined in:**
+`docs/features/video-call/API_CONTRACT.yml`
+
+This document focuses solely on backend implementation details not covered in the API contract.
 
 ## API Endpoints
+
+> **Note**: Request/response schemas are defined in `API_CONTRACT.yml`. This section focuses on implementation details only.
 
 ### `POST /api/video-call/session`
 
 **Handler**: `createSession()`
 
-**Description**: Creates a new meeting via RealtimeKit's REST API. This corresponds to RealtimeKit's "Create Meeting" endpoint. Returns a meeting ID that can be used to generate participant tokens.
-
-**Request Body**:
-
-```typescript
-interface CreateSessionRequest {
-    name?: string;
-}
-```
-
-**Validation**:
-
--   Name: Optional, string
--   No required fields
-
-**Response**:
-
-```typescript
-interface CreateSessionResponse {
-    meeting_id: string;
-}
-```
+**Description**: Creates a new meeting via RealtimeKit's REST API. This corresponds to RealtimeKit's "Create Meeting" endpoint.
 
 **Implementation Flow**:
 
 1. Get RealtimeKit config from environment
 2. Call RealtimeKit API to create meeting
 3. Extract meeting ID from response
-4. Return meeting ID
+4. Format response per API contract (return meeting_id)
+5. Return response
+
+**Implementation Notes**:
+
+-   No local storage needed (stateless)
+-   RealtimeKit handles meeting lifecycle
+-   Meeting persists until all participants leave or explicitly ended
 
 **Error Handling**:
 
--   500: RealtimeKit API error or missing config
+-   RealtimeKit API errors → `REALTIMEKIT_ERROR` (500)
+-   Missing config → `INTERNAL_ERROR` (500)
 
 ### `POST /api/video-call/token`
 
 **Handler**: `generateToken()`
 
-**Description**: Generates a participant authentication token via RealtimeKit's REST API. This corresponds to RealtimeKit's "Add Participant" endpoint, which creates a participant entry for the meeting and returns an authToken. Each participant needs their own token.
-
-**Request Body**:
-
-```typescript
-interface GenerateTokenRequest {
-    meeting_id: string;
-    name?: string;
-    custom_participant_id?: string;
-    preset_name?: string;
-}
-```
-
-**Validation**:
-
--   meeting_id: Required, string
--   name: Optional, string
--   custom_participant_id: Optional, string
--   preset_name: Optional, string (default: "group_call_participant")
-
-**Response**:
-
-```typescript
-interface GenerateTokenResponse {
-    auth_token: string;
-}
-```
+**Description**: Generates a participant authentication token via RealtimeKit's REST API. This corresponds to RealtimeKit's "Add Participant" endpoint.
 
 **Implementation Flow**:
 
-1. Validate meeting_id is present
+1. Validate meeting_id is present (basic validation per API contract)
 2. Get RealtimeKit config from environment
 3. Call RealtimeKit API to generate token
 4. Extract auth token from response
-5. Return auth token
+5. Format response per API contract (return auth_token)
+6. Return response
+
+**Implementation Notes**:
+
+-   Each participant needs their own token
+-   Token is used to initialize RealtimeKit SDK on frontend
+-   Default preset_name: "group_call_participant" if not provided
 
 **Error Handling**:
 
--   400: Missing meeting_id (INVALID_INPUT)
--   404: Meeting does not exist (NOT_FOUND)
--   500: RealtimeKit API error (REALTIMEKIT_ERROR) or missing config (INTERNAL_ERROR)
+-   Missing meeting_id → `INVALID_INPUT` (400)
+-   Meeting does not exist (RealtimeKit 404) → `NOT_FOUND` (404)
+-   RealtimeKit API errors → `REALTIMEKIT_ERROR` (500)
+-   Missing config → `INTERNAL_ERROR` (500)
 
 ## Data Models
 
-### TypeScript Types
+> **Note**: API request/response types are defined in `API_CONTRACT.yml`. This section covers internal data models only.
+
+### Internal TypeScript Types
 
 ```typescript
+// RealtimeKit configuration (from environment)
 interface RealtimeKitConfig {
     accountId: string;
     appId: string;
     apiToken: string;
 }
 
+// RealtimeKit API response types (internal)
 interface RealtimeKitMeetingResponse {
     success: boolean;
     data: {
@@ -172,97 +152,56 @@ interface RealtimeKitTokenResponse {
 
 ### Error Handling
 
-All error responses must match the ErrorResponse schema from the API contract:
+> Error response format is defined in `API_CONTRACT.yml`. Focus on error catching and mapping logic.
 
 ```typescript
-interface ErrorResponse {
-    error: string; // Human-readable error message
-    code:
-        | "INVALID_INPUT"
-        | "NOT_FOUND"
-        | "INTERNAL_ERROR"
-        | "REALTIMEKIT_ERROR";
-}
-
 try {
-    // Operation
+    // Business logic implementation
 } catch (error) {
+    // Map implementation errors to API contract error codes
     if (error instanceof ValidationError) {
-        return new Response(
-            JSON.stringify({
-                error: error.message,
-                code: "INVALID_INPUT",
-            }),
-            {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-            }
-        );
+        return errorResponse(400, "INVALID_INPUT", error.message);
     }
     if (error instanceof RealtimeKitError) {
         if (error.status === 404) {
-            return new Response(
-                JSON.stringify({
-                    error: "Meeting does not exist",
-                    code: "NOT_FOUND",
-                }),
-                {
-                    status: 404,
-                    headers: { "Content-Type": "application/json" },
-                }
-            );
+            return errorResponse(404, "NOT_FOUND", "Meeting does not exist");
         }
-        return new Response(
-            JSON.stringify({
-                error: "RealtimeKit API error",
-                code: "REALTIMEKIT_ERROR",
-            }),
-            {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-            }
-        );
+        return errorResponse(500, "REALTIMEKIT_ERROR", "RealtimeKit API error");
     }
-    return new Response(
-        JSON.stringify({
-            error: "Internal server error",
-            code: "INTERNAL_ERROR",
-        }),
-        {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-        }
-    );
+    return errorResponse(500, "INTERNAL_ERROR", "Internal server error");
+}
+
+// Helper function that formats errors per API contract
+function errorResponse(status: number, code: string, message: string) {
+    return new Response(JSON.stringify({ error: message, code }), {
+        status,
+        headers: { "Content-Type": "application/json" },
+    });
 }
 ```
 
 ## Validation
 
-### Input Validation
+> **Note**: Basic validation rules (required fields, types, formats) are defined in `API_CONTRACT.yml`. This section covers implementation-specific validation only.
+
+### Implementation-Specific Validation
 
 ```typescript
-function validateGenerateTokenRequest(body: unknown): {
-    ok: boolean;
-    error?: string;
-} {
-    if (!body || typeof body !== "object") {
-        return { ok: false, error: "Invalid request body" };
-    }
-
-    const request = body as GenerateTokenRequest;
-
-    if (!request.meeting_id || typeof request.meeting_id !== "string") {
+// Business logic validation beyond basic schema validation
+function validateMeetingId(meetingId: string): { ok: boolean; error?: string } {
+    // Validate meeting ID format (UUID or RealtimeKit meeting ID)
+    if (!meetingId || typeof meetingId !== "string") {
         return { ok: false, error: "Missing meeting_id" };
     }
-
+    // Additional format validation if needed
     return { ok: true };
 }
 ```
 
 ### Business Rules
 
--   Meeting ID must be valid UUID or RealtimeKit meeting ID
--   Token generation requires valid meeting ID
+-   Meeting ID must be valid UUID or RealtimeKit meeting ID format
+-   Token generation requires valid meeting ID (validated via RealtimeKit API)
 
 ## Security Considerations
 
@@ -328,14 +267,17 @@ function validateGenerateTokenRequest(body: unknown): {
 
 ## Error Codes
 
-Must match error codes defined in API_CONTRACT.yml:
+> **All error codes are defined in `API_CONTRACT.yml`.** This section explains implementation-specific error mapping only.
 
-| Code                | HTTP Status | When to Use             |
-| ------------------- | ----------- | ----------------------- |
-| `INVALID_INPUT`     | 400         | Missing required fields |
-| `NOT_FOUND`         | 404         | Meeting not found       |
-| `INTERNAL_ERROR`    | 500         | Server error            |
-| `REALTIMEKIT_ERROR` | 500         | RealtimeKit API error   |
+### Error Mapping
+
+How to map internal errors to API contract error codes:
+
+-   Missing required fields (meeting_id) → `INVALID_INPUT` (400)
+-   RealtimeKit API returns 404 → `NOT_FOUND` (404)
+-   RealtimeKit API errors → `REALTIMEKIT_ERROR` (500)
+-   Missing environment config → `INTERNAL_ERROR` (500)
+-   Unexpected server errors → `INTERNAL_ERROR` (500)
 
 ## Monitoring & Logging
 
@@ -346,4 +288,12 @@ Must match error codes defined in API_CONTRACT.yml:
 
 ---
 
-**Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.yml couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.yml.
+**Note**: This document is downstream from `API_CONTRACT.yml` and independent of frontend implementation.
+
+**Key principles**:
+
+-   **DO NOT** duplicate request/response schemas from the API contract
+-   **DO NOT** duplicate error codes or validation rules from the API contract
+-   **DO** focus on implementation-specific details (database queries, external services, business logic)
+-   **DO** reference the API contract when discussing endpoints or data structures
+-   All API responses **MUST** match the contract defined in `API_CONTRACT.yml`

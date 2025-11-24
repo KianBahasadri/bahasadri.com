@@ -2,6 +2,8 @@
 
 **Backend-specific design and implementation requirements. This document is independent of frontend implementation details.**
 
+**IMPORTANT**: This document is downstream from `API_CONTRACT.yml`. Do NOT duplicate request/response schemas, error codes, or validation rules already defined in the API contract. Reference the contract and focus on implementation-specific details only.
+
 ## Overview
 
 Backend implementation for the Home page features:
@@ -15,9 +17,14 @@ Backend implementation for the Home page features:
 
 ## API Contract Reference
 
-See `docs/features/home/API_CONTRACT.md` for the API contract this backend provides.
+**All request/response schemas, error codes, and validation rules are defined in:**
+`docs/features/home/API_CONTRACT.yml`
+
+This document focuses solely on backend implementation details not covered in the API contract.
 
 ## API Endpoints
+
+> **Note**: Request/response schemas are defined in `API_CONTRACT.yml`. This section focuses on implementation details only.
 
 ### `GET /api/home/welcome`
 
@@ -25,17 +32,12 @@ See `docs/features/home/API_CONTRACT.md` for the API contract this backend provi
 
 **Description**: Returns a randomly selected welcome message for display on page load
 
-**Request**: No request body
-
-**Response Body**:
-
--   `message`: Randomly selected yandere-themed welcome message (string)
-
-**Processing Flow**:
+**Implementation Flow**:
 
 1. Receive GET request
 2. Select random message from pre-generated list
-3. Return welcome message in response
+3. Format response per API contract
+4. Return welcome message in response
 
 **Pre-generated Welcome Messages**:
 
@@ -52,16 +54,16 @@ A static list of yandere-themed greetings to randomly select from:
 -   "I prepared everything for you~ ♡"
 -   "You won't escape my love~ ♡"
 
-**Error Responses**:
-
--   500: Internal server error (should be rare for this simple endpoint)
-
 **Implementation Notes**:
 
 -   Simple endpoint with no state or database access
 -   Randomly selects message on each request
 -   No caching needed (let frontend cache if desired)
 -   No validation needed (no user input)
+
+**Error Handling**:
+
+-   Unexpected errors → `INTERNAL_ERROR` (500)
 
 ---
 
@@ -71,31 +73,26 @@ A static list of yandere-themed greetings to randomly select from:
 
 **Description**: Retrieves the conversation history for the global chat session. Returns empty array if no conversation exists yet.
 
-**Request**: No request body
-
-**Response Body**:
-
--   `messages`: Array of chat messages in chronological order (ChatMessage[])
--   `conversationId`: The conversation ID (always "global" for this single-user app)
-
-**Processing Flow**:
+**Implementation Flow**:
 
 1. Use single global conversation ID (constant: "global")
 2. Retrieve conversation context from KV using global conversation ID
 3. If context doesn't exist:
-    - Return empty messages array with conversationId "global"
+    - Return empty messages array with conversationId "global" (per API contract)
 4. If context exists:
+    - Format response per API contract
     - Return messages array and conversationId from context
 
-**Error Responses**:
-
--   500: Internal server error retrieving conversation history
-
-**Conversation Session Behavior**:
+**Implementation Notes**:
 
 -   **Single global session**: Uses the same global conversation ID ("global")
 -   **No client-side management**: Frontend never sees or manages conversation ID
 -   **Empty state**: Returns empty array if no conversation exists (first time loading chat)
+-   KV key format: `conversation:global`
+
+**Error Handling**:
+
+-   KV retrieval errors → `INTERNAL_ERROR` (500)
 
 ---
 
@@ -105,22 +102,10 @@ A static list of yandere-themed greetings to randomly select from:
 
 **Description**: Processes user message and generates yandere agent response with conversation context. Uses a single global chat session for this single-user application.
 
-**Request Body**:
+**Implementation Flow**:
 
--   `message`: User's chat message (string, required)
-
-**Validation**:
-
--   Message: Non-empty string
-
-**Response Body**:
-
--   `response`: Agent's response message (string)
-
-**Processing Flow**:
-
-1. Parse and validate request body
-2. Validate message (non-empty)
+1. Parse and validate request body (per API contract)
+2. Validate message (non-empty, per API contract)
 3. Use single global conversation ID (constant: "global")
 4. Retrieve conversation context from KV using global conversation ID
 5. If context doesn't exist:
@@ -132,50 +117,43 @@ A static list of yandere-themed greetings to randomly select from:
 7. Call OpenRouter chat completion API
 8. Parse API response and extract assistant's message
 9. Update conversation context with user message and agent response
-10. Store conversation context in KV (with TTL)
-11. Return response with agent message
+10. Store conversation context in KV (with TTL: 3600 seconds)
+11. Format response per API contract
+12. Return response with agent message
 
-**Error Responses**:
-
--   400: Invalid or empty message
--   500: Internal server error processing message, OpenRouter API failure
-
-**Conversation Session Behavior**:
+**Implementation Notes**:
 
 -   **Single global session**: All requests use the same global conversation ID ("global")
 -   **Persistent across refreshes**: Conversation context stored in KV, persists across page refreshes
 -   **No client-side management**: Frontend never sees or manages conversation ID
 -   **Context expiration**: KV TTL of 1 hour - conversation context expires after inactivity
+-   KV key format: `conversation:global`
+
+**Error Handling**:
+
+-   Invalid or empty message → `INVALID_INPUT` (400)
+-   OpenRouter API failure → `INTERNAL_ERROR` (500)
+-   KV storage errors → `INTERNAL_ERROR` (500)
 
 ## Data Models
 
-### Welcome Message
+> **Note**: API request/response types (ChatMessage, ChatRequest, ChatResponse, etc.) are defined in `API_CONTRACT.yml`. This section covers internal data models only.
 
-Simple string selection from static list - no data model needed.
-
-### Conversation Context
-
-Track conversation history and context in KV:
+### Internal TypeScript Types
 
 ```typescript
+// Internal conversation context storage (KV)
 interface ConversationContext {
-    conversationId: string; // UUID
-    messages: ChatMessage[];
+    conversationId: string; // Always "global" for this app
+    messages: ChatMessage[]; // ChatMessage type from API contract
     createdAt: number; // timestamp (ms)
     updatedAt: number; // timestamp (ms)
-}
-
-interface ChatMessage {
-    id: string; // UUID
-    role: "user" | "agent";
-    content: string;
-    timestamp: number; // milliseconds since epoch
 }
 ```
 
 **Storage**:
 
--   Key: `conversation:${conversationId}`
+-   Key: `conversation:global` (single global conversation)
 -   Value: JSON-stringified ConversationContext
 -   TTL: 1 hour (3600 seconds) - conversations expire after inactivity
 
@@ -267,18 +245,28 @@ interface ChatMessage {
 
 ### Error Handling
 
--   Catch validation errors and return 400 with appropriate error message
--   Catch processing errors and return 500 with generic error message
--   Include error codes matching API contract (`INVALID_INPUT`, `INTERNAL_ERROR`)
--   Log errors for monitoring (without sensitive data)
-
-**Error Response Format**:
+> Error response format is defined in `API_CONTRACT.yml`. Focus on error catching and mapping logic.
 
 ```typescript
-{
-  success: false,
-  error: "Human-readable error message",
-  code: "INVALID_INPUT" | "INTERNAL_ERROR"
+try {
+    // Business logic implementation
+} catch (error) {
+    // Map implementation errors to API contract error codes
+    if (error instanceof ValidationError) {
+        return errorResponse(400, "INVALID_INPUT", error.message);
+    }
+    if (error instanceof OpenRouterError) {
+        return errorResponse(500, "INTERNAL_ERROR", "OpenRouter API failure");
+    }
+    return errorResponse(500, "INTERNAL_ERROR", "Internal server error");
+}
+
+// Helper function that formats errors per API contract
+function errorResponse(status: number, code: string, message: string) {
+    return new Response(
+        JSON.stringify({ success: false, error: message, code }),
+        { status, headers: { "Content-Type": "application/json" } }
+    );
 }
 ```
 
@@ -333,29 +321,35 @@ Stay in character at all times.
 
 ## Validation
 
-### Input Validation
+> **Note**: Basic validation rules (required fields, types, formats) are defined in `API_CONTRACT.yml`. This section covers implementation-specific validation only.
 
-**Message Validation** (for chat endpoint):
+### Implementation-Specific Validation
 
--   Message is required (non-empty string)
--   Message must not be empty after trimming
--   Type must be string
-
-**Conversation Session** (for chat endpoint):
-
--   Single global conversation ID: "global"
--   No validation needed (constant value)
--   No client-side session management required
+```typescript
+// Business logic validation beyond basic schema validation
+function validateMessageNotEmpty(message: string): {
+    ok: boolean;
+    error?: string;
+} {
+    // Basic validation is in API contract, but we also check after trimming
+    if (!message || message.trim().length === 0) {
+        return { ok: false, error: "Message cannot be empty" };
+    }
+    return { ok: true };
+}
+```
 
 ### Business Rules
 
--   Message must be non-empty and within length limits
+> Focus on business logic rules not expressed in the API contract
+
 -   Single global conversation session for this single-user application
 -   Conversation ID is constant ("global") - never changes
--   Agent responses should maintain yandere personality
+-   Agent responses should maintain yandere personality (via system prompt)
 -   Conversation context stored with 1-hour TTL
 -   Session persists across page refreshes (stored in KV)
 -   No client-side session management required
+-   Conversation history length may be limited to control OpenRouter token usage
 
 ## Security Considerations
 
@@ -460,12 +454,17 @@ Since this is a single-user app within free tier limits, basic rate limiting:
 
 ## Error Codes
 
-Must match error codes defined in API_CONTRACT.md:
+> **All error codes are defined in `API_CONTRACT.yml`.** This section explains implementation-specific error mapping only.
 
-| Code             | HTTP Status | When to Use                                          |
-| ---------------- | ----------- | ---------------------------------------------------- |
-| `INVALID_INPUT`  | 400         | Empty/invalid message, invalid conversationId format |
-| `INTERNAL_ERROR` | 500         | Server error, OpenRouter API failure, network error  |
+### Error Mapping
+
+How to map internal errors to API contract error codes:
+
+-   Empty/invalid message → `INVALID_INPUT` (400)
+-   OpenRouter API failure → `INTERNAL_ERROR` (500)
+-   KV storage errors → `INTERNAL_ERROR` (500)
+-   Network errors → `INTERNAL_ERROR` (500)
+-   Unexpected server errors → `INTERNAL_ERROR` (500)
 
 ## OpenRouter API Integration
 
@@ -578,4 +577,12 @@ Must match error codes defined in API_CONTRACT.md:
 
 ---
 
-**Note**: This document is independent of frontend implementation. Only the API contract in API_CONTRACT.md couples frontend and backend. All API responses must match the contract defined in API_CONTRACT.md.
+**Note**: This document is downstream from `API_CONTRACT.yml` and independent of frontend implementation.
+
+**Key principles**:
+
+-   **DO NOT** duplicate request/response schemas from the API contract
+-   **DO NOT** duplicate error codes or validation rules from the API contract
+-   **DO** focus on implementation-specific details (database queries, external services, business logic)
+-   **DO** reference the API contract when discussing endpoints or data structures
+-   All API responses **MUST** match the contract defined in `API_CONTRACT.yml`
