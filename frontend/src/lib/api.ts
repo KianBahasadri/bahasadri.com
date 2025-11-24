@@ -26,13 +26,38 @@ import type {
     CreateSessionResponse,
     GenerateTokenRequest,
     GenerateTokenResponse,
-    ErrorResponse as VideoCallErrorResponse,
 } from "../types/video-call";
 
 const API_BASE_URL =
     import.meta.env.MODE === "production"
         ? "https://bahasadri.com/api"
         : "http://localhost:8787/api";
+
+/**
+ * Handles API error responses with logging
+ */
+async function handleApiError(
+    response: Response,
+    endpoint: string,
+    defaultMessage: string
+): Promise<never> {
+    let errorData: { error?: string; code?: string };
+    try {
+        errorData = (await response.json()) as { error?: string; code?: string };
+    } catch {
+        errorData = {};
+    }
+
+    const errorMessage = errorData.error ?? defaultMessage;
+    console.error(`[API] ${endpoint} failed:`, {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorMessage,
+        code: errorData.code,
+    });
+
+    throw new Error(errorMessage);
+}
 
 export const sendSMS = async (
     phoneNumber: string,
@@ -197,10 +222,13 @@ export const sendChatMessage = async (
 export const fetchGlobalRoom = async (): Promise<GlobalRoomResponse> => {
     const response = await fetch(`${API_BASE_URL}/video-call/global-room`);
     if (!response.ok) {
-        const error: VideoCallErrorResponse = await response.json();
-        throw new Error(error.error || "Failed to fetch global room");
+        await handleApiError(
+            response,
+            "fetchGlobalRoom",
+            "Failed to fetch global room"
+        );
     }
-    return response.json();
+    return response.json() as Promise<GlobalRoomResponse>;
 };
 
 export const createSession = async (
@@ -217,11 +245,14 @@ export const createSession = async (
     });
 
     if (!response.ok) {
-        const error: VideoCallErrorResponse = await response.json();
-        throw new Error(error.error || "Failed to create session");
+        await handleApiError(
+            response,
+            "createSession",
+            "Failed to create session"
+        );
     }
 
-    return response.json();
+    return response.json() as Promise<CreateSessionResponse>;
 };
 
 export const generateToken = async (
@@ -249,9 +280,12 @@ export const generateToken = async (
     });
 
     if (!response.ok) {
-        const error: VideoCallErrorResponse = await response.json();
-        throw new Error(error.error || "Failed to generate token");
+        await handleApiError(
+            response,
+            "generateToken",
+            "Failed to generate token"
+        );
     }
 
-    return response.json();
+    return response.json() as Promise<GenerateTokenResponse>;
 };

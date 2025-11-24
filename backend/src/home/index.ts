@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "../types/env";
+import { handleError } from "../lib/error-handling";
 import type {
     WelcomeResponse,
     ErrorResponse,
@@ -17,6 +18,9 @@ import {
 import { generateAgentResponse } from "./lib/openrouter";
 
 const app = new Hono<{ Bindings: Env }>();
+
+type HomeErrorCode = "INVALID_INPUT" | "INTERNAL_ERROR";
+type HttpStatusCode = 400 | 404 | 500;
 
 // Single global conversation ID for this single-user application
 const GLOBAL_CONVERSATION_ID = "global";
@@ -100,15 +104,17 @@ app.get("/chat", async (c) => {
             200
         );
     } catch (error) {
-        const errorMessage =
-            error instanceof Error ? error.message : "Unknown error";
+        const { response, status } = handleError(error, {
+            endpoint: "/api/home/chat",
+            method: "GET",
+        });
         return c.json<ErrorResponse>(
             {
                 success: false,
-                error: `Internal server error: ${errorMessage}`,
-                code: "INTERNAL_ERROR",
+                error: response.error,
+                code: response.code as "INVALID_INPUT" | "INTERNAL_ERROR",
             },
-            500
+            status as 400 | 404 | 500
         );
     }
 });
@@ -130,14 +136,18 @@ app.get("/welcome", (c) => {
             },
             200
         );
-    } catch {
+    } catch (error) {
+        const { response, status } = handleError(error, {
+            endpoint: "/api/home/welcome",
+            method: "GET",
+        });
         return c.json<ErrorResponse>(
             {
                 success: false,
-                error: "Internal server error",
-                code: "INTERNAL_ERROR",
+                error: response.error,
+                code: response.code as "INVALID_INPUT" | "INTERNAL_ERROR",
             },
-            500
+            status as 400 | 404 | 500
         );
     }
 });
@@ -209,15 +219,21 @@ app.post("/chat", async (c) => {
                 userMessage.content
             );
         } catch (error) {
-            const errorMessage =
-                error instanceof Error ? error.message : "Unknown error";
+            const { response, status } = handleError(error, {
+                endpoint: "/api/home/chat",
+                method: "POST",
+                defaultMessage: "Failed to generate response",
+                additionalInfo: {
+                    step: "generateAgentResponse",
+                },
+            });
             return c.json<ErrorResponse>(
                 {
                     success: false,
-                    error: `Failed to generate response: ${errorMessage}`,
-                    code: "INTERNAL_ERROR",
+                    error: response.error,
+                    code: response.code as HomeErrorCode,
                 },
-                500
+                status as HttpStatusCode
             );
         }
 

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "../types/env";
+import { handleError } from "../lib/error-handling";
 import { validatePhoneNumber, validateMessage, validateDisplayName } from "./lib/validation";
 import {
   storeMessage,
@@ -27,6 +28,8 @@ import type {
 } from "./types";
 
 const app = new Hono<{ Bindings: Env }>();
+
+type HttpStatusCode = 400 | 404 | 500 | 502;
 
 // Helper to get Twilio config from env
 function getTwilioConfig(env: Env): { accountSid: string; authToken: string; phoneNumber: string } {
@@ -86,9 +89,16 @@ app.post("/send", async (c) => {
       const result = await sendSMS(twilioConfig, body.phoneNumber, body.message);
       status = result.status === "queued" || result.status === "sent" ? "success" : "failed";
     } catch (error) {
-      errorMessage = error instanceof Error ? error.message : "Twilio API error";
+      const { response } = handleError(error, {
+        endpoint: "/api/sms-messenger/send",
+        method: "POST",
+        defaultMessage: "Twilio API error",
+        additionalInfo: {
+          step: "sendSMS",
+        },
+      });
       return c.json<SendSMSResponse>(
-        { success: false, error: errorMessage },
+        { success: false, error: response.error },
         502
       );
     }
@@ -115,10 +125,14 @@ app.post("/send", async (c) => {
     await updateThreadSummary(env.SMS_MESSAGES, message, contact);
 
     return c.json<SendSMSResponse>({ success: true, message });
-  } catch {
+  } catch (error) {
+    const { response, status } = handleError(error, {
+      endpoint: "/api/sms-messenger/send",
+      method: "POST",
+    });
     return c.json<SendSMSResponse>(
-      { success: false, error: "Internal server error" },
-      500
+      { success: false, error: response.error },
+      status as HttpStatusCode | 502
     );
   }
 });
@@ -147,10 +161,14 @@ app.get("/messages", async (c) => {
       cursor: result.cursor,
       listComplete: result.listComplete,
     });
-  } catch {
+  } catch (error) {
+    const { response, status } = handleError(error, {
+      endpoint: "/api/sms-messenger/messages",
+      method: "GET",
+    });
     return c.json<MessagesResponse>(
-      { success: false, messages: [], listComplete: true, error: "Internal server error" },
-      500
+      { success: false, messages: [], listComplete: true, error: response.error },
+      status as HttpStatusCode
     );
   }
 });
@@ -198,10 +216,14 @@ app.get("/messages-since", async (c) => {
       threads: enrichedThreads,
       timestamp: Date.now(),
     });
-  } catch {
+  } catch (error) {
+    const { response, status } = handleError(error, {
+      endpoint: "/api/sms-messenger/messages-since",
+      method: "GET",
+    });
     return c.json<MessagesSinceResponse>(
-      { success: false, messages: [], threads: [], timestamp: Date.now(), error: "Internal server error" },
-      500
+      { success: false, messages: [], threads: [], timestamp: Date.now(), error: response.error },
+      status as HttpStatusCode
     );
   }
 });
@@ -225,10 +247,14 @@ app.get("/threads", async (c) => {
     });
 
     return c.json<ThreadListResponse>({ threads: enrichedThreads });
-  } catch {
+  } catch (error) {
+    const { response, status } = handleError(error, {
+      endpoint: "/api/sms-messenger/threads",
+      method: "GET",
+    });
     return c.json(
-      { success: false, error: "Internal server error" },
-      500
+      { success: false, error: response.error },
+      status as HttpStatusCode
     );
   }
 });
@@ -239,10 +265,14 @@ app.get("/contacts", async (c) => {
     const env = c.env;
     const contacts = await getAllContacts(env.SMS_MESSAGES);
     return c.json<ContactListResponse>({ contacts });
-  } catch {
+  } catch (error) {
+    const { response, status } = handleError(error, {
+      endpoint: "/api/sms-messenger/threads",
+      method: "GET",
+    });
     return c.json(
-      { success: false, error: "Internal server error" },
-      500
+      { success: false, error: response.error },
+      status as HttpStatusCode
     );
   }
 });
@@ -293,10 +323,14 @@ app.post("/contacts", async (c) => {
     await storeContact(env.SMS_MESSAGES, contact);
 
     return c.json<ContactMutationResult>({ success: true, contact });
-  } catch {
+  } catch (error) {
+    const { response, status } = handleError(error, {
+      endpoint: "/api/sms-messenger/contacts",
+      method: "POST",
+    });
     return c.json<ContactMutationResult>(
-      { success: false, error: "Internal server error" },
-      500
+      { success: false, error: response.error },
+      status as HttpStatusCode
     );
   }
 });
@@ -334,10 +368,14 @@ app.patch("/contacts/:id", async (c) => {
     await storeContact(env.SMS_MESSAGES, contact);
 
     return c.json<ContactMutationResult>({ success: true, contact });
-  } catch {
+  } catch (error) {
+    const { response, status } = handleError(error, {
+      endpoint: "/api/sms-messenger/contacts/:id",
+      method: "PATCH",
+    });
     return c.json<ContactMutationResult>(
-      { success: false, error: "Internal server error" },
-      500
+      { success: false, error: response.error },
+      status as HttpStatusCode
     );
   }
 });
@@ -416,8 +454,12 @@ app.post("/webhook", async (c) => {
     return c.text('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', 200, {
       "Content-Type": "text/xml",
     });
-  } catch {
-    return c.text("Internal server error", 500);
+  } catch (error) {
+    const { response, status } = handleError(error, {
+      endpoint: "/api/sms-messenger/webhook",
+      method: "POST",
+    });
+    return c.text(response.error, status as 400 | 404 | 500);
   }
 });
 

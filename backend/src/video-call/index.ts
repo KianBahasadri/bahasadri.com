@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "../types/env";
 import { validateGenerateTokenRequest, ValidationError } from "./lib/validation";
+import { handleError } from "../lib/error-handling";
 import type {
     GlobalRoomResponse,
     CreateSessionRequest,
@@ -12,6 +13,9 @@ import type {
     RealtimeKitMeetingResponse,
     RealtimeKitTokenResponse,
 } from "./types";
+
+type HttpStatusCode = 400 | 404 | 500;
+type VideoCallErrorCode = "INVALID_INPUT" | "NOT_FOUND" | "INTERNAL_ERROR" | "REALTIMEKIT_ERROR";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -116,23 +120,35 @@ app.get("/global-room", (c) => {
         const roomId = c.env.CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID;
 
         if (!roomId) {
+            const { response, status } = handleError(
+                new Error("Global room ID not configured"),
+                {
+                    endpoint: "/api/video-call/global-room",
+                    method: "GET",
+                    defaultMessage: "Global room ID not configured",
+                }
+            );
             return c.json<ErrorResponse>(
                 {
-                    error: "Global room ID not configured",
-                    code: "INTERNAL_ERROR",
+                    error: response.error,
+                    code: response.code as VideoCallErrorCode,
                 },
-                500
+                status as HttpStatusCode
             );
         }
 
         return c.json<GlobalRoomResponse>({ room_id: roomId }, 200);
-    } catch {
+    } catch (error) {
+        const { response, status } = handleError(error, {
+            endpoint: "/api/video-call/global-room",
+            method: "GET",
+        });
         return c.json<ErrorResponse>(
             {
-                error: "Internal server error",
-                code: "INTERNAL_ERROR",
+                error: response.error,
+                code: response.code as VideoCallErrorCode,
             },
-            500
+            status as HttpStatusCode
         );
     }
 });
@@ -146,12 +162,25 @@ app.post("/session", async (c) => {
         const config = getRealtimeKitConfig(c.env);
 
         if (!config.accountId || !config.appId || !config.apiToken) {
+            const { response, status } = handleError(
+                new Error("RealtimeKit configuration missing"),
+                {
+                    endpoint: "/api/video-call/session",
+                    method: "POST",
+                    defaultMessage: "RealtimeKit configuration missing",
+                    additionalInfo: {
+                        hasAccountId: !!config.accountId,
+                        hasAppId: !!config.appId,
+                        hasApiToken: !!config.apiToken,
+                    },
+                }
+            );
             return c.json<ErrorResponse>(
                 {
-                    error: "RealtimeKit configuration missing",
-                    code: "INTERNAL_ERROR",
+                    error: response.error,
+                    code: response.code as VideoCallErrorCode,
                 },
-                500
+                status as HttpStatusCode
             );
         }
 
@@ -165,28 +194,19 @@ app.post("/session", async (c) => {
             200
         );
     } catch (error) {
-        if (
-            error instanceof Error &&
-            error.message.includes("RealtimeKit")
-        ) {
-            return c.json<ErrorResponse>(
-                {
-                    error: "RealtimeKit API error",
-                    code: "REALTIMEKIT_ERROR",
-                },
-                500
-            );
-        }
-
-        const errorMessage =
-            error instanceof Error ? error.message : "Internal server error";
-
+        const { response, status } = handleError(error, {
+            endpoint: "/api/video-call/session",
+            method: "POST",
+            additionalInfo: {
+                hasBody: !!c.req.raw.body,
+            },
+        });
         return c.json<ErrorResponse>(
             {
-                error: errorMessage,
-                code: "INTERNAL_ERROR",
+                error: response.error,
+                code: response.code as VideoCallErrorCode,
             },
-            500
+            status as HttpStatusCode
         );
     }
 });
@@ -197,24 +217,44 @@ app.post("/token", async (c) => {
 
         const validation = validateGenerateTokenRequest(body);
         if (!validation.ok) {
+            const { response, status } = handleError(
+                new ValidationError(validation.error ?? "Invalid request"),
+                {
+                    endpoint: "/api/video-call/token",
+                    method: "POST",
+                }
+            );
             return c.json<ErrorResponse>(
                 {
-                    error: validation.error ?? "Invalid request",
-                    code: "INVALID_INPUT",
+                    error: response.error,
+                    code: response.code as VideoCallErrorCode,
                 },
-                400
+                status as HttpStatusCode
             );
         }
 
         const config = getRealtimeKitConfig(c.env);
 
         if (!config.accountId || !config.appId || !config.apiToken) {
+            const { response, status } = handleError(
+                new Error("RealtimeKit configuration missing"),
+                {
+                    endpoint: "/api/video-call/token",
+                    method: "POST",
+                    defaultMessage: "RealtimeKit configuration missing",
+                    additionalInfo: {
+                        hasAccountId: !!config.accountId,
+                        hasAppId: !!config.appId,
+                        hasApiToken: !!config.apiToken,
+                    },
+                }
+            );
             return c.json<ErrorResponse>(
                 {
-                    error: "RealtimeKit configuration missing",
-                    code: "INTERNAL_ERROR",
+                    error: response.error,
+                    code: response.code as VideoCallErrorCode,
                 },
-                500
+                status as HttpStatusCode
             );
         }
 
@@ -230,42 +270,16 @@ app.post("/token", async (c) => {
             200
         );
     } catch (error) {
-        if (error instanceof ValidationError) {
-            return c.json<ErrorResponse>(
-                {
-                    error: error.message,
-                    code: "INVALID_INPUT",
-                },
-                400
-            );
-        }
-
-        if (error instanceof Error && error.message === "NOT_FOUND") {
-            return c.json<ErrorResponse>(
-                {
-                    error: "Meeting does not exist",
-                    code: "NOT_FOUND",
-                },
-                404
-            );
-        }
-
-        if (error instanceof Error && error.message.includes("RealtimeKit")) {
-            return c.json<ErrorResponse>(
-                {
-                    error: "RealtimeKit API error",
-                    code: "REALTIMEKIT_ERROR",
-                },
-                500
-            );
-        }
-
+        const { response, status } = handleError(error, {
+            endpoint: "/api/video-call/token",
+            method: "POST",
+        });
         return c.json<ErrorResponse>(
             {
-                error: "Internal server error",
-                code: "INTERNAL_ERROR",
+                error: response.error,
+                code: response.code as VideoCallErrorCode,
             },
-            500
+            status as HttpStatusCode
         );
     }
 });

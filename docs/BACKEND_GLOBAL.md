@@ -37,6 +37,42 @@ The backend is built with:
 -   Consistent error response format
 -   Proper HTTP status codes
 -   User-friendly error messages
+-   **Structured logging** - All errors are logged with context for debugging
+
+**Error Handling Pattern:**
+
+Use the shared `handleError` utility from `src/lib/error-handling.ts`:
+
+```typescript
+import { handleError } from "../lib/error-handling";
+
+app.post("/endpoint", async (c) => {
+    try {
+        // Your logic here
+        return c.json({ success: true }, 200);
+    } catch (error) {
+        const { response, status } = handleError(error, {
+            endpoint: "/api/feature/endpoint",
+            method: "POST",
+            additionalInfo: {
+                // Optional: add context for debugging
+                userId: c.env.USER_ID,
+            },
+        });
+        return c.json<ErrorResponse>(response, status);
+    }
+});
+```
+
+**Logging:**
+
+- All errors are automatically logged with:
+  - Timestamp
+  - Endpoint and method
+  - Error message and stack trace
+  - Additional context (if provided)
+- Logs appear in Wrangler dev server output and Cloudflare dashboard
+- Use `console.error` for structured JSON logging (handled by `handleError`)
 
 ## Code Organization
 

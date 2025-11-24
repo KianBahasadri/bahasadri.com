@@ -3,9 +3,8 @@ import type { Env } from "../types/env";
 import {
     validateExpression,
     evaluateExpression,
-    ValidationError,
-    DivisionByZeroError,
 } from "./lib/validation";
+import { handleError } from "../lib/error-handling";
 import type { CalculateRequest, CalculateResponse, ErrorResponse } from "./types";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -38,31 +37,14 @@ app.post("/calculate", async (c) => {
             200
         );
     } catch (error) {
-        if (error instanceof ValidationError) {
-            return c.json<ErrorResponse>(
-                {
-                    error: error.message,
-                    code: "INVALID_INPUT",
-                },
-                400
-            );
-        }
-        if (error instanceof DivisionByZeroError) {
-            return c.json<ErrorResponse>(
-                {
-                    error: "Division by zero",
-                    code: "DIVISION_BY_ZERO",
-                },
-                400
-            );
-        }
-        return c.json<ErrorResponse>(
-            {
-                error: "Internal server error",
-                code: "INTERNAL_ERROR",
+        const { response, status } = handleError(error, {
+            endpoint: "/api/calculator/calculate",
+            method: "POST",
+            additionalInfo: {
+                hasBody: !!c.req.raw.body,
             },
-            500
-        );
+        });
+        return c.json<ErrorResponse>(response, status as 400 | 404 | 500);
     }
 });
 
