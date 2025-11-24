@@ -53,6 +53,10 @@ main {
     box-sizing: border-box;
 }
 
+.chatSection.chatClosing {
+    animation: slideOut 400ms ease-in;
+}
+
 @keyframes slideIn {
     from {
         transform: translateX(100%);
@@ -61,6 +65,17 @@ main {
     to {
         transform: translateX(0);
         opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
     }
 }
 
@@ -788,7 +803,8 @@ main {
         transition-duration: 0.01ms !important;
     }
 
-    .chatSection {
+    .chatSection,
+    .chatSection.chatClosing {
         animation: none;
     }
 }

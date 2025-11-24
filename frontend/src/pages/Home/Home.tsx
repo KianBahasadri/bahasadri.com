@@ -50,10 +50,19 @@ export default function Home(): React.JSX.Element {
         const saved = localStorage.getItem("chatOpen");
         return saved === "true";
     });
+    const [isChatClosing, setIsChatClosing] = useState(false);
 
     useEffect(() => {
         localStorage.setItem("chatOpen", String(isChatOpen));
     }, [isChatOpen]);
+
+    const handleCloseChat = (): void => {
+        setIsChatClosing(true);
+        setTimeout(() => {
+            setIsChatOpen(false);
+            setIsChatClosing(false);
+        }, 400);
+    };
 
     const { data: welcomeData, isLoading: isLoadingWelcome } = useQuery({
         queryKey: ["welcome"],
@@ -359,12 +368,12 @@ export default function Home(): React.JSX.Element {
 
             {/* Chat Panel - Fixed position, conditionally rendered */}
             {isChatOpen ? (
-                <div className={styles["chatSection"]}>
-                    <Chatbox
-                        onClose={() => {
-                            setIsChatOpen(false);
-                        }}
-                    />
+                <div
+                    className={`${String(styles["chatSection"])} ${
+                        isChatClosing ? String(styles["chatClosing"]) : ""
+                    }`}
+                >
+                    <Chatbox onClose={handleCloseChat} />
                 </div>
             ) : null}
             {/* Toggle button (only visible when chat closed) */}
