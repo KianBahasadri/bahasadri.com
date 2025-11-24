@@ -116,6 +116,8 @@ interface RealtimeKitTokenResponse {
 
 ### External API: Cloudflare RealtimeKit
 
+**Documentation**: [Cloudflare RealtimeKit Documentation](https://developers.cloudflare.com/realtime/realtimekit/)
+
 **Usage**:
 
 -   Create meetings via REST API
@@ -124,8 +126,8 @@ interface RealtimeKitTokenResponse {
 
 **API Endpoints**:
 
--   `POST https://api.cloudflare.com/client/v4/accounts/{accountId}/realtime/meetings` - Create Meeting
--   `POST https://api.cloudflare.com/client/v4/accounts/{accountId}/realtime/meetings/{meetingId}/tokens` - Add Participant (returns authToken)
+-   `POST https://api.cloudflare.com/client/v4/accounts/{accountId}/realtime/kit/{appId}/meetings` - Create Meeting
+-   `POST https://api.cloudflare.com/client/v4/accounts/{accountId}/realtime/kit/{appId}/meetings/{meetingId}/tokens` - Add Participant (returns authToken)
 
 **Configuration**:
 

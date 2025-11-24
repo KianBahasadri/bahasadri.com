@@ -31,7 +31,7 @@ async function createRealtimeKitMeeting(
     config: RealtimeKitConfig,
     name?: string
 ): Promise<string> {
-    const url = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/realtime/meetings`;
+    const url = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/realtime/kit/${config.appId}/meetings`;
 
     const response = await fetch(url, {
         method: "POST",
@@ -65,7 +65,7 @@ async function generateRealtimeKitToken(
     meetingId: string,
     request: GenerateTokenRequest
 ): Promise<string> {
-    const url = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/realtime/meetings/${meetingId}/tokens`;
+    const url = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/realtime/kit/${config.appId}/meetings/${meetingId}/tokens`;
 
     const body: Record<string, unknown> = {};
 
