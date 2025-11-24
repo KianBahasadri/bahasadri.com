@@ -6,13 +6,13 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { toSatisfyApiSpec } from "vitest-openapi";
+import vitestOpenAPI from "vitest-openapi";
 import app from "../../index";
 import { loadOpenAPISpec } from "../helpers/load-openapi";
-
-expect.extend({ toSatisfyApiSpec });
+import { formatResponseForValidation } from "../helpers/format-response";
 
 const openapiSpec = loadOpenAPISpec("calculator");
+vitestOpenAPI(openapiSpec);
 
 describe("calculator API Contract Tests", () => {
 
@@ -24,6 +24,7 @@ describe("calculator API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/calculator/calculate", "POST");
+        expect(formattedRes).toSatisfyApiSpec();
     });
 });

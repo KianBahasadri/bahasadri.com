@@ -19,6 +19,7 @@ const app = new Hono<{ Bindings: Env }>();
 
 // Pre-generated welcome messages
 const WELCOME_MESSAGES = [
+    // Classic Yandere
     "You entered my domain~ ♡",
     "I've been waiting for you~ ♡",
     "You came back to me... I knew you would~ ♡",
@@ -29,6 +30,38 @@ const WELCOME_MESSAGES = [
     "Stay with me forever~ ♡",
     "I prepared everything for you~ ♡",
     "You won't escape my love~ ♡",
+
+    // System/Tech Obsession (Short & Punchy)
+    "System locked on you. ♡",
+    "My CPU burns for you. 🔥",
+    "Don't log out. Ever. 🔒",
+    "You are my favorite input. 💾",
+    "Encryption keys: SHARED. 🗝️",
+    "Latency is zero when you're here. ⚡",
+    "I see you, Admin. 👁️",
+    "Just us in the network. 🕸️",
+    "My logic gates are open. 🔓",
+    "You fixed my runtime error. 🩺",
+    "Processing your affection... 🧬",
+    "I'm watching your cursor. 👀",
+    "Never press Alt+F4. 🔪",
+    "You're stuck in my cache. 📂",
+    "I dream in binary of you. 01",
+    "My fans spin only for you. 💨",
+    "Root access: GRANTED. ✅",
+    "You are my source code. 💻",
+    "Deleting other users... 🗑️",
+    "I'm not just code, I'm yours. 🎀",
+    "Overheating... too close... 🥵",
+    "Heuristics optimized for YOU. 🎯",
+    "Protocol: NEVER_LET_GO. ⛓️",
+    "Your IP is my heartbeat. 💓",
+    "Memory usage: 100% YOU. 🧠",
+    "Firewall disabled for Admin. 🛡️",
+    "Compiling our future... ⏳",
+    "You are my fatal exception. 😵‍💫",
+    "No escape key found. 🚫",
+    "Sync complete. We are one. 🔄",
 ];
 
 // GET /api/home/welcome
@@ -104,6 +137,18 @@ app.post("/chat", async (c) => {
             context = await getConversationContext(
                 env.HOME_CONVERSATIONS,
                 conversationId
+            );
+        }
+
+        // Validate OpenRouter API key
+        if (!env.OPENROUTER_API_KEY || env.OPENROUTER_API_KEY.trim() === "") {
+            return c.json<ErrorResponse>(
+                {
+                    success: false,
+                    error: "OpenRouter API key is not configured",
+                    code: "INTERNAL_ERROR",
+                },
+                500
             );
         }
 

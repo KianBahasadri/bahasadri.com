@@ -313,11 +313,14 @@ function generateTestFile(featureName: string, endpoints: Endpoint[]): string {
 
             // Use toBeOneOf for status codes (vitest doesn't have this, so we'll use a helper)
             const statusCodes = endpoint.responses.join(", ");
+            // Use the full API path for validation (with /api prefix)
+            const apiPath = `/api${substitutedPath}`;
             return `
     it("${testName} satisfies OpenAPI spec", async () => {
         ${requestCode}
         expect([${statusCodes}]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "${apiPath}", "${endpoint.method}");
+        expect(formattedRes).toSatisfyApiSpec();
     });`;
         })
         .join("\n");
@@ -330,13 +333,13 @@ function generateTestFile(featureName: string, endpoints: Endpoint[]): string {
  */
 
 import { describe, it, expect } from "vitest";
-import { toSatisfyApiSpec } from "vitest-openapi";
+import vitestOpenAPI from "vitest-openapi";
 import app from "../../index";
 import { loadOpenAPISpec } from "../helpers/load-openapi";
-
-expect.extend({ toSatisfyApiSpec });
+import { formatResponseForValidation } from "../helpers/format-response";
 
 const openapiSpec = loadOpenAPISpec("${featureName}");
+vitestOpenAPI(openapiSpec);
 
 describe("${featureName} API Contract Tests", () => {
 ${testCases}

@@ -45,6 +45,10 @@ export async function generateAgentResponse(
     conversationHistory: ChatMessage[],
     userMessage: string
 ): Promise<string> {
+    if (!apiKey || apiKey.trim() === "") {
+        throw new Error("OpenRouter API key is required");
+    }
+
     const messages: {
         role: "system" | "user" | "assistant";
         content: string;

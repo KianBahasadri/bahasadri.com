@@ -6,13 +6,13 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { toSatisfyApiSpec } from "vitest-openapi";
+import vitestOpenAPI from "vitest-openapi";
 import app from "../../index";
 import { loadOpenAPISpec } from "../helpers/load-openapi";
-
-expect.extend({ toSatisfyApiSpec });
+import { formatResponseForValidation } from "../helpers/format-response";
 
 const openapiSpec = loadOpenAPISpec("home");
+vitestOpenAPI(openapiSpec);
 
 describe("home API Contract Tests", () => {
 
@@ -22,7 +22,8 @@ describe("home API Contract Tests", () => {
             method: "GET",
         });
         expect([200, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/home/welcome", "GET");
+        expect(formattedRes).toSatisfyApiSpec();
     });
 
     it("sendChatMessage satisfies OpenAPI spec", async () => {
@@ -33,6 +34,7 @@ describe("home API Contract Tests", () => {
             body: JSON.stringify({}),
         });
         expect([200, 400, 500]).toContain(res.status);
-        expect(res).toSatisfyApiSpec(openapiSpec);
+        const formattedRes = await formatResponseForValidation(res, "/api/home/chat", "POST");
+        expect(formattedRes).toSatisfyApiSpec();
     });
 });
