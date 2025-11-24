@@ -23,7 +23,6 @@ beforeEach(() => {
         CLOUDFLARE_ACCOUNT_ID: "test-account-id",
         CLOUDFLARE_REALTIME_APP_ID: "test-app-id",
         CLOUDFLARE_REALTIME_API_TOKEN: "test-api-token",
-        CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID: "test-global-room-id",
     };
 });
 

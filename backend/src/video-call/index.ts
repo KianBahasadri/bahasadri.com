@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import type { Env } from "../types/env";
-import { validateGenerateTokenRequest, ValidationError } from "./lib/validation";
+import {
+    validateGenerateTokenRequest,
+    ValidationError,
+} from "./lib/validation";
 import { handleError } from "../lib/error-handling";
 import type {
-    GlobalRoomResponse,
     CreateSessionRequest,
     CreateSessionResponse,
     GenerateTokenRequest,
@@ -15,7 +17,11 @@ import type {
 } from "./types";
 
 type HttpStatusCode = 400 | 404 | 500;
-type VideoCallErrorCode = "INVALID_INPUT" | "NOT_FOUND" | "INTERNAL_ERROR" | "REALTIMEKIT_ERROR";
+type VideoCallErrorCode =
+    | "INVALID_INPUT"
+    | "NOT_FOUND"
+    | "INTERNAL_ERROR"
+    | "REALTIMEKIT_ERROR";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -115,44 +121,6 @@ async function generateRealtimeKitToken(
     return authToken;
 }
 
-app.get("/global-room", (c) => {
-    try {
-        const roomId = c.env.CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID;
-
-        if (!roomId) {
-            const { response, status } = handleError(
-                new Error("Global room ID not configured"),
-                {
-                    endpoint: "/api/video-call/global-room",
-                    method: "GET",
-                    defaultMessage: "Global room ID not configured",
-                }
-            );
-            return c.json<ErrorResponse>(
-                {
-                    error: response.error,
-                    code: response.code as VideoCallErrorCode,
-                },
-                status as HttpStatusCode
-            );
-        }
-
-        return c.json<GlobalRoomResponse>({ room_id: roomId }, 200);
-    } catch (error) {
-        const { response, status } = handleError(error, {
-            endpoint: "/api/video-call/global-room",
-            method: "GET",
-        });
-        return c.json<ErrorResponse>(
-            {
-                error: response.error,
-                code: response.code as VideoCallErrorCode,
-            },
-            status as HttpStatusCode
-        );
-    }
-});
-
 app.post("/session", async (c) => {
     try {
         const body = (await c.req
@@ -184,15 +152,9 @@ app.post("/session", async (c) => {
             );
         }
 
-        const meetingId = await createRealtimeKitMeeting(
-            config,
-            body.name
-        );
+        const meetingId = await createRealtimeKitMeeting(config, body.name);
 
-        return c.json<CreateSessionResponse>(
-            { meeting_id: meetingId },
-            200
-        );
+        return c.json<CreateSessionResponse>({ meeting_id: meetingId }, 200);
     } catch (error) {
         const { response, status } = handleError(error, {
             endpoint: "/api/video-call/session",
@@ -265,10 +227,7 @@ app.post("/token", async (c) => {
             validatedBody
         );
 
-        return c.json<GenerateTokenResponse>(
-            { auth_token: authToken },
-            200
-        );
+        return c.json<GenerateTokenResponse>({ auth_token: authToken }, 200);
     } catch (error) {
         const { response, status } = handleError(error, {
             endpoint: "/api/video-call/token",
@@ -285,4 +244,3 @@ app.post("/token", async (c) => {
 });
 
 export default app;
-

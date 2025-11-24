@@ -21,7 +21,6 @@ import type {
     ConversationHistoryResponse,
 } from "../types/home";
 import type {
-    GlobalRoomResponse,
     CreateSessionRequest,
     CreateSessionResponse,
     GenerateTokenRequest,
@@ -217,18 +216,6 @@ export const sendChatMessage = async (
     }
 
     return response.json() as Promise<ChatResponse>;
-};
-
-export const fetchGlobalRoom = async (): Promise<GlobalRoomResponse> => {
-    const response = await fetch(`${API_BASE_URL}/video-call/global-room`);
-    if (!response.ok) {
-        await handleApiError(
-            response,
-            "fetchGlobalRoom",
-            "Failed to fetch global room"
-        );
-    }
-    return response.json() as Promise<GlobalRoomResponse>;
 };
 
 export const createSession = async (

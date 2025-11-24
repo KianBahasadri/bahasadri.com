@@ -1,7 +1,3 @@
-export interface GlobalRoomResponse {
-    room_id: string;
-}
-
 export interface CreateSessionRequest {
     name?: string;
 }

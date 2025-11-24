@@ -10,5 +10,4 @@ export interface Env {
     CLOUDFLARE_ACCOUNT_ID: string;
     CLOUDFLARE_REALTIME_APP_ID: string;
     CLOUDFLARE_REALTIME_API_TOKEN: string;
-    CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID: string;
 }

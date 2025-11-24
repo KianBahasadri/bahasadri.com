@@ -16,16 +16,6 @@ vitestOpenAPI(openapiSpec);
 
 describe("video-call API Contract Tests", () => {
 
-    it("getGlobalRoom satisfies OpenAPI spec", async () => {
-        
-        const res = await app.request("/api/video-call/global-room", {
-            method: "GET",
-        });
-        expect([200, 500]).toContain(res.status);
-        const formattedRes = await formatResponseForValidation(res, "/api/video-call/global-room", "GET");
-        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
-    });
-
     it("createSession satisfies OpenAPI spec", async () => {
         
         const res = await app.request("/api/video-call/session", {
