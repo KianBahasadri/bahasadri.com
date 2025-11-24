@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchWelcomeMessage } from "../../lib/api";
@@ -46,7 +46,14 @@ export default function Home(): React.JSX.Element {
         y: number;
         above: boolean;
     } | null>(null);
-    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(() => {
+        const saved = localStorage.getItem("chatOpen");
+        return saved === "true";
+    });
+
+    useEffect(() => {
+        localStorage.setItem("chatOpen", String(isChatOpen));
+    }, [isChatOpen]);
 
     const { data: welcomeData, isLoading: isLoadingWelcome } = useQuery({
         queryKey: ["welcome"],

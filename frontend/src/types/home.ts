@@ -19,3 +19,8 @@ export interface ChatMessage {
   timestamp: number;
 }
 
+export interface ConversationHistoryResponse {
+  messages: ChatMessage[];
+  conversationId: string;
+}
+

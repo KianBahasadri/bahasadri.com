@@ -14,7 +14,12 @@ import type {
     CalculateResponse,
     ErrorResponse,
 } from "../types/calculator";
-import type { WelcomeResponse, ChatRequest, ChatResponse } from "../types/home";
+import type {
+    WelcomeResponse,
+    ChatRequest,
+    ChatResponse,
+    ConversationHistoryResponse,
+} from "../types/home";
 
 const API_BASE_URL =
     import.meta.env.MODE === "production"
@@ -145,6 +150,18 @@ export const fetchWelcomeMessage = async (): Promise<WelcomeResponse> => {
     }
     return response.json() as Promise<WelcomeResponse>;
 };
+
+export const fetchConversationHistory =
+    async (): Promise<ConversationHistoryResponse> => {
+        const response = await fetch(`${API_BASE_URL}/home/chat`);
+
+        if (!response.ok) {
+            const error = (await response.json()) as { error?: string };
+            throw new Error(error.error ?? "Failed to fetch conversation history");
+        }
+
+        return response.json() as Promise<ConversationHistoryResponse>;
+    };
 
 export const sendChatMessage = async (
     message: string,

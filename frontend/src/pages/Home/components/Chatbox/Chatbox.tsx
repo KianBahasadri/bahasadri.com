@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { sendChatMessage } from "../../../../lib/api";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+    sendChatMessage,
+    fetchConversationHistory,
+} from "../../../../lib/api";
 import type { ChatMessage } from "../../../../types/home";
 import styles from "./Chatbox.module.css";
 
@@ -28,6 +31,18 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
     useEffect(() => {
         inputRef.current?.focus();
     }, []);
+
+    const { data: historyData } = useQuery({
+        queryKey: ["conversationHistory"],
+        queryFn: fetchConversationHistory,
+    });
+
+    useEffect(() => {
+        if (historyData) {
+            setMessages(historyData.messages);
+            setConversationId(historyData.conversationId);
+        }
+    }, [historyData]);
 
     const chatMutation = useMutation({
         mutationFn: async (message: string) => {
