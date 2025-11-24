@@ -41,29 +41,59 @@ components:
                     type: string
                     description: The user's message to the agent.
                     example: "Hello"
-                conversationId:
-                    type: string
-                    format: uuid
-                    description: >-
-                        Optional UUID to maintain conversation context.
-                        If omitted, a new conversation is started.
-                    example: "550e8400-e29b-41d4-a716-446655440000"
 
         ChatResponse:
             type: object
             required:
                 - response
-                - conversationId
             properties:
                 response:
                     type: string
                     description: The agent's response.
                     example: "I've been waiting for you... ♡"
+
+        ConversationHistoryResponse:
+            type: object
+            required:
+                - messages
+                - conversationId
+            properties:
+                messages:
+                    type: array
+                    description: Array of chat messages in chronological order.
+                    items:
+                        $ref: "#/components/schemas/ChatMessage"
                 conversationId:
                     type: string
-                    format: uuid
-                    description: The conversation ID (new or existing) to be used in subsequent requests.
+                    description: The conversation ID (always "global" for this single-user app).
+                    example: "global"
+
+        ChatMessage:
+            type: object
+            required:
+                - id
+                - role
+                - content
+                - timestamp
+            properties:
+                id:
+                    type: string
+                    description: Unique message ID.
                     example: "550e8400-e29b-41d4-a716-446655440000"
+                role:
+                    type: string
+                    enum: [user, agent]
+                    description: Message role (user or agent).
+                    example: "user"
+                content:
+                    type: string
+                    description: Message content.
+                    example: "Hello"
+                timestamp:
+                    type: integer
+                    format: int64
+                    description: Message timestamp in milliseconds since epoch.
+                    example: 1704067200000
 
         ErrorResponse:
             type: object
@@ -141,12 +171,31 @@ paths:
     # CHAT ENDPOINT
     # ---------------------------------------------------------------------------
     /home/chat:
+        get:
+            operationId: getConversationHistory
+            summary: Get conversation history
+            description: >-
+                Retrieves the conversation history for the global chat session.
+                Returns empty array if no conversation exists yet.
+                No session management required on the client side.
+            tags:
+                - Home
+            responses:
+                "200":
+                    description: Conversation history retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ConversationHistoryResponse"
+                "500":
+                    $ref: "#/components/responses/InternalError"
         post:
             operationId: sendChatMessage
             summary: Chat with yandere agent
             description: >-
                 Sends a user message to the yandere agent.
-                Handles conversation context via conversationId.
+                Uses a single global chat session that persists across page refreshes.
+                No session management required on the client side.
             tags:
                 - Home
             requestBody:

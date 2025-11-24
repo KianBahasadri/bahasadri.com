@@ -7,8 +7,9 @@ import type {
     ChatResponse,
     ConversationContext,
     ChatMessage,
+    ConversationHistoryResponse,
 } from "./types";
-import { validateMessage, validateConversationId } from "./lib/validation";
+import { validateMessage } from "./lib/validation";
 import {
     getConversationContext,
     storeConversationContext,
@@ -16,6 +17,9 @@ import {
 import { generateAgentResponse } from "./lib/openrouter";
 
 const app = new Hono<{ Bindings: Env }>();
+
+// Single global conversation ID for this single-user application
+const GLOBAL_CONVERSATION_ID = "global";
 
 // Pre-generated welcome messages
 const WELCOME_MESSAGES = [
@@ -63,6 +67,51 @@ const WELCOME_MESSAGES = [
     "No escape key found. 🚫",
     "Sync complete. We are one. 🔄",
 ];
+
+// GET /api/home/chat
+app.get("/chat", async (c) => {
+    try {
+        const env = c.env;
+        const conversationId = GLOBAL_CONVERSATION_ID;
+
+        // Retrieve conversation context from KV
+        const context = await getConversationContext(
+            env.HOME_CONVERSATIONS,
+            conversationId
+        );
+
+        // If no conversation exists, return empty history
+        if (!context) {
+            return c.json<ConversationHistoryResponse>(
+                {
+                    messages: [],
+                    conversationId,
+                },
+                200
+            );
+        }
+
+        // Return conversation history
+        return c.json<ConversationHistoryResponse>(
+            {
+                messages: context.messages,
+                conversationId: context.conversationId,
+            },
+            200
+        );
+    } catch (error) {
+        const errorMessage =
+            error instanceof Error ? error.message : "Unknown error";
+        return c.json<ErrorResponse>(
+            {
+                success: false,
+                error: `Internal server error: ${errorMessage}`,
+                code: "INTERNAL_ERROR",
+            },
+            500
+        );
+    }
+});
 
 // GET /api/home/welcome
 app.get("/welcome", (c) => {
@@ -112,33 +161,15 @@ app.post("/chat", async (c) => {
             );
         }
 
-        // Validate conversationId if provided
-        let conversationId = body.conversationId;
-        if (conversationId) {
-            const idValidation = validateConversationId(conversationId);
-            if (!idValidation.ok) {
-                return c.json<ErrorResponse>(
-                    {
-                        success: false,
-                        error: idValidation.error ?? "Invalid conversation ID",
-                        code: "INVALID_INPUT",
-                    },
-                    400
-                );
-            }
-        }
-
-        // Generate new conversationId if not provided
-        conversationId ??= crypto.randomUUID();
+        // Use single global conversation for this single-user application
+        const conversationId = GLOBAL_CONVERSATION_ID;
 
         // Retrieve conversation context from KV
-        let context: ConversationContext | undefined;
-        if (conversationId) {
-            context = await getConversationContext(
+        let context: ConversationContext | undefined =
+            await getConversationContext(
                 env.HOME_CONVERSATIONS,
                 conversationId
             );
-        }
 
         // Validate OpenRouter API key
         if (!env.OPENROUTER_API_KEY || env.OPENROUTER_API_KEY.trim() === "") {
@@ -209,7 +240,6 @@ app.post("/chat", async (c) => {
         return c.json<ChatResponse>(
             {
                 response: agentResponseText,
-                conversationId,
             },
             200
         );

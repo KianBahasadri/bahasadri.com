@@ -35,7 +35,7 @@ Users can interact with the yandere agent through a chatbox interface:
 -   Message history displayed in a chat-style interface
 -   Terminal/cyberpunk aesthetic matching the home page design
 -   Agent responds with yandere personality traits
--   Conversation persists during the session
+-   Conversation persists across page refreshes (managed server-side)
 
 ### Randomly Generated Welcome Message
 

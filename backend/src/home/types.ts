@@ -10,11 +10,14 @@ export interface ErrorResponse {
 
 export interface ChatRequest {
     message: string;
-    conversationId?: string;
 }
 
 export interface ChatResponse {
     response: string;
+}
+
+export interface ConversationHistoryResponse {
+    messages: ChatMessage[];
     conversationId: string;
 }
 

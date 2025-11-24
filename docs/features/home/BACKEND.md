@@ -65,37 +65,65 @@ A static list of yandere-themed greetings to randomly select from:
 
 ---
 
+### `GET /api/home/chat`
+
+**Handler**: `handleGetConversationHistory()`
+
+**Description**: Retrieves the conversation history for the global chat session. Returns empty array if no conversation exists yet.
+
+**Request**: No request body
+
+**Response Body**:
+
+-   `messages`: Array of chat messages in chronological order (ChatMessage[])
+-   `conversationId`: The conversation ID (always "global" for this single-user app)
+
+**Processing Flow**:
+
+1. Use single global conversation ID (constant: "global")
+2. Retrieve conversation context from KV using global conversation ID
+3. If context doesn't exist:
+    - Return empty messages array with conversationId "global"
+4. If context exists:
+    - Return messages array and conversationId from context
+
+**Error Responses**:
+
+-   500: Internal server error retrieving conversation history
+
+**Conversation Session Behavior**:
+
+-   **Single global session**: Uses the same global conversation ID ("global")
+-   **No client-side management**: Frontend never sees or manages conversation ID
+-   **Empty state**: Returns empty array if no conversation exists (first time loading chat)
+
+---
+
 ### `POST /api/home/chat`
 
 **Handler**: `handleChat()`
 
-**Description**: Processes user message and generates yandere agent response with conversation context
+**Description**: Processes user message and generates yandere agent response with conversation context. Uses a single global chat session for this single-user application.
 
 **Request Body**:
 
 -   `message`: User's chat message (string, required)
--   `conversationId`: Optional conversation ID for maintaining context (string, optional)
 
 **Validation**:
 
 -   Message: Non-empty string, reasonable length limit (e.g., 1000 characters)
--   Conversation ID: Optional, must be valid UUID format if provided
 
 **Response Body**:
 
 -   `response`: Agent's response message (string)
--   `conversationId`: Conversation ID for maintaining context (string, UUID format)
 
 **Processing Flow**:
 
 1. Parse and validate request body
 2. Validate message (non-empty, length limit)
-3. Validate conversationId format if provided
-4. If conversationId provided:
-    - Retrieve conversation context from KV
-    - If context exists, use it for personalized response
-5. If conversationId NOT provided:
-    - Generate new UUID for conversationId
+3. Use single global conversation ID (constant: "global")
+4. Retrieve conversation context from KV using global conversation ID
+5. If context doesn't exist:
     - Initialize new conversation context
 6. Build OpenRouter API request:
     - Include system prompt defining yandere personality
@@ -105,19 +133,19 @@ A static list of yandere-themed greetings to randomly select from:
 8. Parse API response and extract assistant's message
 9. Update conversation context with user message and agent response
 10. Store conversation context in KV (with TTL)
-11. Return response with conversationId
+11. Return response with agent message
 
 **Error Responses**:
 
--   400: Invalid or empty message, invalid conversationId format
+-   400: Invalid or empty message
 -   500: Internal server error processing message, OpenRouter API failure
 
-**Conversation ID Behavior**:
+**Conversation Session Behavior**:
 
--   **No conversationId in request**: Generate new UUID, return it in response (starts new conversation)
--   **conversationId provided**: Retrieve context from KV, return same conversationId in response (continues conversation)
--   **Invalid conversationId format**: Return 400 error
--   **conversationId not found in KV**: Treat as new conversation (context may have expired)
+-   **Single global session**: All requests use the same global conversation ID ("global")
+-   **Persistent across refreshes**: Conversation context stored in KV, persists across page refreshes
+-   **No client-side management**: Frontend never sees or manages conversation ID
+-   **Context expiration**: KV TTL of 1 hour - conversation context expires after inactivity
 
 ## Data Models
 
@@ -162,10 +190,10 @@ interface ChatMessage {
 **Usage**:
 
 -   Store conversation context when user sends message
--   Key format: `conversation:${conversationId}`
+-   Key format: `conversation:global` (single global conversation)
 -   Value: JSON-stringified ConversationContext object
 -   TTL: 3600 seconds (1 hour) - auto-expire inactive conversations
--   Retrieve context when conversationId is provided in subsequent requests
+-   Retrieve context using global conversation ID on each request
 
 **Free Tier Considerations**:
 
@@ -222,20 +250,20 @@ interface ChatMessage {
 1. Receive POST request to `/api/home/chat`
 2. Parse and validate request body
 3. Validate message (non-empty, length limit)
-4. Check if conversationId provided:
-    - **If provided**: Validate UUID format, retrieve context from KV
-    - **If not provided**: Generate new UUID
-5. Build OpenRouter API request:
+4. Use single global conversation ID ("global")
+5. Retrieve conversation context from KV using global conversation ID
+6. If context doesn't exist: Initialize new conversation context
+7. Build OpenRouter API request:
     - System message with yandere personality prompt
     - Conversation history from KV context (if exists)
     - User's new message
-6. Call OpenRouter chat completion API
-7. Handle API response or errors
-8. Parse agent's response message
-9. Create ChatMessage objects for user and agent messages
-10. Update conversation context with new messages
-11. Store conversation context in KV with TTL (3600 seconds)
-12. Return response with conversationId
+8. Call OpenRouter chat completion API
+9. Handle API response or errors
+10. Parse agent's response message
+11. Create ChatMessage objects for user and agent messages
+12. Update conversation context with new messages
+13. Store conversation context in KV with TTL (3600 seconds)
+14. Return response with agent message
 
 ### Error Handling
 
@@ -314,19 +342,21 @@ Stay in character at all times.
 -   Message length: max 1000 characters
 -   Type must be string
 
-**Conversation ID Validation** (for chat endpoint):
+**Conversation Session** (for chat endpoint):
 
--   Optional field
--   Must be valid UUID format if provided
--   Regex pattern: `/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i`
+-   Single global conversation ID: "global"
+-   No validation needed (constant value)
+-   No client-side session management required
 
 ### Business Rules
 
 -   Message must be non-empty and within length limits
--   Conversation ID is optional but must be valid UUID format if provided
+-   Single global conversation session for this single-user application
+-   Conversation ID is constant ("global") - never changes
 -   Agent responses should maintain yandere personality
 -   Conversation context stored with 1-hour TTL
--   Generate new UUID if conversationId not provided
+-   Session persists across page refreshes (stored in KV)
+-   No client-side session management required
 
 ## Security Considerations
 
@@ -342,7 +372,6 @@ Stay in character at all times.
 ### Input Sanitization
 
 -   Sanitize user messages to prevent injection attacks
--   Validate conversationId format (UUID only)
 -   Limit message length to prevent abuse (1000 chars)
 -   Consider rate limiting to prevent abuse (Cloudflare Workers rate limiting)
 
@@ -384,7 +413,8 @@ Since this is a single-user app within free tier limits, basic rate limiting:
     -   [ ] Response formatting
 -   [ ] POST /api/home/chat endpoint
     -   [ ] Error handling (per API_CONTRACT.md)
-    -   [ ] Input validation (message, conversationId)
+    -   [ ] Input validation (message)
+    -   [ ] Global conversation session management
     -   [ ] Response formatting
 
 ### Business Logic

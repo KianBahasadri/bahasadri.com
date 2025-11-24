@@ -41,7 +41,6 @@ See `docs/features/home/API_CONTRACT.md` for the API contract this frontend cons
     -   Audio context for sound effects
     -   Heartbeat sound interval management
     -   Chat input state
-    -   Conversation ID for maintaining context
     -   Chat open/closed state (default: closed)
 
 **Layout**:
@@ -128,7 +127,6 @@ See `docs/features/home/API_CONTRACT.md` for the API contract this frontend cons
 -   Server state: Chat messages (TanStack Query mutation)
 -   Local state:
     -   Message input value
-    -   Conversation ID (persisted in component state)
     -   Sending status
     -   Message history (local message list)
     -   Open/closed state (managed by parent or internally)
@@ -140,9 +138,8 @@ See `docs/features/home/API_CONTRACT.md` for the API contract this frontend cons
 -   User types message in input field
 -   User sends message (click send button or press Enter)
 -   Message appears in chat history immediately with animation
--   API request sent to backend with current conversationId (if exists)
+-   API request sent to backend (backend manages conversation session automatically)
 -   Agent response appears after processing with animation
--   ConversationId stored from response and included in all subsequent requests
 -   Scroll to latest message automatically
 -   User clicks heartbreak emoji (💔) to close chat
 -   Chat panel slides out to right with smooth animation
@@ -406,14 +403,13 @@ const toggleChat = () => {
 
 -   Welcome message fetched via TanStack Query (GET request on mount)
 -   Chat messages managed via TanStack Query mutation
--   Send chat message mutation includes conversationId when available
+-   Backend automatically manages conversation session (persists across page refreshes)
 
 ### Local State
 
 -   Audio context for sound effects
 -   Heartbeat sound interval management
 -   Chat input value
--   Conversation ID for maintaining context (stored after first message, reused for all subsequent messages)
 -   Message history (array of ChatMessage objects)
 -   Chat open/closed state (boolean, default: false)
 
@@ -462,28 +458,22 @@ const welcomeMessage = welcomeData?.message || "Welcome~ ♡"; // fallback
 **Implementation**:
 
 -   Use TanStack Query's `useMutation` hook
--   Include `conversationId` in request if available (from previous response)
--   Store `conversationId` from response for subsequent requests
+-   Send only the message in the request body (no conversationId)
+-   Backend automatically manages conversation session via cookies/session
+-   Conversation persists across page refreshes (managed server-side)
 -   Handle response and update conversation state
 -   Add both user message and agent response to local message history
 
-**Conversation ID Management**:
+**Conversation Session Management**:
 
-1. Initialize `conversationId` state as `null` or `undefined`
-2. On first message: Send request without `conversationId`
-3. Backend returns a new `conversationId` in response
-4. Store `conversationId` in component state
-5. On subsequent messages: Include stored `conversationId` in request
-6. Backend returns same `conversationId` in response
-7. Continue using same `conversationId` for entire session
+-   The backend manages the conversation session automatically
+-   No client-side conversationId tracking required
+-   Session persists across page refreshes (stored server-side)
+-   Frontend simply sends messages without any session management
 
 **Example**:
 
 ```typescript
-const [conversationId, setConversationId] = useState<string | undefined>(
-    undefined
-);
-
 const mutation = useMutation({
     mutationFn: async (message: string) => {
         const response = await fetch(`${API_BASE_URL}/home/chat`, {
@@ -491,15 +481,13 @@ const mutation = useMutation({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 message,
-                conversationId, // undefined on first message, populated after
             }),
+            credentials: "include", // Include cookies for session management
         });
         if (!response.ok) throw new Error("Failed to send message");
         return response.json() as Promise<ChatResponse>;
     },
     onSuccess: (data) => {
-        // Store conversationId from response
-        setConversationId(data.conversationId);
         // Add agent response to message history
         addMessageToHistory({ role: "agent", content: data.response });
     },
@@ -587,16 +575,16 @@ const mutation = useMutation({
     -   Flow:
         1. Validate input (non-empty)
         2. Add user message to local history immediately with animation
-        3. Send API request with message and conversationId (if available)
+        3. Send API request with message (backend manages session automatically)
         4. Show loading indicator
-        5. On success: Store conversationId, add agent response to history with animation
+        5. On success: Add agent response to history with animation
         6. On error: Display error message, allow retry
         7. Scroll to latest message smoothly
     -   Error handling: Display error message if request fails, allow retry
 
 -   **Receive Agent Response**:
     -   Trigger: API response received
-    -   Flow: Store conversationId, add agent message to history with animation, scroll to latest message smoothly
+    -   Flow: Add agent message to history with animation, scroll to latest message smoothly
     -   Error handling: Handle malformed responses gracefully
 
 ### Sound Effects
@@ -706,7 +694,6 @@ const mutation = useMutation({
 -   [ ] API client functions (welcome, chat)
 -   [ ] Welcome message loading/error states
 -   [ ] Chat message state management
--   [ ] Conversation ID management (store from first response, reuse in all subsequent requests)
 
 ### Styling
 
@@ -761,8 +748,9 @@ const mutation = useMutation({
 -   CSS animations use GPU-accelerated properties (transform, opacity)
 -   Minimize unnecessary re-renders
 -   Chat message history: Consider limiting displayed messages or virtual scrolling for long conversations
--   API calls: Cache welcome message, persist conversationId in component state
+-   API calls: Cache welcome message
 -   Welcome message: Cache with TanStack Query to avoid refetching on remount
+-   Conversation session: Managed server-side, no client-side persistence needed
 -   Chat panel: Use `transform: translateX()` for slide animations (GPU-accelerated)
 -   Layout reflow: Use CSS transitions for smooth repositioning
 -   Message animations: Stagger animations to avoid jank with many messages
