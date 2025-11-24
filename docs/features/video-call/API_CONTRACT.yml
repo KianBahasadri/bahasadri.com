@@ -26,16 +26,6 @@ components:
     # SHARED MODELS
     # -------------------------------------------------------------------------
     schemas:
-        GlobalRoomResponse:
-            type: object
-            required:
-                - room_id
-            properties:
-                room_id:
-                    type: string
-                    description: Global room identifier
-                    example: "room_550e8400-e29b-41d4-a716-446655440000"
-
         CreateSessionRequest:
             type: object
             properties:
@@ -153,27 +143,6 @@ components:
                                 code: "INTERNAL_ERROR"
 
 paths:
-    # ---------------------------------------------------------------------------
-    # GET GLOBAL ROOM ENDPOINT
-    # ---------------------------------------------------------------------------
-    /video-call/global-room:
-        get:
-            operationId: getGlobalRoom
-            summary: Get global room ID
-            description: >-
-                Returns the hard-coded global room ID for direct video calls.
-            tags:
-                - Video Call
-            responses:
-                "200":
-                    description: Global room ID retrieved successfully.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/GlobalRoomResponse"
-                "500":
-                    $ref: "#/components/responses/InternalError"
-
     # ---------------------------------------------------------------------------
     # CREATE SESSION ENDPOINT
     # ---------------------------------------------------------------------------

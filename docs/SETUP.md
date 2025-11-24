@@ -121,7 +121,6 @@ CREATE INDEX IF NOT EXISTS idx_whois_cache_expires ON whois_cache (expires_at);
 -   `CLOUDFLARE_ACCOUNT_ID` - Cloudflare account ID
 -   `CLOUDFLARE_REALTIME_APP_ID` - RealtimeKit app ID
 -   `CLOUDFLARE_REALTIME_API_TOKEN` - RealtimeKit API token
--   `CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID` - Global room ID
 
 ### Optional
 
@@ -146,7 +145,6 @@ TWILIO_PHONE_NUMBER=+1234567890
 CLOUDFLARE_ACCOUNT_ID=your_account_id
 CLOUDFLARE_REALTIME_APP_ID=your_app_id
 CLOUDFLARE_REALTIME_API_TOKEN=your_api_token
-CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID=your_room_id
 WHOIS_API_KEY=your_whois_key
 ```
 
@@ -161,7 +159,6 @@ pnpm wrangler secret put TWILIO_PHONE_NUMBER
 pnpm wrangler secret put CLOUDFLARE_ACCOUNT_ID
 pnpm wrangler secret put CLOUDFLARE_REALTIME_APP_ID
 pnpm wrangler secret put CLOUDFLARE_REALTIME_API_TOKEN
-pnpm wrangler secret put CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID
 ```
 
 Optional:

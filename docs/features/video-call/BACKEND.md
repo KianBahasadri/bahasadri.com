@@ -16,31 +16,6 @@ See `docs/features/video-call/API_CONTRACT.yml` for the API contract this backen
 
 ## API Endpoints
 
-### `GET /api/video-call/global-room`
-
-**Handler**: `getGlobalRoom()`
-
-**Description**: Returns the hard-coded global room ID
-
-**Request**: None
-
-**Response**:
-
-```typescript
-interface GlobalRoomResponse {
-    room_id: string;
-}
-```
-
-**Implementation Flow**:
-
-1. Read `CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID` from environment
-2. Return room ID or error if not configured
-
-**Error Handling**:
-
--   500: Room ID not configured
-
 ### `POST /api/video-call/session`
 
 **Handler**: `createSession()`
@@ -177,7 +152,6 @@ interface RealtimeKitTokenResponse {
 -   `CLOUDFLARE_ACCOUNT_ID`: Cloudflare account ID
 -   `CLOUDFLARE_REALTIME_APP_ID`: RealtimeKit app ID
 -   `CLOUDFLARE_REALTIME_API_TOKEN`: API authentication token
--   `CLOUDFLARE_REALTIME_GLOBAL_ROOM_ID`: Global room ID (for GET /global-room)
 
 ## Workers Logic
 
@@ -191,7 +165,6 @@ interface RealtimeKitTokenResponse {
 5. Call RealtimeKit API:
    - Create meeting (POST /session)
    - Generate token (POST /token)
-   - Or return global room ID (GET /global-room)
 6. Parse RealtimeKit response
 7. Format response per API contract
 8. Return response
@@ -290,7 +263,6 @@ function validateGenerateTokenRequest(body: unknown): {
 
 -   Meeting ID must be valid UUID or RealtimeKit meeting ID
 -   Token generation requires valid meeting ID
--   Global room ID must be configured in environment
 
 ## Security Considerations
 
@@ -326,7 +298,6 @@ function validateGenerateTokenRequest(body: unknown): {
 
 ### API Endpoints
 
--   [ ] GET /global-room endpoint
 -   [ ] POST /session endpoint
 -   [ ] POST /token endpoint
 -   [ ] Error handling (per API_CONTRACT.yml)

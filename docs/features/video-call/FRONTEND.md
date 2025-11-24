@@ -140,18 +140,10 @@ interface ControlsProps {
 ```typescript
 // Query keys
 const queryKeys = {
-    globalRoom: ["video-call", "global-room"] as const,
     session: (name?: string) => ["video-call", "session", name] as const,
 };
 
 // TanStack Query hooks
-const useGlobalRoom = () => {
-    return useQuery({
-        queryKey: queryKeys.globalRoom,
-        queryFn: () => fetchGlobalRoom(),
-    });
-};
-
 const useCreateSession = () => {
     return useMutation({
         mutationFn: (name?: string) => createSession(name),
@@ -204,16 +196,6 @@ interface GenerateTokenRequest {
     custom_participant_id?: string;
     preset_name?: string;
 }
-
-// Get global room ID
-export const fetchGlobalRoom = async (): Promise<GlobalRoomResponse> => {
-    const response = await fetch("/api/video-call/global-room");
-    if (!response.ok) {
-        const error: ErrorResponse = await response.json();
-        throw new Error(error.error || "Failed to fetch global room");
-    }
-    return response.json();
-};
 
 // Create session
 export const createSession = async (
