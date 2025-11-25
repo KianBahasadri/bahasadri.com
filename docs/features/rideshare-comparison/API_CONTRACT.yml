@@ -1,0 +1,230 @@
+openapi: 3.1.0
+info:
+    title: Rideshare Comparison API
+    description: >-
+        API contract document defining the interface between frontend and backend.
+        This is the ONLY coupling point between frontend and backend.
+        A rideshare price comparison API that fetches real-time pricing from multiple
+        rideshare services (Uber, Lyft, etc.) for a given origin and destination.
+    version: 1.0.0
+    contact:
+        name: API Support
+servers:
+    - url: http://localhost:8787/api
+      description: Development
+    - url: https://bahasadri.com/api
+      description: Production
+
+tags:
+    - name: Rideshare Comparison
+      description: Rideshare price comparison endpoints
+
+components:
+    # -------------------------------------------------------------------------
+    # SHARED MODELS
+    # -------------------------------------------------------------------------
+    schemas:
+        ComparePricesRequest:
+            type: object
+            required:
+                - origin
+                - destination
+            properties:
+                origin:
+                    type: string
+                    description: Origin address or location name.
+                    example: "123 Main St, San Francisco, CA"
+                destination:
+                    type: string
+                    description: Destination address or location name.
+                    example: "456 Market St, San Francisco, CA"
+                scheduledTime:
+                    type: string
+                    format: date-time
+                    description: >-
+                        Optional scheduled date and time for the ride in ISO 8601 format.
+                        If not provided, defaults to current time (immediate ride).
+                    example: "2024-01-15T14:30:00Z"
+
+        VehicleType:
+            type: object
+            required:
+                - name
+                - price
+            properties:
+                name:
+                    type: string
+                    description: Vehicle type name (e.g., "Economy", "Premium", "XL").
+                    example: "Economy"
+                price:
+                    type: number
+                    description: Estimated price in USD.
+                    example: 15.50
+                priceRange:
+                    type: object
+                    description: Optional price range if exact price is not available.
+                    properties:
+                        low:
+                            type: number
+                            description: Lower bound of price estimate.
+                            example: 12.00
+                        high:
+                            type: number
+                            description: Upper bound of price estimate.
+                            example: 18.00
+                estimatedArrivalMinutes:
+                    type: integer
+                    description: Estimated minutes until driver arrival.
+                    example: 5
+                estimatedDurationMinutes:
+                    type: integer
+                    description: Estimated trip duration in minutes.
+                    example: 25
+
+        ServicePrice:
+            type: object
+            required:
+                - service
+                - vehicleTypes
+            properties:
+                service:
+                    type: string
+                    description: Rideshare service name (e.g., "Uber", "Lyft").
+                    example: "Uber"
+                vehicleTypes:
+                    type: array
+                    description: Available vehicle types and their pricing.
+                    items:
+                        $ref: "#/components/schemas/VehicleType"
+                error:
+                    type: string
+                    description: >-
+                        Optional error message if this service failed to return pricing.
+                        If present, vehicleTypes may be empty.
+                    example: "Service temporarily unavailable"
+
+        ComparePricesResponse:
+            type: object
+            required:
+                - origin
+                - destination
+                - services
+            properties:
+                origin:
+                    type: string
+                    description: Normalized origin address.
+                    example: "123 Main St, San Francisco, CA"
+                destination:
+                    type: string
+                    description: Normalized destination address.
+                    example: "456 Market St, San Francisco, CA"
+                scheduledTime:
+                    type: string
+                    format: date-time
+                    description: The scheduled time used for the comparison.
+                    example: "2024-01-15T14:30:00Z"
+                services:
+                    type: array
+                    description: Price comparisons from different rideshare services.
+                    items:
+                        $ref: "#/components/schemas/ServicePrice"
+                fetchedAt:
+                    type: string
+                    format: date-time
+                    description: Timestamp when prices were fetched.
+                    example: "2024-01-15T12:00:00Z"
+
+        ErrorResponse:
+            type: object
+            required:
+                - error
+                - code
+            properties:
+                error:
+                    type: string
+                    description: Human-readable error message.
+                    example: "Invalid origin or destination address"
+                code:
+                    type: string
+                    enum: [INVALID_INPUT, LOCATION_NOT_FOUND, SERVICE_UNAVAILABLE, INTERNAL_ERROR]
+                    description: Machine-readable error code.
+                    example: "INVALID_INPUT"
+
+    # ---------------------------------------------------------------------------
+    # STANDARD RESPONSES
+    # ---------------------------------------------------------------------------
+    responses:
+        BadRequest:
+            description: Invalid input provided (400).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        invalid_input:
+                            value:
+                                error: "Origin and destination are required"
+                                code: "INVALID_INPUT"
+                        location_not_found:
+                            value:
+                                error: "Could not find location for the provided address"
+                                code: "LOCATION_NOT_FOUND"
+
+        ServiceUnavailable:
+            description: One or more rideshare services are unavailable (503).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        service_unavailable:
+                            value:
+                                error: "One or more rideshare services are currently unavailable"
+                                code: "SERVICE_UNAVAILABLE"
+
+        InternalError:
+            description: Server error (500).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        server_error:
+                            value:
+                                error: "An unexpected error occurred while fetching prices"
+                                code: "INTERNAL_ERROR"
+
+paths:
+    # ---------------------------------------------------------------------------
+    # COMPARE PRICES ENDPOINT
+    # ---------------------------------------------------------------------------
+    /rideshare-comparison/compare:
+        post:
+            operationId: compareRidesharePrices
+            summary: Compare rideshare prices
+            description: >-
+                Fetches real-time pricing from multiple rideshare services for a given
+                origin and destination. Returns price comparisons across different services
+                and vehicle types.
+            tags:
+                - Rideshare Comparison
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ComparePricesRequest"
+            responses:
+                "200":
+                    description: Price comparison successful.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ComparePricesResponse"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "503":
+                    $ref: "#/components/responses/ServiceUnavailable"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
