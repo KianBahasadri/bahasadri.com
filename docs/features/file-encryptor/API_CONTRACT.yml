@@ -4,9 +4,9 @@ info:
     description: >-
         API contract document defining the interface between frontend and backend.
         This is the ONLY coupling point between frontend and backend.
-        This feature provides file encryption and decryption capabilities. Since encryption/decryption
-        happens client-side for security, the backend is minimal and primarily handles optional
-        temporary file storage if needed. Most operations are client-side only.
+        This feature provides file encryption and decryption capabilities. All encryption/decryption
+        operations are performed server-side for performance (especially for large files on mobile devices).
+        Files are processed ephemerally - unencrypted data is never stored, only processed in memory.
     version: 1.0.0
     contact:
         name: API Support
@@ -50,6 +50,28 @@ components:
                     type: boolean
                     description: Whether the deletion was successful
                     example: true
+
+        EncryptResponse:
+            type: object
+            required:
+                - encryptedFile
+            properties:
+                encryptedFile:
+                    type: string
+                    format: binary
+                    description: The encrypted file as binary data
+                    example: "base64-encoded-encrypted-data"
+
+        DecryptResponse:
+            type: object
+            required:
+                - decryptedFile
+            properties:
+                decryptedFile:
+                    type: string
+                    format: binary
+                    description: The decrypted file as binary data
+                    example: "base64-encoded-decrypted-data"
 
         ErrorResponse:
             type: object
@@ -111,16 +133,122 @@ components:
 
 paths:
     # ---------------------------------------------------------------------------
-    # UPLOAD TEMP ENDPOINT
+    # ENCRYPT ENDPOINT
+    # ---------------------------------------------------------------------------
+    /file-encryptor/encrypt:
+        post:
+            operationId: encryptFile
+            summary: Encrypt a file
+            description: >-
+                Encrypt a file using password or keyfile. The file is processed ephemerally
+                on the server - unencrypted data is never stored, only processed in memory.
+                Returns the encrypted file as binary data.
+            tags:
+                - File Encryptor
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            required:
+                                - file
+                                - method
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                                    description: The file to encrypt
+                                method:
+                                    type: string
+                                    enum: [password, keyfile]
+                                    description: Encryption method to use
+                                password:
+                                    type: string
+                                    description: Password for password-based encryption (required if method is password)
+                                keyfile:
+                                    type: string
+                                    format: binary
+                                    description: Keyfile for keyfile-based encryption (required if method is keyfile)
+            responses:
+                "200":
+                    description: File encrypted successfully.
+                    content:
+                        application/octet-stream:
+                            schema:
+                                type: string
+                                format: binary
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "413":
+                    $ref: "#/components/responses/PayloadTooLarge"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # DECRYPT ENDPOINT
+    # ---------------------------------------------------------------------------
+    /file-encryptor/decrypt:
+        post:
+            operationId: decryptFile
+            summary: Decrypt a file
+            description: >-
+                Decrypt an encrypted file using password or keyfile. The file is processed ephemerally
+                on the server - unencrypted data is never stored, only processed in memory.
+                Returns the decrypted file as binary data.
+            tags:
+                - File Encryptor
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            required:
+                                - file
+                                - method
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                                    description: The encrypted file to decrypt
+                                method:
+                                    type: string
+                                    enum: [password, keyfile]
+                                    description: Decryption method to use
+                                password:
+                                    type: string
+                                    description: Password for password-based decryption (required if method is password)
+                                keyfile:
+                                    type: string
+                                    format: binary
+                                    description: Keyfile for keyfile-based decryption (required if method is keyfile)
+            responses:
+                "200":
+                    description: File decrypted successfully.
+                    content:
+                        application/octet-stream:
+                            schema:
+                                type: string
+                                format: binary
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    # ---------------------------------------------------------------------------
+    # UPLOAD TEMP ENDPOINT (DEPRECATED - kept for backwards compatibility)
     # ---------------------------------------------------------------------------
     /file-encryptor/upload-temp:
         post:
             operationId: uploadTempFile
-            summary: Upload file to temporary storage
+            summary: Upload file to temporary storage (DEPRECATED)
             description: >-
+                DEPRECATED: This endpoint is kept for backwards compatibility but is no longer
+                the primary method. Use /encrypt and /decrypt endpoints instead.
                 Optionally upload a file to temporary storage for processing.
-                This endpoint is optional - encryption/decryption can happen entirely
-                client-side without backend interaction.
             tags:
                 - File Encryptor
             requestBody:

@@ -6,6 +6,8 @@
 
 A secure file encryption and decryption utility that allows users to encrypt files for safe storage or transmission, and decrypt them when needed. Users can choose between password-based encryption or keyfile-based encryption for enhanced security.
 
+**Note**: Encryption/decryption operations are performed server-side for performance (especially important for large files on mobile devices). Files are processed ephemerally - unencrypted data is never stored on the server, only processed in memory and immediately discarded.
+
 ## Key Features
 
 ### File Encryption
@@ -146,7 +148,8 @@ Users can encrypt files or text using a keyfile (a file used as the encryption k
 -   Copy encrypted text to clipboard
 -   Download decrypted files to restore originals
 -   View decrypted text directly in the interface
--   All encryption/decryption happens client-side for maximum security
+-   Server-side processing for performance (handles large files efficiently)
+-   Ephemeral processing (unencrypted data never stored on server)
 
 ## Use Cases
 
@@ -172,12 +175,15 @@ Quickly encrypt sensitive text content like passwords, private notes, or confide
 
 ## User Benefits
 
--   **Secure**: Client-side encryption ensures files are never transmitted or stored in unencrypted form
+-   **Secure**: Uses audited cryptographic libraries (`@noble/ciphers`) with AES-256-GCM encryption
 -   **Flexible**: Choose between password or keyfile encryption based on security needs
 -   **Simple**: Easy-to-use interface for encrypting and decrypting files
--   **Private**: All encryption/decryption happens in the browser - no server-side processing
+-   **Performant**: Server-side processing handles large files efficiently, even on mobile devices
+-   **Ephemeral**: Unencrypted data is never stored on the server - only processed in memory and immediately discarded
 -   **Universal**: Works with any file type and size
 -   **Reliable**: Standard encryption algorithms ensure compatibility and security
+
+**Security Note**: Server-side processing means the server sees unencrypted data during processing. Users must trust the server. The server ensures no unencrypted data is stored or logged.
 
 ---
 

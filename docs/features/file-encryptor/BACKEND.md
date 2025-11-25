@@ -6,7 +6,13 @@
 
 ## Overview
 
-Backend implementation for the File Encryptor utility. Since encryption/decryption happens client-side for security, the backend is minimal and only provides optional temporary file storage if needed. Most operations are client-side only and don't require backend interaction.
+Backend implementation for the File Encryptor utility. All encryption/decryption operations are performed server-side for performance (especially important for large files on mobile devices). Files are processed **ephemerally** - unencrypted data is never stored, only processed in memory and immediately discarded after encryption/decryption completes.
+
+**Security Note**: While server-side processing means the server sees unencrypted data during processing, we ensure:
+- No unencrypted data is ever stored (ephemeral processing only)
+- No logging of file contents or passwords
+- Secure handling using audited cryptographic libraries (`@noble/ciphers`)
+- Files are processed in memory and immediately discarded
 
 ## Code Location
 
@@ -21,7 +27,94 @@ This document focuses solely on backend implementation details not covered in th
 
 ## API Endpoints
 
-### `POST /api/file-encryptor/upload-temp`
+### `POST /api/file-encryptor/encrypt`
+
+**Handler**: `encryptFile()`
+
+**Description**: Encrypt a file using password or keyfile. Processing is ephemeral - unencrypted data is never stored.
+
+**Request**:
+-   Method: `POST`
+-   Content-Type: `multipart/form-data`
+-   Body: Form data with:
+    -   `file`: File to encrypt (required)
+    -   `method`: `"password"` or `"keyfile"` (required)
+    -   `password`: Password string (required if method is password)
+    -   `keyfile`: Keyfile binary (required if method is keyfile)
+
+**Validation**:
+-   File must be provided
+-   Method must be `"password"` or `"keyfile"`
+-   Password must be provided if method is password
+-   Keyfile must be provided if method is keyfile
+-   File size must be within limits (e.g., 100MB max)
+
+**Response**:
+-   Content-Type: `application/octet-stream`
+-   Body: Encrypted file binary data
+
+**Implementation Flow**:
+1. Parse multipart form data
+2. Extract file, method, and credentials (password or keyfile)
+3. Validate all required fields
+4. Validate file size
+5. **Encrypt file using `@noble/ciphers` library**:
+   -   For password: Derive key using PBKDF2 (Web Crypto API)
+   -   For keyfile: Derive key from keyfile content using SHA-256
+   -   Use AES-256-GCM for encryption
+6. Return encrypted file as binary response
+7. **Immediately discard unencrypted data from memory**
+
+**Error Handling**:
+-   `400 Bad Request`: Missing required fields, invalid method, or invalid file
+-   `413 Payload Too Large`: File exceeds size limit
+-   `500 Internal Server Error`: Encryption error
+
+### `POST /api/file-encryptor/decrypt`
+
+**Handler**: `decryptFile()`
+
+**Description**: Decrypt an encrypted file using password or keyfile. Processing is ephemeral - unencrypted data is never stored.
+
+**Request**:
+-   Method: `POST`
+-   Content-Type: `multipart/form-data`
+-   Body: Form data with:
+    -   `file`: Encrypted file to decrypt (required)
+    -   `method`: `"password"` or `"keyfile"` (required)
+    -   `password`: Password string (required if method is password)
+    -   `keyfile`: Keyfile binary (required if method is keyfile)
+
+**Validation**:
+-   File must be provided
+-   Method must be `"password"` or `"keyfile"`
+-   Password must be provided if method is password
+-   Keyfile must be provided if method is keyfile
+-   File must be valid encrypted format
+
+**Response**:
+-   Content-Type: `application/octet-stream`
+-   Body: Decrypted file binary data
+
+**Implementation Flow**:
+1. Parse multipart form data
+2. Extract encrypted file, method, and credentials
+3. Validate all required fields
+4. Parse encrypted file format (header + encrypted data)
+5. **Decrypt file using `@noble/ciphers` library**:
+   -   For password: Derive key using PBKDF2 with salt from file header
+   -   For keyfile: Derive key from keyfile content using SHA-256
+   -   Use AES-256-GCM for decryption
+   -   Verify authentication tag
+6. Return decrypted file as binary response
+7. **Immediately discard decrypted data from memory**
+
+**Error Handling**:
+-   `400 Bad Request`: Missing required fields, invalid method, wrong password/keyfile, or corrupted file
+-   `404 Not Found`: Invalid encrypted file format
+-   `500 Internal Server Error`: Decryption error
+
+### `POST /api/file-encryptor/upload-temp` (DEPRECATED)
 
 **Handler**: `uploadTempFile()`
 
@@ -295,9 +388,11 @@ function validateFileId(fileId: string): { ok: boolean; error?: string } {
 
 ### Data Privacy
 
--   **Critical**: No encryption keys, passwords, or unencrypted file data should ever be sent to the backend
--   Backend only handles encrypted files if temporary storage is used
--   All encryption/decryption happens client-side
+-   **Ephemeral Processing**: Unencrypted file data exists only in memory during processing and is immediately discarded
+-   **No Storage**: Unencrypted data is never written to disk, logs, or any persistent storage
+-   **No Logging**: File contents, passwords, and keyfile contents are never logged
+-   **Secure Memory**: Use secure memory handling practices - clear buffers after use when possible
+-   **Trust Model**: Users must trust the server with their unencrypted data during processing (this is a trade-off for performance on mobile devices)
 
 ## Performance Optimization
 
@@ -317,14 +412,81 @@ function validateFileId(fileId: string): { ok: boolean; error?: string } {
 -   Automatic expiration prevents storage bloat
 -   Consider cleanup job for orphaned files (optional)
 
+## Encryption Implementation
+
+### Encryption Algorithm
+
+**Library**: `@noble/ciphers` (audited, secure, minimal bundle size)
+
+**Implementation Details**:
+-   Use `@noble/ciphers` AES-256-GCM implementation for encryption/decryption
+-   Use Web Crypto API's `crypto.subtle.deriveBits()` with PBKDF2 for password-based key derivation
+-   Generate random IV (12 bytes for AES-GCM) for each encryption using `crypto.getRandomValues()`
+-   Use authenticated encryption (GCM mode) for integrity - the library handles authentication tag automatically
+-   For keyfile-based encryption: derive key from keyfile content using SHA-256 hash
+
+**Key Derivation Parameters** (PBKDF2):
+-   Algorithm: PBKDF2 with SHA-256
+-   Iterations: 100,000 (configurable, but minimum 100k for security)
+-   Salt: Random 16-byte salt generated per encryption
+-   Key length: 256 bits (32 bytes) for AES-256-GCM
+
+### File Format
+
+Encrypted files use a custom binary format that includes:
+-   **Header** (JSON, length-prefixed):
+    -   `version`: File format version (currently `1`)
+    -   `method`: `"password"` or `"keyfile"`
+    -   `originalFilename`: Original filename (if available)
+    -   `salt`: Base64-encoded salt (for password method)
+    -   `iv`: Base64-encoded IV
+-   **Encrypted Data**: AES-GCM encrypted file content (includes authentication tag automatically)
+
+**Format Structure**:
+```
+[4 bytes: JSON header length (big-endian)]
+[JSON header (UTF-8)]
+[Encrypted data + authentication tag]
+```
+
+### Security Best Practices
+
+1.   **Never log sensitive data** - No passwords, keyfiles, or file contents in logs
+2.   **Ephemeral processing** - Unencrypted data only exists in memory during processing
+3.   **Immediate cleanup** - Discard unencrypted data immediately after encryption/decryption
+4.   **Use audited libraries** - Always use `@noble/ciphers` for crypto operations
+5.   **Unique IV per encryption** - Never reuse IVs
+6.   **Strong key derivation** - PBKDF2 with sufficient iterations (100k+)
+7.   **Secure random generation** - Use `crypto.getRandomValues()` for all randomness
+8.   **Error handling** - Don't leak information about decryption failures (wrong password, etc.)
+
 ## Implementation Checklist
 
 ### API Endpoints
 
--   [ ] POST /upload-temp endpoint
--   [ ] GET /download-temp/:fileId endpoint
--   [ ] DELETE /temp/:fileId endpoint
--   [ ] Error handling (per API_CONTRACT.md)
+-   [ ] POST /encrypt endpoint
+-   [ ] POST /decrypt endpoint
+-   [ ] Error handling (per API_CONTRACT.yml)
+-   [ ] Multipart form data parsing
+-   [ ] File validation
+
+### Encryption Logic
+
+-   [ ] Install and configure `@noble/ciphers` library
+-   [ ] Encryption function using `@noble/ciphers` AES-256-GCM
+-   [ ] Decryption function using `@noble/ciphers` AES-256-GCM
+-   [ ] PBKDF2 key derivation using Web Crypto API
+-   [ ] Keyfile-based key derivation (SHA-256)
+-   [ ] File format serialization (header + encrypted data)
+-   [ ] File format deserialization (parse header, extract encrypted data)
+-   [ ] Error handling for encryption/decryption (wrong password, corrupted file, etc.)
+
+### Data Layer (Optional - for deprecated temp endpoints)
+
+-   [ ] POST /upload-temp endpoint (deprecated)
+-   [ ] GET /download-temp/:fileId endpoint (deprecated)
+-   [ ] DELETE /temp/:fileId endpoint (deprecated)
+-   [ ] R2 bucket setup and configuration (if using temp storage)
 
 ### Data Layer
 
@@ -348,6 +510,16 @@ function validateFileId(fileId: string): { ok: boolean; error?: string } {
 -   Native Workers API
 -   `@cloudflare/workers-types` for types
 -   Multipart form data parsing (native or library)
+
+### Encryption Libraries
+
+-   `@noble/ciphers`: Audited, secure AES-GCM implementation
+    -   Package: `@noble/ciphers`
+    -   Why: Well-tested, audited, minimal bundle size, actively maintained
+    -   Usage: Provides `aes_256_gcm` for encryption/decryption operations
+-   Web Crypto API: For PBKDF2 key derivation (available in Workers runtime)
+    -   `crypto.subtle.deriveBits()`: PBKDF2 key derivation from passwords
+    -   `crypto.getRandomValues()`: Secure random number generation for IVs and salts
 
 ## Error Codes
 
@@ -373,11 +545,17 @@ How to map internal errors to API contract error codes:
 
 ## Important Notes
 
-**Minimal Backend**: This backend is intentionally minimal. The frontend performs all encryption/decryption operations client-side using the `@noble/ciphers` library (audited, secure) combined with Web Crypto API for key derivation. The backend only provides optional temporary file storage if needed.
+**Server-Side Encryption**: All encryption/decryption operations are performed server-side for performance, especially important for large files on mobile devices. The backend uses the `@noble/ciphers` library (audited, secure) combined with Web Crypto API for key derivation.
 
-**Security First**: No encryption keys, passwords, or unencrypted file data should ever be sent to or stored on the backend. All sensitive operations are client-side only. The frontend uses well-tested, audited cryptographic libraries to ensure security.
+**Ephemeral Processing**: Unencrypted file data is processed in memory only and immediately discarded. No unencrypted data is ever stored, logged, or persisted in any way.
 
-**Optional Usage**: The frontend can operate entirely without backend interaction. These endpoints are provided for optional use cases where temporary file storage might be helpful.
+**Security Trade-off**: Server-side processing means the server sees unencrypted data during processing. This is a performance trade-off - users must trust the server. We mitigate this by:
+-   Using audited cryptographic libraries
+-   Ensuring ephemeral processing (no storage)
+-   No logging of sensitive data
+-   Secure memory handling practices
+
+**Performance Benefits**: Server-side encryption allows handling of large files that would be problematic on mobile devices due to memory and processing constraints.
 
 ---
 
