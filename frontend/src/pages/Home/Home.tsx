@@ -39,6 +39,18 @@ const toolPopups: Record<string, ToolPopup> = {
         text: "Click me, darling~ Let's see each other! 📹💖",
         ascii: "(〜￣▽￣)〜",
     },
+    "platformer-game": {
+        text: "Still working on this game for you~ Play with me soon! 🎮💕",
+        ascii: "(◕‿◕)♡",
+    },
+    "rideshare-comparison": {
+        text: "Coming soon~ I'll help you find the best ride! 🚗✨",
+        ascii: "(⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄)",
+    },
+    "route-comparison": {
+        text: "Not ready yet... but I'll show you the best routes! 🗺️💖",
+        ascii: "♡( ◡‿◡ )",
+    },
 };
 
 export default function Home(): React.JSX.Element {
@@ -280,38 +292,6 @@ export default function Home(): React.JSX.Element {
                         {/* Tools Section */}
                         <section className={styles["section"]}>
                             <div className={styles["toolsGrid"]}>
-                                <button
-                                    className={styles["cardMenhera"]}
-                                    disabled
-                                    onMouseEnter={(e) => {
-                                        handleCardHover("file-hosting", e);
-                                    }}
-                                    onMouseLeave={handleCardLeave}
-                                >
-                                    <span className={styles["cardIcon"]}>
-                                        💾
-                                    </span>
-                                    <h3 className={styles["cardTitle"]}>
-                                        File Hosting
-                                    </h3>
-                                </button>
-
-                                <button
-                                    className={styles["cardMenhera"]}
-                                    disabled
-                                    onMouseEnter={(e) => {
-                                        handleCardHover("file-encryptor", e);
-                                    }}
-                                    onMouseLeave={handleCardLeave}
-                                >
-                                    <span className={styles["cardIcon"]}>
-                                        🔒
-                                    </span>
-                                    <h3 className={styles["cardTitle"]}>
-                                        File Encryptor
-                                    </h3>
-                                </button>
-
                                 <Link
                                     to="/sms-messenger"
                                     className={styles["cardMenhera"]}
@@ -372,22 +352,6 @@ export default function Home(): React.JSX.Element {
                                     </h3>
                                 </Link>
 
-                                <button
-                                    className={styles["cardMenhera"]}
-                                    disabled
-                                    onMouseEnter={(e) => {
-                                        handleCardHover("osint-tool", e);
-                                    }}
-                                    onMouseLeave={handleCardLeave}
-                                >
-                                    <span className={styles["cardIcon"]}>
-                                        🔍
-                                    </span>
-                                    <h3 className={styles["cardTitle"]}>
-                                        OSINT Tool
-                                    </h3>
-                                </button>
-
                                 <Link
                                     to="/video-call"
                                     className={styles["cardMenhera"]}
@@ -407,6 +371,102 @@ export default function Home(): React.JSX.Element {
                                         Video Call
                                     </h3>
                                 </Link>
+
+                                <button
+                                    className={styles["cardMenhera"]}
+                                    disabled
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("file-hosting", e);
+                                    }}
+                                    onMouseLeave={handleCardLeave}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        💾
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        File Hosting
+                                    </h3>
+                                </button>
+
+                                <button
+                                    className={styles["cardMenhera"]}
+                                    disabled
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("file-encryptor", e);
+                                    }}
+                                    onMouseLeave={handleCardLeave}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        🔒
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        File Encryptor
+                                    </h3>
+                                </button>
+
+                                <button
+                                    className={styles["cardMenhera"]}
+                                    disabled
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("osint-tool", e);
+                                    }}
+                                    onMouseLeave={handleCardLeave}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        🔍
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        OSINT Tool
+                                    </h3>
+                                </button>
+
+                                <button
+                                    className={styles["cardMenhera"]}
+                                    disabled
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("platformer-game", e);
+                                    }}
+                                    onMouseLeave={handleCardLeave}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        🎮
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        Platformer Game
+                                    </h3>
+                                </button>
+
+                                <button
+                                    className={styles["cardMenhera"]}
+                                    disabled
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("rideshare-comparison", e);
+                                    }}
+                                    onMouseLeave={handleCardLeave}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        🚗
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        Rideshare Comparison
+                                    </h3>
+                                </button>
+
+                                <button
+                                    className={styles["cardMenhera"]}
+                                    disabled
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("route-comparison", e);
+                                    }}
+                                    onMouseLeave={handleCardLeave}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        🗺️
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        Route Comparison
+                                    </h3>
+                                </button>
                             </div>
 
                             {/* Cute Popup */}
