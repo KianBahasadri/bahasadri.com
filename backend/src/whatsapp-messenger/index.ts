@@ -37,12 +37,14 @@ function getTwilioConfig(env: Env): { accountSid: string; authToken: string; wha
     throw new Error("Twilio configuration is missing. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables.");
   }
   
-  // Use TWILIO_WHATSAPP_NUMBER if set, otherwise fall back to TWILIO_PHONE_NUMBER
-  // Both can use the same number - WhatsApp just needs the whatsapp: prefix
-  const whatsappNumber = env.TWILIO_WHATSAPP_NUMBER || env.TWILIO_PHONE_NUMBER;
+  // Use TWILIO_WHATSAPP_NUMBER if set
+  // Note: WhatsApp requires the number to be registered as a WhatsApp Business sender
+  // You cannot use a regular SMS number for WhatsApp - it must be registered separately
+  // For testing, you can use the WhatsApp Sandbox: whatsapp:+14155238886
+  const whatsappNumber = env.TWILIO_WHATSAPP_NUMBER;
   
   if (!whatsappNumber) {
-    throw new Error("WhatsApp number is missing. Please set either TWILIO_WHATSAPP_NUMBER or TWILIO_PHONE_NUMBER environment variable.");
+    throw new Error("TWILIO_WHATSAPP_NUMBER is required. WhatsApp requires a number registered as a WhatsApp Business sender. For testing, use the WhatsApp Sandbox number: whatsapp:+14155238886. For production, register your number in the Twilio Console.");
   }
   
   return {

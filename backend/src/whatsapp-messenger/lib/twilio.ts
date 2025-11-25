@@ -38,9 +38,14 @@ export async function sendWhatsApp(
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(
-            `Twilio API error: ${String(response.status)} ${errorText}`
-        );
+        let errorMessage = `Twilio API error: ${String(response.status)} ${errorText}`;
+        
+        // Provide helpful error message for common WhatsApp setup issues
+        if (response.status === 400 && errorText.includes("63007")) {
+            errorMessage = `WhatsApp sender not registered. The phone number "${fromNumber}" is not registered as a WhatsApp Business sender in Twilio. You need to either: 1) Use the WhatsApp Sandbox (whatsapp:+14155238886 for testing), or 2) Register your number as a WhatsApp Business sender in the Twilio Console. Original error: ${errorText}`;
+        }
+        
+        throw new Error(errorMessage);
     }
 
     const data = await response.json();
