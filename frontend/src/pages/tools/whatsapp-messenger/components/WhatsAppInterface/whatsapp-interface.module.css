@@ -1,0 +1,561 @@
+:root {
+  --whatsapp-green: #25d366;
+  --whatsapp-green-dark: #128c7e;
+  --whatsapp-green-light: #dcf8c6;
+  --whatsapp-blue: #34b7f1;
+  --whatsapp-gray: #ece5dd;
+  --whatsapp-gray-dark: #d4d4d4;
+  --whatsapp-text: #111b21;
+  --whatsapp-text-light: #667781;
+  --whatsapp-white: #ffffff;
+  --whatsapp-error: #e53e3e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --whatsapp-gray: #0b141a;
+    --whatsapp-gray-dark: #1a1a1a;
+    --whatsapp-text: #e9edef;
+    --whatsapp-text-light: #8696a0;
+    --whatsapp-white: #202c33;
+  }
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+  background-color: var(--whatsapp-gray);
+  position: relative;
+}
+
+.sidebar {
+  width: 350px;
+  background-color: var(--whatsapp-white);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  z-index: 2;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sidebar {
+    background-color: var(--whatsapp-gray-dark);
+    border-right-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--whatsapp-white);
+}
+
+@media (prefers-color-scheme: dark) {
+  .sidebarHeader {
+    background-color: var(--whatsapp-gray-dark);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.sidebarTitle {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--whatsapp-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sidebarTitle {
+    color: var(--whatsapp-text);
+  }
+}
+
+.addContactButton {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  background-color: var(--whatsapp-green);
+  color: white;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+}
+
+.addContactButton:hover {
+  background-color: var(--whatsapp-green-dark);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+}
+
+.contactForm {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--whatsapp-white);
+}
+
+@media (prefers-color-scheme: dark) {
+  .contactForm {
+    background-color: var(--whatsapp-gray-dark);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.contactFormTitle {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--whatsapp-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  .contactFormTitle {
+    color: var(--whatsapp-text);
+  }
+}
+
+.contactInput {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  background-color: var(--whatsapp-white);
+  color: var(--whatsapp-text);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.contactInput:focus {
+  outline: none;
+  border-color: var(--whatsapp-green);
+  box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .contactInput {
+    background-color: var(--whatsapp-gray);
+    color: var(--whatsapp-text);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .contactInput:focus {
+    border-color: var(--whatsapp-green);
+    box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+  }
+}
+
+.contactFormActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.contactSubmitButton {
+  flex: 1;
+  padding: 0.75rem;
+  background-color: var(--whatsapp-green);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.contactSubmitButton:hover:not(:disabled) {
+  background-color: var(--whatsapp-green-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+}
+
+.contactSubmitButton:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.contactCancelButton {
+  flex: 1;
+  padding: 0.75rem;
+  background-color: transparent;
+  color: var(--whatsapp-text);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.contactCancelButton:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  .contactCancelButton {
+    color: var(--whatsapp-text);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .contactCancelButton:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.threadList {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.emptyState {
+  padding: 2rem;
+  text-align: center;
+  color: var(--whatsapp-text-light);
+  font-size: 0.875rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.threadItem {
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.threadItem:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+@media (prefers-color-scheme: dark) {
+  .threadItem {
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .threadItem:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+}
+
+.threadItem.active {
+  background-color: rgba(37, 211, 102, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  .threadItem.active {
+    background-color: rgba(37, 211, 102, 0.15);
+  }
+}
+
+.threadName {
+  font-weight: 500;
+  color: var(--whatsapp-text);
+  margin-bottom: 0.25rem;
+  font-size: 0.9375rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .threadName {
+    color: var(--whatsapp-text);
+  }
+}
+
+.unreadBadge {
+  background-color: var(--whatsapp-green);
+  color: white;
+  border-radius: 0.625rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 1.25rem;
+  text-align: center;
+}
+
+.threadPreview {
+  color: var(--whatsapp-text-light);
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 0.25rem;
+}
+
+.threadTime {
+  color: var(--whatsapp-text-light);
+  font-size: 0.75rem;
+}
+
+.mainArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--whatsapp-gray);
+  position: relative;
+  z-index: 1;
+}
+
+.header {
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--whatsapp-white);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (prefers-color-scheme: dark) {
+  .header {
+    background-color: var(--whatsapp-gray-dark);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--whatsapp-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  .headerTitle {
+    color: var(--whatsapp-text);
+  }
+}
+
+.addContactToThreadButton {
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  color: var(--whatsapp-green);
+  border: 1px solid var(--whatsapp-green);
+  border-radius: 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.addContactToThreadButton:hover {
+  background-color: var(--whatsapp-green);
+  color: white;
+}
+
+.messageList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='grid' width='100' height='100' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 100 0 L 0 0 0 100' fill='none' stroke='rgba(0,0,0,0.02)' stroke-width='1'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23grid)'/%3E%3C/svg%3E");
+  background-color: var(--whatsapp-gray);
+}
+
+@media (prefers-color-scheme: dark) {
+  .messageList {
+    background-color: var(--whatsapp-gray);
+  }
+}
+
+.composer {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--whatsapp-white);
+}
+
+@media (prefers-color-scheme: dark) {
+  .composer {
+    background-color: var(--whatsapp-gray-dark);
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.error {
+  color: var(--whatsapp-error);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background-color: rgba(229, 62, 62, 0.1);
+  border: 1px solid var(--whatsapp-error);
+  border-radius: 0.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.composerInputs {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.messageInput {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 1.5rem;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  resize: none;
+  min-height: 2.5rem;
+  max-height: 8rem;
+  background-color: var(--whatsapp-white);
+  color: var(--whatsapp-text);
+  transition: all 0.2s ease;
+  line-height: 1.5;
+}
+
+.messageInput:focus {
+  outline: none;
+  border-color: var(--whatsapp-green);
+  box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .messageInput {
+    background-color: var(--whatsapp-gray);
+    color: var(--whatsapp-text);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .messageInput:focus {
+    border-color: var(--whatsapp-green);
+    box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+  }
+}
+
+.sendButton {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--whatsapp-green);
+  color: white;
+  border: none;
+  border-radius: 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.sendButton:hover:not(:disabled) {
+  background-color: var(--whatsapp-green-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+}
+
+.sendButton:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.emptyMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--whatsapp-text-light);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  text-align: center;
+}
+
+.emptyMain p {
+  margin: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+.newConversation {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.phoneInput {
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 1.5rem;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  background-color: var(--whatsapp-white);
+  color: var(--whatsapp-text);
+  transition: all 0.2s ease;
+}
+
+.phoneInput:focus {
+  outline: none;
+  border-color: var(--whatsapp-green);
+  box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .phoneInput {
+    background-color: var(--whatsapp-gray-dark);
+    color: var(--whatsapp-text);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .phoneInput:focus {
+    border-color: var(--whatsapp-green);
+    box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+  }
+}
+
+.startButton {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--whatsapp-green);
+  color: white;
+  border: none;
+  border-radius: 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.startButton:hover {
+  background-color: var(--whatsapp-green-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+}
+
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: 200px;
+    border-right: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .mainArea {
+    height: calc(100vh - 200px);
+  }
+}
+

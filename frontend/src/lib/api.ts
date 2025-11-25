@@ -10,6 +10,17 @@ import type {
     ContactUpdatePayload,
 } from "../types/sms-messenger";
 import type {
+    SendWhatsAppRequest,
+    SendWhatsAppResponse,
+    MessagesResponse as WhatsAppMessagesResponse,
+    MessagesSinceResponse as WhatsAppMessagesSinceResponse,
+    ThreadListResponse as WhatsAppThreadListResponse,
+    ContactListResponse as WhatsAppContactListResponse,
+    ContactCreatePayload as WhatsAppContactCreatePayload,
+    ContactMutationResult as WhatsAppContactMutationResult,
+    ContactUpdatePayload as WhatsAppContactUpdatePayload,
+} from "../types/whatsapp-messenger";
+import type {
     CalculateRequest,
     CalculateResponse,
     ErrorResponse,
@@ -165,6 +176,111 @@ export const updateContact = async (
     return response.json() as Promise<ContactMutationResult>;
 };
 
+export const sendWhatsApp = async (
+    phoneNumber: string,
+    message: string,
+    contactId?: string
+): Promise<SendWhatsAppResponse> => {
+    const body: SendWhatsAppRequest = { phoneNumber, message };
+    if (contactId) {
+        body.contactId = contactId;
+    }
+    const response = await fetch(`${API_BASE_URL}/whatsapp-messenger/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+        const error = (await response.json()) as { error?: string };
+        throw new Error(error.error ?? "Failed to send WhatsApp message");
+    }
+
+    return response.json() as Promise<SendWhatsAppResponse>;
+};
+
+export const fetchWhatsAppMessages = async (
+    counterpart: string,
+    cursor?: string,
+    limit?: number
+): Promise<WhatsAppMessagesResponse> => {
+    const params = new URLSearchParams({ counterpart });
+    if (cursor) params.append("cursor", cursor);
+    if (limit) params.append("limit", String(limit));
+
+    const response = await fetch(
+        `${API_BASE_URL}/whatsapp-messenger/messages?${params}`
+    );
+    if (!response.ok) throw new Error("Failed to fetch messages");
+    return response.json() as Promise<WhatsAppMessagesResponse>;
+};
+
+export const pollWhatsAppMessagesSince = async (
+    since: number
+): Promise<WhatsAppMessagesSinceResponse> => {
+    const response = await fetch(
+        `${API_BASE_URL}/whatsapp-messenger/messages-since?since=${String(since)}`
+    );
+    if (!response.ok) throw new Error("Failed to poll messages");
+    return response.json() as Promise<WhatsAppMessagesSinceResponse>;
+};
+
+export const fetchWhatsAppThreads = async (): Promise<WhatsAppThreadListResponse> => {
+    const response = await fetch(`${API_BASE_URL}/whatsapp-messenger/threads`);
+    if (!response.ok) throw new Error("Failed to fetch threads");
+    return response.json() as Promise<WhatsAppThreadListResponse>;
+};
+
+export const fetchWhatsAppContacts = async (): Promise<WhatsAppContactListResponse> => {
+    const response = await fetch(`${API_BASE_URL}/whatsapp-messenger/contacts`);
+    if (!response.ok) throw new Error("Failed to fetch contacts");
+    return response.json() as Promise<WhatsAppContactListResponse>;
+};
+
+export const createWhatsAppContact = async (
+    phoneNumber: string,
+    displayName: string
+): Promise<WhatsAppContactMutationResult> => {
+    const response = await fetch(`${API_BASE_URL}/whatsapp-messenger/contacts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            phoneNumber,
+            displayName,
+        } satisfies WhatsAppContactCreatePayload),
+    });
+
+    if (!response.ok) {
+        const error = (await response.json()) as { error?: string };
+        throw new Error(error.error ?? "Failed to create contact");
+    }
+
+    return response.json() as Promise<WhatsAppContactMutationResult>;
+};
+
+export const updateWhatsAppContact = async (
+    contactId: string,
+    displayName: string
+): Promise<WhatsAppContactMutationResult> => {
+    const response = await fetch(
+        `${API_BASE_URL}/whatsapp-messenger/contacts/${contactId}`,
+        {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                displayName,
+            } satisfies WhatsAppContactUpdatePayload),
+        }
+    );
+
+    if (!response.ok) {
+        const error = (await response.json()) as { error?: string };
+        throw new Error(error.error ?? "Failed to update contact");
+    }
+
+    return response.json() as Promise<WhatsAppContactMutationResult>;
+};
+
 export const calculateExpression = async (
     expression: string
 ): Promise<CalculateResponse> => {
@@ -257,6 +373,12 @@ export const generateToken = async (
     customParticipantId?: string,
     presetName?: string
 ): Promise<GenerateTokenResponse> => {
+    console.log("[api] generateToken: Called with:", {
+        meetingId,
+        name,
+        customParticipantId,
+        presetName,
+    });
     const body: GenerateTokenRequest = {
         meeting_id: meetingId,
     };
@@ -269,13 +391,26 @@ export const generateToken = async (
     if (presetName) {
         body.preset_name = presetName;
     }
+    console.log("[api] generateToken: Request body:", body);
+    console.log(
+        "[api] generateToken: Fetching from:",
+        `${API_BASE_URL}/video-call/token`
+    );
     const response = await fetch(`${API_BASE_URL}/video-call/token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
     });
 
+    console.log(
+        "[api] generateToken: Response status:",
+        response.status,
+        response.statusText
+    );
     if (!response.ok) {
+        console.error(
+            "[api] generateToken: Response not OK, calling handleApiError"
+        );
         await handleApiError(
             response,
             "generateToken",
@@ -283,13 +418,30 @@ export const generateToken = async (
         );
     }
 
-    return response.json() as Promise<GenerateTokenResponse>;
+    const json = (await response.json()) as GenerateTokenResponse;
+    console.log("[api] generateToken: Response JSON received:", {
+        hasAuthToken: !!json.auth_token,
+        tokenLength: json.auth_token?.length,
+    });
+    return json;
 };
 
 export const listSessions = async (): Promise<ListSessionsResponse> => {
+    console.log(
+        "[api] listSessions: Fetching from:",
+        `${API_BASE_URL}/video-call/sessions`
+    );
     const response = await fetch(`${API_BASE_URL}/video-call/sessions`);
 
+    console.log(
+        "[api] listSessions: Response status:",
+        response.status,
+        response.statusText
+    );
     if (!response.ok) {
+        console.error(
+            "[api] listSessions: Response not OK, calling handleApiError"
+        );
         await handleApiError(
             response,
             "listSessions",
@@ -297,7 +449,12 @@ export const listSessions = async (): Promise<ListSessionsResponse> => {
         );
     }
 
-    return response.json() as Promise<ListSessionsResponse>;
+    const json = (await response.json()) as ListSessionsResponse;
+    console.log("[api] listSessions: Response JSON received:", {
+        sessionCount: json.sessions?.length ?? 0,
+        sessions: json.sessions,
+    });
+    return json;
 };
 
 export const listAllMeetings = async (): Promise<ListMeetingsResponse> => {

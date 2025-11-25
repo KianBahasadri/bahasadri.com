@@ -1,0 +1,147 @@
+:root {
+  --whatsapp-green: #25d366;
+  --whatsapp-green-dark: #128c7e;
+  --whatsapp-green-light: #dcf8c6;
+  --whatsapp-gray: #ece5dd;
+  --whatsapp-text: #111b21;
+  --whatsapp-text-light: #667781;
+  --whatsapp-white: #ffffff;
+  --whatsapp-error: #e53e3e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --whatsapp-gray: #0b141a;
+    --whatsapp-text: #e9edef;
+    --whatsapp-text-light: #8696a0;
+    --whatsapp-white: #202c33;
+    --whatsapp-green-light: #005c4b;
+  }
+}
+
+.messageList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--whatsapp-text-light);
+  font-size: 0.9375rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  text-align: center;
+  padding: 2rem;
+}
+
+.emptyState p {
+  margin: 0;
+  margin-top: 0.5rem;
+}
+
+.message {
+  display: flex;
+  margin-bottom: 0.25rem;
+}
+
+.message.sent {
+  justify-content: flex-end;
+}
+
+.message.received {
+  justify-content: flex-start;
+}
+
+.messageBubble {
+  max-width: 65%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  word-wrap: break-word;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.message.sent .messageBubble {
+  background-color: var(--whatsapp-green-light);
+  color: var(--whatsapp-text);
+  border-bottom-right-radius: 0.125rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .message.sent .messageBubble {
+    background-color: var(--whatsapp-green-dark);
+    color: var(--whatsapp-text);
+  }
+}
+
+.message.received .messageBubble {
+  background-color: var(--whatsapp-white);
+  color: var(--whatsapp-text);
+  border-bottom-left-radius: 0.125rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .message.received .messageBubble {
+    background-color: var(--whatsapp-white);
+    color: var(--whatsapp-text);
+  }
+}
+
+.messageBody {
+  margin-bottom: 0.25rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  font-size: 0.9375rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.messageMeta {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+  font-size: 0.6875rem;
+  opacity: 0.7;
+  justify-content: flex-end;
+}
+
+.message.sent .messageMeta {
+  color: var(--whatsapp-text);
+}
+
+.message.received .messageMeta {
+  color: var(--whatsapp-text-light);
+}
+
+.messageTime {
+  font-size: 0.6875rem;
+}
+
+.messageStatus {
+  font-size: 0.6875rem;
+  text-transform: capitalize;
+}
+
+.messageError {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--whatsapp-error);
+  font-style: italic;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.message.sent .messageError {
+  color: var(--whatsapp-error);
+}
+
+@media (max-width: 768px) {
+  .messageBubble {
+    max-width: 80%;
+  }
+}
+

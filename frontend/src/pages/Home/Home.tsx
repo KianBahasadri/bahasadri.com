@@ -23,6 +23,10 @@ const toolPopups: Record<string, ToolPopup> = {
         text: "Click me, darling~ Let's talk forever! 📱💕",
         ascii: "(♡ >ω< ♡)",
     },
+    "whatsapp-messenger": {
+        text: "WhatsApp time~ Let's chat on green! 💬💚",
+        ascii: "(◕‿◕)♡",
+    },
     calculator: {
         text: "Math time together~ I'll help you calculate! 🧮✨",
         ascii: "☆⌒(ゝ。∂)",
@@ -325,6 +329,26 @@ export default function Home(): React.JSX.Element {
                                     </span>
                                     <h3 className={styles["cardTitle"]}>
                                         SMS Messenger
+                                    </h3>
+                                </Link>
+
+                                <Link
+                                    to="/whatsapp-messenger"
+                                    className={styles["cardMenhera"]}
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("whatsapp-messenger", e);
+                                        startHeartbeat(e.currentTarget);
+                                    }}
+                                    onMouseLeave={() => {
+                                        handleCardLeave();
+                                        stopHeartbeat();
+                                    }}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        💬
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        WhatsApp Messenger
                                     </h3>
                                 </Link>
 

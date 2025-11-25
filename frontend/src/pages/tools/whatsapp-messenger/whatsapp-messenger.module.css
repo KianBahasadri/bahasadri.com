@@ -1,0 +1,14 @@
+.container {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: linear-gradient(135deg, #e5ddd5 0%, #d2dbdc 100%);
+    position: relative;
+}
+
+@media (prefers-color-scheme: dark) {
+    .container {
+        background: linear-gradient(135deg, #0b141a 0%, #1a1a1a 100%);
+    }
+}
+
