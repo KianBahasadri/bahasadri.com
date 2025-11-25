@@ -74,7 +74,6 @@
     border: 2px solid var(--pink-hot);
     background: var(--pink-primary);
     border-radius: 1rem;
-    cursor: pointer;
     transition: all 0.3s ease;
     font-family: "Comic Neue", sans-serif;
     box-shadow: 4px 4px 0 var(--pink-light);
@@ -85,8 +84,6 @@
 .meetingItem:hover {
     transform: translateY(-2px);
     box-shadow: 6px 6px 0 var(--pink-hot);
-    background: var(--pink-hot);
-    color: white;
 }
 
 .meetingInfo {
@@ -102,10 +99,6 @@
     color: var(--pink-darker);
 }
 
-.meetingItem:hover .meetingName {
-    color: white;
-}
-
 .meetingMeta {
     display: flex;
     flex-direction: column;
@@ -113,11 +106,6 @@
     font-size: 0.9rem;
     color: var(--pink-darker);
     opacity: 0.8;
-}
-
-.meetingItem:hover .meetingMeta {
-    color: white;
-    opacity: 1;
 }
 
 .meetingId {
@@ -129,18 +117,35 @@
     font-size: 0.85rem;
 }
 
+.participantCount {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.joinButtons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 .joinButton {
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--pink-darker);
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
     background: rgba(255, 255, 255, 0.3);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: "Comic Neue", sans-serif;
 }
 
-.meetingItem:hover .joinButton {
+.joinButton:hover {
     color: white;
     background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
 }
 
 @media (prefers-color-scheme: dark) {

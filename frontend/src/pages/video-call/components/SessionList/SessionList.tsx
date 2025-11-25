@@ -94,6 +94,14 @@ export default function SessionList({
                                 <span className={styles["sessionDate"]}>
                                     {formatDate(session.created_at)}
                                 </span>
+                                {session.live_participants !== undefined && (
+                                    <span className={styles["participantCount"]}>
+                                        {session.live_participants} active
+                                        {session.live_participants === 1
+                                            ? " participant"
+                                            : " participants"}
+                                    </span>
+                                )}
                             </div>
                         </div>
                         <div className={styles["joinButton"]}>Join →</div>

@@ -115,7 +115,11 @@ function InMeetingRoom(): React.JSX.Element {
     );
 }
 
-function MeetingContent(): React.JSX.Element {
+interface MeetingContentProps {
+    readonly onLeave?: (() => void) | undefined;
+}
+
+function MeetingContent({ onLeave }: MeetingContentProps): React.JSX.Element {
     console.log("[VideoRoom] MeetingContent: Component rendering");
     const { meeting } = useRealtimeKitMeeting();
     const roomState = useRealtimeKitSelector((m) => m.self.roomState);
@@ -154,6 +158,16 @@ function MeetingContent(): React.JSX.Element {
             );
         }
     }, [roomState, roomJoined, participantName, meeting]);
+
+    // Navigate away when leaving the meeting
+    useEffect(() => {
+        if ((roomState === "ended" || roomState === "left") && onLeave) {
+            console.log(
+                "[VideoRoom] MeetingContent: Room ended/left, calling onLeave callback"
+            );
+            onLeave();
+        }
+    }, [roomState, onLeave]);
 
     // Track participant name changes
     useEffect(() => {
@@ -664,7 +678,7 @@ export default function VideoRoom({
             >
                 <RtkUiProvider meeting={meeting} showSetupScreen>
                     <RtkDialogManager meeting={meeting} />
-                    <MeetingContent />
+                    <MeetingContent onLeave={onLeave} />
                 </RtkUiProvider>
             </RealtimeKitProvider>
         );

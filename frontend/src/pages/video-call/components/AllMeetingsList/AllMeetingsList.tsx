@@ -82,13 +82,7 @@ export default function AllMeetingsList(): React.JSX.Element {
     const renderMeetingItem = (meeting: Meeting): React.JSX.Element => {
         return (
             <div key={meeting.id} className={styles["meetingItem"]}>
-                <button
-                    type="button"
-                    className={styles["meetingContent"]}
-                    onClick={() => {
-                        navigate(`/video-call/${meeting.id}`);
-                    }}
-                >
+                <div className={styles["meetingContent"]}>
                     <div className={styles["meetingInfo"]}>
                         <div className={styles["meetingName"]}>
                             {meeting.title ?? "Unnamed Meeting"}
@@ -107,8 +101,29 @@ export default function AllMeetingsList(): React.JSX.Element {
                             ) : null}
                         </div>
                     </div>
-                    <div className={styles["joinButton"]}>Join →</div>
-                </button>
+                    <div className={styles["joinButtons"]}>
+                        <button
+                            type="button"
+                            className={styles["joinButton"]}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/video-call/basic/${meeting.id}`);
+                            }}
+                        >
+                            Basic
+                        </button>
+                        <button
+                            type="button"
+                            className={styles["joinButton"]}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/video-call/${meeting.id}`);
+                            }}
+                        >
+                            Custom
+                        </button>
+                    </div>
+                </div>
                 <button
                     type="button"
                     className={styles["deleteButton"]}

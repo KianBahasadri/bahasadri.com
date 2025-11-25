@@ -45,6 +45,8 @@ export interface Session {
     name?: string;
     created_at: string;
     status?: "LIVE" | "ENDED";
+    live_participants?: number;
+    max_concurrent_participants?: number;
 }
 
 export interface ListSessionsResponse {

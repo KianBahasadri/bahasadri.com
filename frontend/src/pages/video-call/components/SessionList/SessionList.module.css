@@ -120,6 +120,11 @@
     font-size: 0.85rem;
 }
 
+.participantCount {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
 .joinButton {
     font-size: 1.2rem;
     font-weight: 700;

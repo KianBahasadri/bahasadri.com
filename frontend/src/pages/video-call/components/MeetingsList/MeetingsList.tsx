@@ -84,18 +84,7 @@ export default function MeetingsList(): React.JSX.Element {
 
     const renderSessionItem = (session: Session): React.JSX.Element => {
         return (
-            <button
-                key={session.meeting_id}
-                type="button"
-                className={styles["meetingItem"]}
-                onClick={() => {
-                    console.log(
-                        "[MeetingsList] Session item clicked:",
-                        session.meeting_id
-                    );
-                    navigate(`/video-call/${session.meeting_id}`);
-                }}
-            >
+            <div key={session.meeting_id} className={styles["meetingItem"]}>
                 <div className={styles["meetingInfo"]}>
                     <div className={styles["meetingName"]}>
                         {session.name ?? "Unnamed Session"}
@@ -107,10 +96,47 @@ export default function MeetingsList(): React.JSX.Element {
                         <span className={styles["meetingDate"]}>
                             {formatDate(session.created_at)}
                         </span>
+                        {session.live_participants !== undefined ? (
+                            <span className={styles["participantCount"]}>
+                                {session.live_participants} active
+                                {session.live_participants === 1
+                                    ? " participant"
+                                    : " participants"}
+                            </span>
+                        ) : null}
                     </div>
                 </div>
-                <div className={styles["joinButton"]}>Join →</div>
-            </button>
+                <div className={styles["joinButtons"]}>
+                    <button
+                        type="button"
+                        className={styles["joinButton"]}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            console.log(
+                                "[MeetingsList] Basic join clicked:",
+                                session.meeting_id
+                            );
+                            navigate(`/video-call/basic/${session.meeting_id}`);
+                        }}
+                    >
+                        Basic
+                    </button>
+                    <button
+                        type="button"
+                        className={styles["joinButton"]}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            console.log(
+                                "[MeetingsList] Custom join clicked:",
+                                session.meeting_id
+                            );
+                            navigate(`/video-call/${session.meeting_id}`);
+                        }}
+                    >
+                        Custom
+                    </button>
+                </div>
+            </div>
         );
     };
 

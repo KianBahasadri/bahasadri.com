@@ -220,6 +220,8 @@ async function listRealtimeKitMeetings(
                     session.status === "LIVE" || session.status === "ENDED"
                         ? session.status
                         : undefined,
+                live_participants: session.live_participants,
+                max_concurrent_participants: session.max_concurrent_participants,
             });
         }
     }

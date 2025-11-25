@@ -100,11 +100,6 @@
     transition: all 0.3s ease;
 }
 
-.meetingItem:hover .meetingContent {
-    background: var(--pink-hot);
-    color: white;
-}
-
 .meetingInfo {
     display: flex;
     flex-direction: column;
@@ -122,10 +117,6 @@
     color: var(--pink-darker);
 }
 
-.meetingItem:hover .meetingContent .meetingName {
-    color: white;
-}
-
 .meetingMeta {
     display: flex;
     flex-direction: column;
@@ -133,11 +124,6 @@
     font-size: 0.9rem;
     color: var(--pink-darker);
     opacity: 0.8;
-}
-
-.meetingItem:hover .meetingContent .meetingMeta {
-    color: white;
-    opacity: 1;
 }
 
 .meetingId {
@@ -154,18 +140,30 @@
     font-weight: 600;
 }
 
+.joinButtons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 .joinButton {
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--pink-darker);
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
     background: rgba(255, 255, 255, 0.3);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: "Comic Neue", sans-serif;
 }
 
-.meetingItem:hover .meetingContent .joinButton {
+.joinButton:hover {
     color: white;
     background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
 }
 
 .deleteButton {
@@ -191,10 +189,6 @@
 .deleteButton:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
-
-.meetingItem:hover .deleteButton {
-    color: var(--pink-darker);
 }
 
 .meetingItem:hover .deleteButton:hover:not(:disabled) {
