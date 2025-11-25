@@ -138,7 +138,11 @@ function MeetingContent(): React.JSX.Element {
     }
 
     console.log("[VideoRoom] MeetingContent: Showing setup screen");
-    return <RtkSetupScreen meeting={meeting} />;
+    return (
+        <div className={styles["setupScreenWrapper"]}>
+            <RtkSetupScreen meeting={meeting} size="sm" />
+        </div>
+    );
 }
 
 export default function VideoRoom({
@@ -280,6 +284,31 @@ export default function VideoRoom({
                         isJoiningRef.current = false;
                         return;
                     }
+
+                    // Set default name to "admin-kun" if none was provided and user has permission
+                    if (
+                        initializedMeeting.self.permissions
+                            .canEditDisplayName &&
+                        !initializedMeeting.self.name
+                    ) {
+                        const nameToSet = participantName ?? "admin-kun";
+                        console.log(
+                            "[VideoRoom] handleJoinMeeting: Setting participant name:",
+                            nameToSet
+                        );
+                        initializedMeeting.self.setName(nameToSet);
+                    } else if (
+                        participantName &&
+                        initializedMeeting.self.permissions
+                            .canEditDisplayName &&
+                        initializedMeeting.self.name !== participantName
+                    ) {
+                        console.log(
+                            "[VideoRoom] handleJoinMeeting: Updating participant name from prop"
+                        );
+                        initializedMeeting.self.setName(participantName);
+                    }
+
                     setMeeting(initializedMeeting);
                     console.log(
                         "[VideoRoom] handleJoinMeeting: Calling joinRoom()..."
