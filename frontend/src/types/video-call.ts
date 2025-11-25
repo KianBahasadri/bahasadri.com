@@ -31,7 +31,6 @@ export interface Participant {
     name?: string;
     videoEnabled: boolean;
     audioEnabled: boolean;
-    stream?: MediaStream;
 }
 
 export type RoomState =

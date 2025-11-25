@@ -287,10 +287,7 @@ export const generateToken = async (
 };
 
 export const listSessions = async (): Promise<ListSessionsResponse> => {
-    const response = await fetch(`${API_BASE_URL}/video-call/sessions`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-    });
+    const response = await fetch(`${API_BASE_URL}/video-call/sessions`);
 
     if (!response.ok) {
         await handleApiError(
@@ -304,10 +301,7 @@ export const listSessions = async (): Promise<ListSessionsResponse> => {
 };
 
 export const listAllMeetings = async (): Promise<ListMeetingsResponse> => {
-    const response = await fetch(`${API_BASE_URL}/video-call/meetings`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-    });
+    const response = await fetch(`${API_BASE_URL}/video-call/meetings`);
 
     if (!response.ok) {
         await handleApiError(
@@ -321,10 +315,7 @@ export const listAllMeetings = async (): Promise<ListMeetingsResponse> => {
 };
 
 export const listAllPresets = async (): Promise<ListPresetsResponse> => {
-    const response = await fetch(`${API_BASE_URL}/video-call/presets`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-    });
+    const response = await fetch(`${API_BASE_URL}/video-call/presets`);
 
     if (!response.ok) {
         await handleApiError(
@@ -344,7 +335,6 @@ export const deleteMeeting = async (
         `${API_BASE_URL}/video-call/meetings/${meetingId}`,
         {
             method: "DELETE",
-            headers: { "Content-Type": "application/json" },
         }
     );
 

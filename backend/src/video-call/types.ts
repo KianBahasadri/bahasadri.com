@@ -38,9 +38,8 @@ export interface ErrorResponse {
 }
 
 export interface RealtimeKitConfig {
-    accountId: string;
     orgId: string;
-    apiToken: string;
+    apiKey: string;
 }
 
 export interface RealtimeKitMeetingResponse {

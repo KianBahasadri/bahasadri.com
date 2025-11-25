@@ -1,12 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { listSessions } from "../../../../lib/api";
 import type { Session } from "../../../../types/video-call";
 import styles from "./MeetingsList.module.css";
-
-interface MeetingsListProps {
-    readonly onJoinMeeting: (meetingId: string) => void;
-}
 
 function formatDate(dateString: string): string {
     try {
@@ -22,9 +19,8 @@ function formatDate(dateString: string): string {
     }
 }
 
-export default function MeetingsList({
-    onJoinMeeting,
-}: MeetingsListProps): React.JSX.Element {
+export default function MeetingsList(): React.JSX.Element {
+    const navigate = useNavigate();
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ["video-call", "sessions"],
         queryFn: listSessions,
@@ -67,7 +63,7 @@ export default function MeetingsList({
                 type="button"
                 className={styles["meetingItem"]}
                 onClick={() => {
-                    onJoinMeeting(session.meeting_id);
+                    navigate(`/video-call/${session.meeting_id}`);
                 }}
             >
                 <div className={styles["meetingInfo"]}>

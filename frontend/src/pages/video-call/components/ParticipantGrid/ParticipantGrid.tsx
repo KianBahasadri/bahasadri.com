@@ -1,24 +1,20 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import type { Participant } from "../../../../types/video-call";
 import styles from "./ParticipantGrid.module.css";
 
 interface ParticipantGridProps {
     readonly participants: Participant[];
+    readonly onVideoElementRef?: (
+        participantId: string,
+        element: HTMLVideoElement | null
+    ) => void;
 }
 
 export default function ParticipantGrid({
     participants,
+    onVideoElementRef,
 }: ParticipantGridProps): React.JSX.Element {
     const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
-
-    useEffect(() => {
-        for (const participant of participants) {
-            const videoElement = videoRefs.current.get(participant.id);
-            if (videoElement && participant.stream) {
-                videoElement.srcObject = participant.stream;
-            }
-        }
-    }, [participants]);
 
     if (participants.length === 0) {
         return (
@@ -50,11 +46,11 @@ export default function ParticipantGrid({
                         ref={(el) => {
                             if (el) {
                                 videoRefs.current.set(participant.id, el);
-                                if (participant.stream) {
-                                    el.srcObject = participant.stream;
-                                }
                             } else {
                                 videoRefs.current.delete(participant.id);
+                            }
+                            if (onVideoElementRef) {
+                                onVideoElementRef(participant.id, el);
                             }
                         }}
                         autoPlay

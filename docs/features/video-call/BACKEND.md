@@ -220,9 +220,8 @@ interface RealtimeKitListAllMeetingsResponse {
 
 **Configuration**:
 
--   `CLOUDFLARE_ACCOUNT_ID`: Cloudflare account ID (legacy, may not be used in v2 API)
 -   `CLOUDFLARE_REALTIME_ORG_ID`: RealtimeKit organization ID
--   `CLOUDFLARE_REALTIME_API_TOKEN`: API authentication token (or `CLOUDFLARE_REALTIME_API_KEY` for v2 API)
+-   `CLOUDFLARE_REALTIME_API_KEY`: API authentication key
 
 ## Workers Logic
 

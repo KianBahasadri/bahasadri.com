@@ -1,6 +1,7 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import type { Env } from "../types/env";
-import { handleError } from "../lib/error-handling";
+import { handleError, withErrorHandling } from "../lib/error-handling";
 import type {
     WelcomeResponse,
     ErrorResponse,
@@ -74,241 +75,228 @@ const WELCOME_MESSAGES = [
 ];
 
 // GET /api/home/chat
-app.get("/chat", async (c) => {
-    try {
-        const env = c.env;
-        const conversationId = GLOBAL_CONVERSATION_ID;
+app.get(
+    "/chat",
+    withErrorHandling(
+        async (c) => {
+            const env = (c as Context<{ Bindings: Env }>).env;
+            const conversationId = GLOBAL_CONVERSATION_ID;
 
-        // Retrieve conversation context from KV
-        const context = await getConversationContext(
-            env.HOME_CONVERSATIONS,
-            conversationId
-        );
-
-        // If no conversation exists, return empty history
-        if (!context) {
-            return c.json<ConversationHistoryResponse>(
-                {
-                    messages: [],
-                    conversationId,
-                },
-                200
-            );
-        }
-
-        // Return conversation history
-        return c.json<ConversationHistoryResponse>(
-            {
-                messages: context.messages,
-                conversationId: context.conversationId,
-            },
-            200
-        );
-    } catch (error) {
-        const { response, status } = handleError(error, {
-            endpoint: "/api/home/chat",
-            method: "GET",
-        });
-        return c.json<ErrorResponse>(
-            {
-                success: false,
-                error: response.error,
-                code: response.code as "INVALID_INPUT" | "INTERNAL_ERROR",
-            },
-            status as 400 | 404 | 500
-        );
-    }
-});
-
-// GET /api/home/welcome
-app.get("/welcome", (c) => {
-    try {
-        // Select random message from the list
-        // Use crypto.getRandomValues to satisfy linter
-        const array = new Uint32Array(1);
-        crypto.getRandomValues(array);
-        const randomValue = array[0];
-        const randomIndex = randomValue % WELCOME_MESSAGES.length;
-        const message = WELCOME_MESSAGES[randomIndex];
-
-        return c.json<WelcomeResponse>(
-            {
-                message,
-            },
-            200
-        );
-    } catch (error) {
-        const { response, status } = handleError(error, {
-            endpoint: "/api/home/welcome",
-            method: "GET",
-        });
-        return c.json<ErrorResponse>(
-            {
-                success: false,
-                error: response.error,
-                code: response.code as "INVALID_INPUT" | "INTERNAL_ERROR",
-            },
-            status as 400 | 404 | 500
-        );
-    }
-});
-
-// POST /api/home/chat
-app.post("/chat", async (c) => {
-    try {
-        const env = c.env;
-        const body = (await c.req.json().catch(() => ({}))) as ChatRequest;
-
-        // Validate message
-        const messageValidation = validateMessage(body.message);
-        if (!messageValidation.ok) {
-            return c.json<ErrorResponse>(
-                {
-                    success: false,
-                    error: messageValidation.error ?? "Invalid message",
-                    code: "INVALID_INPUT",
-                },
-                400
-            );
-        }
-
-        // Use single global conversation for this single-user application
-        const conversationId = GLOBAL_CONVERSATION_ID;
-
-        // Retrieve conversation context from KV
-        let context: ConversationContext | undefined =
-            await getConversationContext(
+            // Retrieve conversation context from KV
+            const context = await getConversationContext(
                 env.HOME_CONVERSATIONS,
                 conversationId
             );
 
-        // Validate OpenRouter API key
-        if (!env.OPENROUTER_API_KEY || env.OPENROUTER_API_KEY.trim() === "") {
-            return c.json<ErrorResponse>(
+            // If no conversation exists, return empty history
+            if (!context) {
+                return c.json<ConversationHistoryResponse>(
+                    {
+                        messages: [],
+                        conversationId,
+                    },
+                    200
+                );
+            }
+
+            // Return conversation history
+            return c.json<ConversationHistoryResponse>(
                 {
-                    success: false,
-                    error: "OpenRouter API key is not configured",
-                    code: "INTERNAL_ERROR",
+                    messages: context.messages,
+                    conversationId: context.conversationId,
                 },
-                500
+                200
             );
-        }
+        },
+        "/api/home/chat",
+        "GET"
+    )
+);
 
-        // Initialize or update conversation context
-        const now = Date.now();
-        context ??= {
-            conversationId,
-            messages: [],
-            createdAt: now,
-            updatedAt: now,
-        };
+// GET /api/home/welcome
+app.get(
+    "/welcome",
+    withErrorHandling(
+        (c) => {
+            // Select random message from the list
+            // Use crypto.getRandomValues to satisfy linter
+            const array = new Uint32Array(1);
+            crypto.getRandomValues(array);
+            const randomValue = array[0];
+            const randomIndex = randomValue % WELCOME_MESSAGES.length;
+            const message = WELCOME_MESSAGES[randomIndex];
 
-        // Create user message
-        const userMessage: ChatMessage = {
-            id: crypto.randomUUID(),
-            role: "user",
-            content: body.message.trim(),
-            timestamp: now,
-        };
-
-        // Create agent response using OpenRouter
-        let agentResponseText: string;
-        try {
-            agentResponseText = await generateAgentResponse(
-                env.OPENROUTER_API_KEY,
-                context.messages,
-                userMessage.content
-            );
-        } catch (error) {
-            const { response, status } = handleError(error, {
-                endpoint: "/api/home/chat",
-                method: "POST",
-                defaultMessage: "Failed to generate response",
-                additionalInfo: {
-                    step: "generateAgentResponse",
-                },
-            });
-            return c.json<ErrorResponse>(
+            return c.json<WelcomeResponse>(
                 {
-                    success: false,
-                    error: response.error,
-                    code: response.code as HomeErrorCode,
+                    message,
                 },
-                status as HttpStatusCode
+                200
             );
-        }
+        },
+        "/api/home/welcome",
+        "GET"
+    )
+);
 
-        if (!env.ELEVENLABS_API_KEY || env.ELEVENLABS_API_KEY.trim() === "") {
-            return c.json<ErrorResponse>(
+// POST /api/home/chat
+app.post(
+    "/chat",
+    withErrorHandling(
+        async (c) => {
+            const typedC = c as Context<{ Bindings: Env }>;
+            const env = typedC.env;
+            const body = (await typedC.req
+                .json()
+                .catch(() => ({}))) as ChatRequest;
+
+            // Validate message
+            const messageValidation = validateMessage(body.message);
+            if (!messageValidation.ok) {
+                return c.json<ErrorResponse>(
+                    {
+                        success: false,
+                        error: messageValidation.error ?? "Invalid message",
+                        code: "INVALID_INPUT",
+                    },
+                    400
+                );
+            }
+
+            // Use single global conversation for this single-user application
+            const conversationId = GLOBAL_CONVERSATION_ID;
+
+            // Retrieve conversation context from KV
+            let context: ConversationContext | undefined =
+                await getConversationContext(
+                    env.HOME_CONVERSATIONS,
+                    conversationId
+                );
+
+            // Validate OpenRouter API key
+            if (
+                !env.OPENROUTER_API_KEY ||
+                env.OPENROUTER_API_KEY.trim() === ""
+            ) {
+                return c.json<ErrorResponse>(
+                    {
+                        success: false,
+                        error: "OpenRouter API key is not configured",
+                        code: "INTERNAL_ERROR",
+                    },
+                    500
+                );
+            }
+
+            // Initialize or update conversation context
+            const now = Date.now();
+            context ??= {
+                conversationId,
+                messages: [],
+                createdAt: now,
+                updatedAt: now,
+            };
+
+            // Create user message
+            const userMessage: ChatMessage = {
+                id: crypto.randomUUID(),
+                role: "user",
+                content: body.message.trim(),
+                timestamp: now,
+            };
+
+            // Create agent response using OpenRouter
+            let agentResponseText: string;
+            try {
+                agentResponseText = await generateAgentResponse(
+                    env.OPENROUTER_API_KEY,
+                    context.messages,
+                    userMessage.content
+                );
+            } catch (error) {
+                const { response, status } = handleError(error, {
+                    endpoint: "/api/home/chat",
+                    method: "POST",
+                    defaultMessage: "Failed to generate response",
+                    additionalInfo: {
+                        step: "generateAgentResponse",
+                    },
+                });
+                return c.json<ErrorResponse>(
+                    {
+                        success: false,
+                        error: response.error,
+                        code: response.code as HomeErrorCode,
+                    },
+                    status as HttpStatusCode
+                );
+            }
+
+            if (
+                !env.ELEVENLABS_API_KEY ||
+                env.ELEVENLABS_API_KEY.trim() === ""
+            ) {
+                return c.json<ErrorResponse>(
+                    {
+                        success: false,
+                        error: "ElevenLabs API key is not configured",
+                        code: "INTERNAL_ERROR",
+                    },
+                    500
+                );
+            }
+
+            let agentAudioBase64: string;
+            try {
+                agentAudioBase64 = await synthesizeYandereAgentAudio(
+                    env.ELEVENLABS_API_KEY,
+                    agentResponseText
+                );
+            } catch (error) {
+                const { response, status } = handleError(error, {
+                    endpoint: "/api/home/chat",
+                    method: "POST",
+                    defaultMessage: "Failed to synthesize agent audio",
+                    additionalInfo: {
+                        step: "synthesizeYandereAgentAudio",
+                    },
+                });
+                return c.json<ErrorResponse>(
+                    {
+                        success: false,
+                        error: response.error,
+                        code: response.code as HomeErrorCode,
+                    },
+                    status as HttpStatusCode
+                );
+            }
+
+            // Create agent message
+            const agentMessage: ChatMessage = {
+                id: crypto.randomUUID(),
+                role: "agent",
+                content: agentResponseText,
+                timestamp: Date.now(),
+            };
+
+            // Update conversation context
+            context.messages.push(userMessage, agentMessage);
+            context.updatedAt = Date.now();
+
+            // Store conversation context in KV
+            await storeConversationContext(env.HOME_CONVERSATIONS, context);
+
+            // Return response
+            return c.json<ChatResponse>(
                 {
-                    success: false,
-                    error: "ElevenLabs API key is not configured",
-                    code: "INTERNAL_ERROR",
+                    response: agentResponseText,
+                    audio: agentAudioBase64,
                 },
-                500
+                200
             );
-        }
-
-        let agentAudioBase64: string;
-        try {
-            agentAudioBase64 = await synthesizeYandereAgentAudio(
-                env.ELEVENLABS_API_KEY,
-                agentResponseText
-            );
-        } catch (error) {
-            const { response, status } = handleError(error, {
-                endpoint: "/api/home/chat",
-                method: "POST",
-                defaultMessage: "Failed to synthesize agent audio",
-                additionalInfo: {
-                    step: "synthesizeYandereAgentAudio",
-                },
-            });
-            return c.json<ErrorResponse>(
-                {
-                    success: false,
-                    error: response.error,
-                    code: response.code as HomeErrorCode,
-                },
-                status as HttpStatusCode
-            );
-        }
-
-        // Create agent message
-        const agentMessage: ChatMessage = {
-            id: crypto.randomUUID(),
-            role: "agent",
-            content: agentResponseText,
-            timestamp: Date.now(),
-        };
-
-        // Update conversation context
-        context.messages.push(userMessage, agentMessage);
-        context.updatedAt = Date.now();
-
-        // Store conversation context in KV
-        await storeConversationContext(env.HOME_CONVERSATIONS, context);
-
-        // Return response
-        return c.json<ChatResponse>(
-            {
-                response: agentResponseText,
-                audio: agentAudioBase64,
-            },
-            200
-        );
-    } catch (error) {
-        const errorMessage =
-            error instanceof Error ? error.message : "Unknown error";
-        return c.json<ErrorResponse>(
-            {
-                success: false,
-                error: `Internal server error: ${errorMessage}`,
-                code: "INTERNAL_ERROR",
-            },
-            500
-        );
-    }
-});
+        },
+        "/api/home/chat",
+        "POST"
+    )
+);
 
 export default app;

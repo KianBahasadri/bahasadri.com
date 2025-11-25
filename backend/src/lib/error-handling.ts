@@ -2,6 +2,8 @@
  * Shared error handling utilities for consistent error responses and logging
  */
 
+import type { Context, Handler } from "hono";
+
 export interface ErrorResponse {
     error: string;
     code: string;
@@ -15,7 +17,7 @@ export type ErrorCode =
     | "DIVISION_BY_ZERO"
     | "FORBIDDEN";
 
-type HttpStatusCode = 400 | 404 | 500;
+type HttpStatusCode = 400 | 404 | 500 | 502;
 
 /**
  * Check if an error is a ValidationError
@@ -119,6 +121,10 @@ export function handleError(
         code = "NOT_FOUND";
         status = 404;
         userMessage = "Meeting does not exist";
+    } else if (errorMessage.startsWith("Twilio API error")) {
+        code = "INTERNAL_ERROR";
+        status = 502;
+        userMessage = context.defaultMessage ?? "External service error";
     }
 
     return {
@@ -132,13 +138,17 @@ export function handleError(
 
 /**
  * Wraps an async route handler with consistent error handling
+ * Note: Uses `any` for Context types to work with Hono's complex type system
  */
-export function withErrorHandling<T extends { Bindings: unknown }>(
-    handler: (c: T) => Promise<Response> | Response,
+export function withErrorHandling(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    handler: (c: Context<any, any, any>) => Promise<Response> | Response,
     endpoint: string,
     method: string
-) {
-    return async (c: T): Promise<Response> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): (c: Context<any, any, any>) => Promise<Response> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return async (c: Context<any, any, any>): Promise<Response> => {
         try {
             return await handler(c);
         } catch (error) {
@@ -146,8 +156,9 @@ export function withErrorHandling<T extends { Bindings: unknown }>(
                 endpoint,
                 method,
             });
-            return Response.json(response, {
+            return new Response(JSON.stringify(response), {
                 status: status as HttpStatusCode,
+                headers: { "Content-Type": "application/json" },
             });
         }
     };

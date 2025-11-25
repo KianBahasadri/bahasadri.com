@@ -89,7 +89,7 @@ app.post("/send", async (c) => {
       const result = await sendSMS(twilioConfig, body.phoneNumber, body.message);
       status = result.status === "queued" || result.status === "sent" ? "success" : "failed";
     } catch (error) {
-      const { response } = handleError(error, {
+      const { response, status } = handleError(error, {
         endpoint: "/api/sms-messenger/send",
         method: "POST",
         defaultMessage: "Twilio API error",
@@ -99,7 +99,7 @@ app.post("/send", async (c) => {
       });
       return c.json<SendSMSResponse>(
         { success: false, error: response.error },
-        502
+        status as HttpStatusCode
       );
     }
 

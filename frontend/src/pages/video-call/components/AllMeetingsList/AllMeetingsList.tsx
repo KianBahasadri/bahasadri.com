@@ -1,12 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listAllMeetings, deleteMeeting } from "../../../../lib/api";
 import type { Meeting } from "../../../../types/video-call";
 import styles from "./AllMeetingsList.module.css";
-
-interface AllMeetingsListProps {
-    readonly onJoinMeeting: (meetingId: string) => void;
-}
 
 function formatDate(dateString: string): string {
     try {
@@ -22,14 +19,12 @@ function formatDate(dateString: string): string {
     }
 }
 
-export default function AllMeetingsList({
-    onJoinMeeting,
-}: AllMeetingsListProps): React.JSX.Element {
+export default function AllMeetingsList(): React.JSX.Element {
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ["video-call", "meetings"],
         queryFn: listAllMeetings,
-        refetchInterval: 5000,
     });
 
     const deleteMeetingMutation = useMutation({
@@ -91,7 +86,7 @@ export default function AllMeetingsList({
                     type="button"
                     className={styles["meetingContent"]}
                     onClick={() => {
-                        onJoinMeeting(meeting.id);
+                        navigate(`/video-call/${meeting.id}`);
                     }}
                 >
                     <div className={styles["meetingInfo"]}>

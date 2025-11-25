@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+    useState,
+    useEffect,
+    useCallback,
+    useMemo,
+    useRef,
+} from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
     RealtimeKitProvider,
@@ -6,140 +12,141 @@ import {
     useRealtimeKitMeeting,
     useRealtimeKitSelector,
 } from "@cloudflare/realtimekit-react";
-import type { Participant, RoomState } from "../../../../types/video-call";
 import {
-    generateToken,
-} from "../../../../lib/api";
-import ParticipantGrid from "../ParticipantGrid/ParticipantGrid";
-import Controls from "../Controls/Controls";
+    RtkUiProvider,
+    RtkDialogManager,
+    RtkSetupScreen,
+    RtkEndedScreen,
+    RtkSimpleGrid,
+    RtkMeetingTitle,
+    RtkClock,
+    RtkParticipantCount,
+    RtkMicToggle,
+    RtkCameraToggle,
+    RtkLeaveButton,
+    RtkParticipantsAudio,
+    RtkSpinner,
+} from "@cloudflare/realtimekit-react-ui";
+import type { RoomState } from "../../../../types/video-call";
+import { generateToken } from "../../../../lib/api";
 import MeetingsList from "../MeetingsList/MeetingsList";
 import AllMeetingsList from "../AllMeetingsList/AllMeetingsList";
+import IceTestStatus from "../IceTestStatus/IceTestStatus";
+import { useIceServerTest } from "../../hooks/useIceServerTest";
 import styles from "./VideoRoom.module.css";
 
 interface VideoRoomProps {
     readonly participantName?: string;
+    readonly meetingId?: string;
+    readonly showMeetingList?: boolean;
+    readonly onLeave?: () => void;
 }
 
-function InMeetingRoom({ participantName }: VideoRoomProps): React.JSX.Element {
-    const meetingContext = useRealtimeKitMeeting();
-    const meetingClient = meetingContext.meeting;
-
-    const self = useRealtimeKitSelector((m) => m.self);
+function InMeetingRoom(): React.JSX.Element {
+    const { meeting } = useRealtimeKitMeeting();
     const activeParticipants = useRealtimeKitSelector((m) =>
         m.participants.active.toArray()
     );
-    const videoEnabled = useRealtimeKitSelector((m) => m.self.videoEnabled);
-    const audioEnabled = useRealtimeKitSelector((m) => m.self.audioEnabled);
+    const pinnedParticipants = useRealtimeKitSelector((m) =>
+        m.participants.pinned.toArray()
+    );
 
-    const [participants, setParticipants] = useState<Participant[]>([]);
-    const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
-
-    useEffect(() => {
-        const localParticipant: Participant = {
-            id: "local",
-            name: participantName || self.name || "You",
-            videoEnabled: self.videoEnabled,
-            audioEnabled: self.audioEnabled,
-        };
-
-        const remoteParticipants: Participant[] = activeParticipants.map(
-            (p) => {
-                const participantName = p.name || `Participant ${p.id}`;
-                return {
-                    id: p.id,
-                    name: participantName,
-                    videoEnabled: p.videoEnabled,
-                    audioEnabled: p.audioEnabled,
-                };
-            }
-        );
-
-        setParticipants([localParticipant, ...remoteParticipants]);
-    }, [self, activeParticipants, participantName]);
-
-    useEffect(() => {
-        const currentVideoRefs = videoRefs.current;
-        const localVideoElement = currentVideoRefs.get("local");
-        if (localVideoElement && self.videoTrack) {
-            meetingClient.self.registerVideoElement(localVideoElement);
-        }
-
-        const currentActiveParticipants = activeParticipants;
-        for (const participant of currentActiveParticipants) {
-            const videoElement = currentVideoRefs.get(participant.id);
-            if (videoElement && participant.videoTrack) {
-                participant.registerVideoElement(videoElement);
-            }
-        }
-
-        return (): void => {
-            const cleanupLocalVideo = currentVideoRefs.get("local");
-            if (cleanupLocalVideo) {
-                meetingClient.self.deregisterVideoElement(cleanupLocalVideo);
-            }
-
-            for (const participant of currentActiveParticipants) {
-                const cleanupVideo = currentVideoRefs.get(participant.id);
-                if (cleanupVideo) {
-                    participant.deregisterVideoElement(cleanupVideo);
-                }
-            }
-        };
-    }, [meetingClient, self, activeParticipants]);
-
-    const handleToggleVideo = useCallback(() => {
-        if (meetingClient.self.videoEnabled) {
-            void meetingClient.self.disableVideo();
-        } else {
-            void meetingClient.self.enableVideo();
-        }
-    }, [meetingClient]);
-
-    const handleToggleAudio = useCallback(() => {
-        if (meetingClient.self.audioEnabled) {
-            void meetingClient.self.disableAudio();
-        } else {
-            void meetingClient.self.enableAudio();
-        }
-    }, [meetingClient]);
-
-    const handleLeave = useCallback((): void => {
-        void meetingClient.leave();
-    }, [meetingClient]);
+    const participants = useMemo(() => {
+        const self = meeting.self;
+        return [
+            ...pinnedParticipants,
+            ...activeParticipants.filter(
+                (p) => !pinnedParticipants.includes(p)
+            ),
+            self,
+        ];
+    }, [pinnedParticipants, activeParticipants, meeting.self]);
 
     return (
         <div className={styles["container"]}>
-            <ParticipantGrid participants={participants} />
-            <Controls
-                videoEnabled={videoEnabled}
-                audioEnabled={audioEnabled}
-                onToggleVideo={handleToggleVideo}
-                onToggleAudio={handleToggleAudio}
-                onLeave={handleLeave}
-            />
+            <RtkParticipantsAudio meeting={meeting} />
+            <header className={styles["header"]}>
+                <div className={styles["headerLeft"]}>
+                    <RtkMeetingTitle
+                        meeting={meeting}
+                        className={styles["meetingTitle"] ?? ""}
+                    />
+                </div>
+                <div className={styles["headerRight"]}>
+                    <RtkParticipantCount
+                        meeting={meeting}
+                        className={styles["participantCount"] ?? ""}
+                    />
+                    <RtkClock
+                        meeting={meeting}
+                        className={styles["clock"] ?? ""}
+                    />
+                </div>
+            </header>
+            <main className={styles["gridContainer"]}>
+                <RtkSimpleGrid
+                    participants={participants}
+                    meeting={meeting}
+                    gap={12}
+                    aspectRatio="16:9"
+                />
+            </main>
+            <footer className={styles["controls"]}>
+                <RtkMicToggle meeting={meeting} />
+                <RtkCameraToggle meeting={meeting} />
+                <RtkLeaveButton />
+            </footer>
         </div>
     );
 }
 
+function MeetingContent(): React.JSX.Element {
+    const { meeting } = useRealtimeKitMeeting();
+    const roomState = useRealtimeKitSelector((m) => m.self.roomState);
+    const roomJoined = useRealtimeKitSelector((m) => m.self.roomJoined);
+
+    if (roomState === "ended" || roomState === "left") {
+        return <RtkEndedScreen meeting={meeting} />;
+    }
+
+    if (roomState === "joined" && roomJoined) {
+        return <InMeetingRoom />;
+    }
+
+    return <RtkSetupScreen meeting={meeting} />;
+}
+
 export default function VideoRoom({
     participantName,
+    meetingId,
+    showMeetingList = false,
+    onLeave,
 }: VideoRoomProps): React.JSX.Element {
     const [roomState, setRoomState] = useState<RoomState>("idle");
     const [error, setError] = useState<string | null>(null);
     const [meeting, setMeeting] = useState<
         ReturnType<typeof useRealtimeKitClient>[0] | null
     >(null);
+    const joiningRef = useRef<string | null>(null);
 
     const [, initMeeting] = useRealtimeKitClient();
+
+    // Test ICE server connectivity on page load
+    const iceTest = useIceServerTest();
 
     const generateTokenMutation = useMutation({
         mutationFn: async (params: {
             meetingId: string;
             name?: string;
             presetName?: string;
-        }) => await generateToken(params.meetingId, params.name, undefined, params.presetName),
+        }) =>
+            await generateToken(
+                params.meetingId,
+                params.name,
+                undefined,
+                params.presetName
+            ),
     });
-
 
     const handleJoinMeeting = useCallback(
         async (targetMeetingId: string, presetName?: string) => {
@@ -156,19 +163,22 @@ export default function VideoRoom({
                 const initializedMeeting = await initMeeting({
                     authToken: tokenResponse.auth_token,
                     defaults: {
-                        audio: true,
-                        video: true,
+                        audio: false,
+                        video: false,
+                    },
+                    modules: {
+                        devTools: {
+                            logs: false,
+                        },
                     },
                 });
 
                 if (initializedMeeting) {
-                    const joinMethod =
-                        initializedMeeting.join.bind(initializedMeeting);
-                    await joinMethod();
                     setMeeting(initializedMeeting);
-                    setRoomState("connected");
+                    await initializedMeeting.joinRoom();
                 }
             } catch (error_) {
+                joiningRef.current = null;
                 const errorMessage =
                     error_ instanceof Error
                         ? error_.message
@@ -180,15 +190,30 @@ export default function VideoRoom({
         [participantName, generateTokenMutation, initMeeting]
     );
 
-
     const handleLeave = useCallback(() => {
         if (meeting) {
             void meeting.leave();
             setMeeting(null);
         }
+        joiningRef.current = null;
         setRoomState("idle");
         setError(null);
-    }, [meeting]);
+        if (onLeave) {
+            onLeave();
+        }
+    }, [meeting, onLeave]);
+
+    useEffect(() => {
+        if (
+            meetingId &&
+            roomState === "idle" &&
+            !meeting &&
+            joiningRef.current !== meetingId
+        ) {
+            joiningRef.current = meetingId;
+            void handleJoinMeeting(meetingId);
+        }
+    }, [meetingId, roomState, meeting, handleJoinMeeting]);
 
     useEffect(() => {
         return (): void => {
@@ -196,26 +221,36 @@ export default function VideoRoom({
         };
     }, [handleLeave]);
 
-    if (roomState === "idle") {
+    if (roomState === "idle" && showMeetingList) {
         return (
             <div className={styles["container"]}>
                 <div className={styles["idleState"]}>
                     <h2 className={styles["title"]}>Video Call Interface</h2>
+                    <IceTestStatus
+                        status={iceTest.status}
+                        hasStun={iceTest.hasStun}
+                        error={iceTest.error}
+                        isFirefox={iceTest.isFirefox}
+                        onRetry={iceTest.retest}
+                    />
                     {error === null ? null : (
                         <div className={styles["error"]}>{error}</div>
                     )}
                     <div className={styles["listsContainer"]}>
-                        <MeetingsList
-                            onJoinMeeting={(meetingId) => {
-                                void handleJoinMeeting(meetingId);
-                            }}
-                        />
-                        <AllMeetingsList
-                            onJoinMeeting={(meetingId) => {
-                                void handleJoinMeeting(meetingId);
-                            }}
-                        />
+                        <MeetingsList />
+                        <AllMeetingsList />
                     </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (roomState === "idle" && !showMeetingList) {
+        return (
+            <div className={styles["container"]}>
+                <div className={styles["idleState"]}>
+                    <RtkSpinner className={styles["spinner"] ?? ""} />
+                    <p>Preparing to join...</p>
                 </div>
             </div>
         );
@@ -225,7 +260,7 @@ export default function VideoRoom({
         return (
             <div className={styles["container"]}>
                 <div className={styles["connectingState"]}>
-                    <div className={styles["spinner"]}>⏳</div>
+                    <RtkSpinner className={styles["spinner"] ?? ""} />
                     <p>Establishing connection... 📡</p>
                 </div>
             </div>
@@ -259,12 +294,21 @@ export default function VideoRoom({
 
     if (roomState === "connected" && meeting) {
         return (
-            <RealtimeKitProvider value={meeting}>
-                {participantName ? (
-                    <InMeetingRoom participantName={participantName} />
-                ) : (
-                    <InMeetingRoom />
-                )}
+            <RealtimeKitProvider
+                value={meeting}
+                fallback={
+                    <div className={styles["container"]}>
+                        <div className={styles["connectingState"]}>
+                            <RtkSpinner className={styles["spinner"] ?? ""} />
+                            <p>Joining room... 📡</p>
+                        </div>
+                    </div>
+                }
+            >
+                <RtkUiProvider meeting={meeting} showSetupScreen>
+                    <RtkDialogManager meeting={meeting} />
+                    <MeetingContent />
+                </RtkUiProvider>
             </RealtimeKitProvider>
         );
     }
@@ -272,6 +316,7 @@ export default function VideoRoom({
     return (
         <div className={styles["container"]}>
             <div className={styles["idleState"]}>
+                <RtkSpinner className={styles["spinner"] ?? ""} />
                 <p>Loading...</p>
             </div>
         </div>

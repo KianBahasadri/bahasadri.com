@@ -1,0 +1,99 @@
+.container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-family: "Comic Neue", sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.pending,
+.testing {
+    background: rgba(255, 193, 7, 0.15);
+    border: 1px solid rgba(255, 193, 7, 0.5);
+    color: #b8860b;
+}
+
+.success {
+    background: rgba(76, 175, 80, 0.15);
+    border: 1px solid rgba(76, 175, 80, 0.5);
+    color: #2e7d32;
+}
+
+.warning {
+    background: rgba(255, 152, 0, 0.15);
+    border: 1px solid rgba(255, 152, 0, 0.5);
+    color: #e65100;
+}
+
+.failed {
+    background: rgba(244, 67, 54, 0.15);
+    border: 1px solid rgba(244, 67, 54, 0.5);
+    color: #c62828;
+}
+
+.icon {
+    font-size: 1rem;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.retryButton {
+    margin-left: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid currentColor;
+    background: transparent;
+    color: inherit;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s ease;
+}
+
+.retryButton:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.details {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    margin-left: 0.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+    .pending,
+    .testing {
+        color: #ffd54f;
+    }
+
+    .success {
+        color: #81c784;
+    }
+
+    .warning {
+        color: #ffb74d;
+    }
+
+    .failed {
+        color: #e57373;
+    }
+
+    .retryButton:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+}

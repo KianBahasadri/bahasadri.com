@@ -35,9 +35,10 @@ const app = new Hono<{ Bindings: Env }>();
 
 function getRealtimeKitConfig(env: Env): RealtimeKitConfig {
     return {
-        accountId: env.CLOUDFLARE_ACCOUNT_ID,
         orgId: env.CLOUDFLARE_REALTIME_ORG_ID,
-        apiToken: env.CLOUDFLARE_REALTIME_API_TOKEN,
+        apiKey:
+            (env as { CLOUDFLARE_REALTIME_API_KEY?: string })
+                .CLOUDFLARE_REALTIME_API_KEY ?? "",
     };
 }
 
@@ -48,7 +49,7 @@ function getRealtimeKitV2Credentials(env: Env): {
     const orgId = env.CLOUDFLARE_REALTIME_ORG_ID;
     const apiKey =
         (env as { CLOUDFLARE_REALTIME_API_KEY?: string })
-            .CLOUDFLARE_REALTIME_API_KEY ?? env.CLOUDFLARE_REALTIME_API_TOKEN;
+            .CLOUDFLARE_REALTIME_API_KEY ?? "";
 
     return { orgId, apiKey };
 }
@@ -97,22 +98,20 @@ async function generateRealtimeKitToken(
     meetingId: string,
     request: GenerateTokenRequest
 ): Promise<string> {
-    const url = `https://api.realtime.cloudflare.com/v2/meetings/${meetingId}/tokens`;
+    const url = `https://api.realtime.cloudflare.com/v2/meetings/${meetingId}/participants`;
 
     const credentials = `${orgId}:${apiKey}`;
     const base64Credentials = btoa(credentials);
 
-    const body: Record<string, unknown> = {};
+    const body: Record<string, unknown> = {
+        preset_name: request.preset_name ?? "group_call_participant",
+        custom_participant_id:
+            request.custom_participant_id ?? crypto.randomUUID(),
+    };
 
     if (request.name) {
         body.name = request.name;
     }
-
-    if (request.custom_participant_id) {
-        body.custom_participant_id = request.custom_participant_id;
-    }
-
-    body.preset_name = request.preset_name ?? "group_call_participant";
 
     const response = await fetch(url, {
         method: "POST",
@@ -137,15 +136,33 @@ async function generateRealtimeKitToken(
     const data = (await response.json()) as RealtimeKitTokenResponse;
 
     if (!data.success || !data.data) {
+        const errorDetails = {
+            errors: data.errors,
+            responseData: data,
+            meetingId,
+            hasToken: !!data.data?.token,
+            hasAuthToken: !!data.data?.auth_token,
+        };
         throw new Error(
-            `RealtimeKit API error: ${JSON.stringify(data.errors)}`
+            `RealtimeKit API error: ${JSON.stringify(
+                data.errors
+            )}. Details: ${JSON.stringify(errorDetails)}`
         );
     }
 
-    const authToken = data.data.auth_token ?? data.data.token;
+    const authToken = data.data.token ?? data.data.auth_token;
 
     if (!authToken) {
-        throw new Error("RealtimeKit API error: No token in response");
+        const errorDetails = {
+            responseData: data,
+            meetingId,
+            participantId: data.data.participant_id,
+        };
+        throw new Error(
+            `RealtimeKit API error: No token in response. Details: ${JSON.stringify(
+                errorDetails
+            )}`
+        );
     }
 
     return authToken;
@@ -192,9 +209,11 @@ async function listRealtimeKitMeetings(
 
     const sessions: Session[] = [];
     for (const session of sessionsData) {
-        if (session.id) {
+        // Use associated_id (meeting ID) if available, fallback to session.id
+        const meetingId = session.associated_id ?? session.id;
+        if (meetingId) {
             sessions.push({
-                meeting_id: session.id,
+                meeting_id: meetingId,
                 name: session.meeting_display_name,
                 created_at: session.created_at,
                 status:
@@ -388,7 +407,7 @@ app.post("/session", async (c) => {
 
         const config = getRealtimeKitConfig(c.env);
 
-        if (!config.accountId || !config.orgId || !config.apiToken) {
+        if (!config.orgId || !config.apiKey) {
             const { response, status } = handleError(
                 new Error("RealtimeKit configuration missing"),
                 {
@@ -396,9 +415,8 @@ app.post("/session", async (c) => {
                     method: "POST",
                     defaultMessage: "RealtimeKit configuration missing",
                     additionalInfo: {
-                        hasAccountId: !!config.accountId,
                         hasOrgId: !!config.orgId,
-                        hasApiToken: !!config.apiToken,
+                        hasApiKey: !!config.apiKey,
                     },
                 }
             );
@@ -438,9 +456,9 @@ app.post("/session", async (c) => {
 });
 
 app.post("/token", async (c) => {
+    const body = await c.req.json<GenerateTokenRequest>().catch(() => ({}));
+    const requestBody = body as GenerateTokenRequest;
     try {
-        const body = await c.req.json<GenerateTokenRequest>().catch(() => ({}));
-
         const validation = validateGenerateTokenRequest(body);
         if (!validation.ok) {
             const { response, status } = handleError(
@@ -461,7 +479,7 @@ app.post("/token", async (c) => {
 
         const config = getRealtimeKitConfig(c.env);
 
-        if (!config.accountId || !config.orgId || !config.apiToken) {
+        if (!config.orgId || !config.apiKey) {
             const { response, status } = handleError(
                 new Error("RealtimeKit configuration missing"),
                 {
@@ -469,9 +487,8 @@ app.post("/token", async (c) => {
                     method: "POST",
                     defaultMessage: "RealtimeKit configuration missing",
                     additionalInfo: {
-                        hasAccountId: !!config.accountId,
                         hasOrgId: !!config.orgId,
-                        hasApiToken: !!config.apiToken,
+                        hasApiKey: !!config.apiKey,
                     },
                 }
             );
@@ -498,6 +515,11 @@ app.post("/token", async (c) => {
         const { response, status } = handleError(error, {
             endpoint: "/api/video-call/token",
             method: "POST",
+            additionalInfo: {
+                meetingId: requestBody.meeting_id,
+                hasName: !!requestBody.name,
+                presetName: requestBody.preset_name,
+            },
         });
         return c.json<ErrorResponse>(
             {
@@ -513,7 +535,7 @@ app.get("/sessions", async (c) => {
     try {
         const config = getRealtimeKitConfig(c.env);
 
-        if (!config.accountId || !config.orgId || !config.apiToken) {
+        if (!config.orgId || !config.apiKey) {
             const { response, status } = handleError(
                 new Error("RealtimeKit configuration missing"),
                 {
@@ -521,9 +543,8 @@ app.get("/sessions", async (c) => {
                     method: "GET",
                     defaultMessage: "RealtimeKit configuration missing",
                     additionalInfo: {
-                        hasAccountId: !!config.accountId,
                         hasOrgId: !!config.orgId,
-                        hasApiToken: !!config.apiToken,
+                        hasApiKey: !!config.apiKey,
                     },
                 }
             );
@@ -569,7 +590,7 @@ app.get("/meetings", async (c) => {
     try {
         const config = getRealtimeKitConfig(c.env);
 
-        if (!config.accountId || !config.orgId || !config.apiToken) {
+        if (!config.orgId || !config.apiKey) {
             const { response, status } = handleError(
                 new Error("RealtimeKit configuration missing"),
                 {
@@ -577,9 +598,8 @@ app.get("/meetings", async (c) => {
                     method: "GET",
                     defaultMessage: "RealtimeKit configuration missing",
                     additionalInfo: {
-                        hasAccountId: !!config.accountId,
                         hasOrgId: !!config.orgId,
-                        hasApiToken: !!config.apiToken,
+                        hasApiKey: !!config.apiKey,
                     },
                 }
             );
@@ -659,7 +679,7 @@ app.get("/presets", async (c) => {
     try {
         const config = getRealtimeKitConfig(c.env);
 
-        if (!config.accountId || !config.orgId || !config.apiToken) {
+        if (!config.orgId || !config.apiKey) {
             const { response, status } = handleError(
                 new Error("RealtimeKit configuration missing"),
                 {
@@ -667,9 +687,8 @@ app.get("/presets", async (c) => {
                     method: "GET",
                     defaultMessage: "RealtimeKit configuration missing",
                     additionalInfo: {
-                        hasAccountId: !!config.accountId,
                         hasOrgId: !!config.orgId,
-                        hasApiToken: !!config.apiToken,
+                        hasApiKey: !!config.apiKey,
                     },
                 }
             );
@@ -751,7 +770,7 @@ app.delete("/meetings/:meeting_id", async (c) => {
 
         const config = getRealtimeKitConfig(c.env);
 
-        if (!config.accountId || !config.orgId || !config.apiToken) {
+        if (!config.orgId || !config.apiKey) {
             const { response, status } = handleError(
                 new Error("RealtimeKit configuration missing"),
                 {
@@ -759,9 +778,8 @@ app.delete("/meetings/:meeting_id", async (c) => {
                     method: "DELETE",
                     defaultMessage: "RealtimeKit configuration missing",
                     additionalInfo: {
-                        hasAccountId: !!config.accountId,
                         hasOrgId: !!config.orgId,
-                        hasApiToken: !!config.apiToken,
+                        hasApiKey: !!config.apiKey,
                     },
                 }
             );

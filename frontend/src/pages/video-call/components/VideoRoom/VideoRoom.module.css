@@ -76,17 +76,8 @@
 }
 
 .spinner {
-    font-size: 4rem;
-    animation: spin 2s linear infinite;
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+    width: 3rem;
+    height: 3rem;
 }
 
 .error {
@@ -131,6 +122,56 @@
     color: var(--pink-darker);
 }
 
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    gap: 1rem;
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.headerRight {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.meetingTitle {
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+.participantCount,
+.clock {
+    font-size: 0.875rem;
+}
+
+.gridContainer {
+    flex: 1;
+    padding: 1rem;
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 @media (prefers-color-scheme: dark) {
     .title {
         color: var(--pink-light);
@@ -138,5 +179,9 @@
 
     .errorMessage {
         color: var(--pink-light);
+    }
+
+    .controls {
+        border-top-color: rgba(255, 255, 255, 0.1);
     }
 }
