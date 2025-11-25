@@ -33,13 +33,22 @@ type HttpStatusCode = 400 | 404 | 500 | 502;
 
 // Helper to get Twilio config from env
 function getTwilioConfig(env: Env): { accountSid: string; authToken: string; whatsappNumber: string } {
-  if (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN || !env.TWILIO_WHATSAPP_NUMBER) {
-    throw new Error("Twilio configuration is missing. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_WHATSAPP_NUMBER environment variables.");
+  if (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN) {
+    throw new Error("Twilio configuration is missing. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables.");
   }
+  
+  // Use TWILIO_WHATSAPP_NUMBER if set, otherwise fall back to TWILIO_PHONE_NUMBER
+  // Both can use the same number - WhatsApp just needs the whatsapp: prefix
+  const whatsappNumber = env.TWILIO_WHATSAPP_NUMBER || env.TWILIO_PHONE_NUMBER;
+  
+  if (!whatsappNumber) {
+    throw new Error("WhatsApp number is missing. Please set either TWILIO_WHATSAPP_NUMBER or TWILIO_PHONE_NUMBER environment variable.");
+  }
+  
   return {
     accountSid: env.TWILIO_ACCOUNT_SID,
     authToken: env.TWILIO_AUTH_TOKEN,
-    whatsappNumber: env.TWILIO_WHATSAPP_NUMBER,
+    whatsappNumber,
   };
 }
 
