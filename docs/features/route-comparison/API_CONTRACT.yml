@@ -1,0 +1,306 @@
+openapi: 3.1.0
+info:
+    title: Route Comparison API
+    description: >-
+        API contract document defining the interface between frontend and backend.
+        This is the ONLY coupling point between frontend and backend.
+        A route comparison API that fetches routes from multiple navigation APIs for a given
+        origin and destination, allowing users to compare route options side-by-side.
+    version: 1.0.0
+    contact:
+        name: API Support
+servers:
+    - url: http://localhost:8787/api
+      description: Development
+    - url: https://bahasadri.com/api
+      description: Production
+
+tags:
+    - name: Route Comparison
+      description: Route comparison endpoints
+
+components:
+    # -------------------------------------------------------------------------
+    # SHARED MODELS
+    # -------------------------------------------------------------------------
+    schemas:
+        CompareRoutesRequest:
+            type: object
+            required:
+                - origin
+                - destination
+            properties:
+                origin:
+                    type: string
+                    description: >-
+                        Origin location. Can be an address string or coordinates in "lat,lng" format.
+                    example: "New York, NY"
+                destination:
+                    type: string
+                    description: >-
+                        Destination location. Can be an address string or coordinates in "lat,lng" format.
+                    example: "Los Angeles, CA"
+                apis:
+                    type: array
+                    items:
+                        type: string
+                        enum: [google, mapbox, openrouteservice]
+                    description: >-
+                        Optional list of APIs to query. If not provided, all available APIs will be queried.
+                    example: ["google", "mapbox"]
+
+        RouteMetrics:
+            type: object
+            required:
+                - distance
+                - duration
+            properties:
+                distance:
+                    type: number
+                    description: Total distance in meters.
+                    example: 4500000
+                distanceText:
+                    type: string
+                    description: Human-readable distance string.
+                    example: "4,500 km"
+                duration:
+                    type: number
+                    description: Estimated travel time in seconds.
+                    example: 144000
+                durationText:
+                    type: string
+                    description: Human-readable duration string.
+                    example: "40 hours"
+                trafficDuration:
+                    type: number
+                    description: >-
+                        Estimated travel time with traffic in seconds (if available).
+                        May be null if traffic data is not available.
+                    nullable: true
+                    example: 162000
+                trafficDurationText:
+                    type: string
+                    description: >-
+                        Human-readable duration with traffic string (if available).
+                        May be null if traffic data is not available.
+                    nullable: true
+                    example: "45 hours"
+
+        RouteStep:
+            type: object
+            required:
+                - instruction
+                - distance
+                - duration
+            properties:
+                instruction:
+                    type: string
+                    description: Turn-by-turn instruction for this step.
+                    example: "Head north on Main St"
+                distance:
+                    type: number
+                    description: Distance for this step in meters.
+                    example: 500
+                distanceText:
+                    type: string
+                    description: Human-readable distance for this step.
+                    example: "500 m"
+                duration:
+                    type: number
+                    description: Duration for this step in seconds.
+                    example: 60
+                durationText:
+                    type: string
+                    description: Human-readable duration for this step.
+                    example: "1 min"
+                polyline:
+                    type: string
+                    description: >-
+                        Encoded polyline string for this step's geometry (if available).
+                        May be null if not provided by the API.
+                    nullable: true
+                    example: "encoded_polyline_string"
+
+        RouteResult:
+            type: object
+            required:
+                - api
+                - metrics
+                - steps
+            properties:
+                api:
+                    type: string
+                    enum: [google, mapbox, openrouteservice]
+                    description: The API provider for this route.
+                    example: "google"
+                metrics:
+                    $ref: '#/components/schemas/RouteMetrics'
+                steps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/RouteStep'
+                    description: Turn-by-turn directions for the route.
+                polyline:
+                    type: string
+                    description: >-
+                        Encoded polyline string for the full route geometry (if available).
+                        May be null if not provided by the API.
+                    nullable: true
+                    example: "encoded_polyline_string"
+                error:
+                    type: string
+                    description: >-
+                        Error message if this API failed to return a route.
+                        If present, other fields may be null or empty.
+                    nullable: true
+                    example: "API rate limit exceeded"
+
+        CompareRoutesResponse:
+            type: object
+            required:
+                - origin
+                - destination
+                - routes
+            properties:
+                origin:
+                    type: string
+                    description: Normalized origin location string.
+                    example: "New York, NY, USA"
+                destination:
+                    type: string
+                    description: Normalized destination location string.
+                    example: "Los Angeles, CA, USA"
+                originCoordinates:
+                    type: object
+                    properties:
+                        lat:
+                            type: number
+                            example: 40.7128
+                        lng:
+                            type: number
+                            example: -74.0060
+                    description: >-
+                        Origin coordinates (if geocoding was successful).
+                        May be null if geocoding failed.
+                    nullable: true
+                destinationCoordinates:
+                    type: object
+                    properties:
+                        lat:
+                            type: number
+                            example: 34.0522
+                        lng:
+                            type: number
+                            example: -118.2437
+                    description: >-
+                        Destination coordinates (if geocoding was successful).
+                        May be null if geocoding failed.
+                    nullable: true
+                routes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/RouteResult'
+                    description: Route results from each queried API.
+
+        ErrorResponse:
+            type: object
+            required:
+                - error
+            properties:
+                error:
+                    type: string
+                    description: A descriptive error message.
+                    example: "Invalid origin or destination provided."
+                code:
+                    type: string
+                    description: Machine-readable error code.
+                    enum: [INVALID_INPUT, NOT_FOUND, RATE_LIMIT_EXCEEDED, INTERNAL_ERROR]
+                    example: INVALID_INPUT
+
+    # -------------------------------------------------------------------------
+    # STANDARD RESPONSES
+    # -------------------------------------------------------------------------
+    responses:
+        BadRequest:
+            description: Invalid input provided (400).
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ErrorResponse'
+                    examples:
+                        invalid_input:
+                            value:
+                                error: "Origin and destination are required."
+                                code: "INVALID_INPUT"
+
+        NotFound:
+            description: Route not found (404).
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ErrorResponse'
+                    examples:
+                        not_found:
+                            value:
+                                error: "No routes found for the provided origin and destination."
+                                code: "NOT_FOUND"
+
+        RateLimitExceeded:
+            description: Rate limit exceeded (429).
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ErrorResponse'
+                    examples:
+                        rate_limit:
+                            value:
+                                error: "Rate limit exceeded. Please try again later."
+                                code: "RATE_LIMIT_EXCEEDED"
+
+        InternalError:
+            description: Server error (500).
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ErrorResponse'
+                    examples:
+                        server_error:
+                            value:
+                                error: "Unexpected error occurred while fetching routes."
+                                code: "INTERNAL_ERROR"
+
+paths:
+    # -------------------------------------------------------------------------
+    # ENDPOINTS
+    # -------------------------------------------------------------------------
+    /route-comparison/compare:
+        post:
+            operationId: compareRoutes
+            summary: Compare routes from multiple APIs
+            description: >-
+                Fetches routes from multiple navigation APIs for the given origin and destination,
+                returning a comparison of route options with metrics and turn-by-turn directions.
+            tags:
+                - Route Comparison
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CompareRoutesRequest'
+            responses:
+                '200':
+                    description: Route comparison results.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CompareRoutesResponse'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '429':
+                    $ref: '#/components/responses/RateLimitExceeded'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
