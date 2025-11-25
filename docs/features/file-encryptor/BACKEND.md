@@ -373,9 +373,9 @@ How to map internal errors to API contract error codes:
 
 ## Important Notes
 
-**Minimal Backend**: This backend is intentionally minimal. The frontend performs all encryption/decryption operations client-side using the Web Crypto API. The backend only provides optional temporary file storage if needed.
+**Minimal Backend**: This backend is intentionally minimal. The frontend performs all encryption/decryption operations client-side using the `@noble/ciphers` library (audited, secure) combined with Web Crypto API for key derivation. The backend only provides optional temporary file storage if needed.
 
-**Security First**: No encryption keys, passwords, or unencrypted file data should ever be sent to or stored on the backend. All sensitive operations are client-side only.
+**Security First**: No encryption keys, passwords, or unencrypted file data should ever be sent to or stored on the backend. All sensitive operations are client-side only. The frontend uses well-tested, audited cryptographic libraries to ensure security.
 
 **Optional Usage**: The frontend can operate entirely without backend interaction. These endpoints are provided for optional use cases where temporary file storage might be helpful.
 

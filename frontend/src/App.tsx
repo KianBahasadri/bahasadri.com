@@ -6,7 +6,6 @@ import WhatsAppMessenger from "./pages/tools/whatsapp-messenger/whatsapp-messeng
 import Calculator from "./pages/tools/calculator/calculator";
 import VideoCallList from "./pages/video-call/VideoCallList";
 import VideoCallRoom from "./pages/video-call/VideoCallRoom";
-import VideoCallBasic from "./pages/video-call/VideoCallBasic";
 import NotFound from "./pages/NotFound/NotFound";
 import HomeButton from "./components/HomeButton/HomeButton";
 
@@ -20,10 +19,6 @@ export default function App(): React.JSX.Element {
                 <Route path="/whatsapp-messenger" element={<WhatsAppMessenger />} />
                 <Route path="/calculator" element={<Calculator />} />
                 <Route path="/video-call" element={<VideoCallList />} />
-                <Route
-                    path="/video-call/basic/:meetingId"
-                    element={<VideoCallBasic />}
-                />
                 <Route path="/video-call/:meetingId" element={<VideoCallRoom />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>

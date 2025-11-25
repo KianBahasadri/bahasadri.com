@@ -4,7 +4,9 @@
 
 ## Overview
 
-Frontend implementation for the File Encryptor utility. This feature provides client-side file encryption and decryption capabilities using the Web Crypto API. Users can encrypt files with passwords or keyfiles, and decrypt them later.
+Frontend implementation for the File Encryptor utility. This feature provides client-side file encryption and decryption capabilities using the `@noble/ciphers` library (audited, secure) combined with Web Crypto API for key derivation. Users can encrypt files with passwords or keyfiles, and decrypt them later.
+
+**Security Note**: We use well-tested, audited cryptographic libraries rather than implementing encryption manually. This reduces the risk of security vulnerabilities from implementation errors.
 
 ## Code Location
 
@@ -165,50 +167,101 @@ const [error, setError] = useState<string | null>(null);
 
 **Location**: `lib/encryption.ts`
 
+**Library Usage**: All encryption/decryption operations use `@noble/ciphers` for the actual cryptographic operations. This ensures we're using well-tested, audited code rather than implementing crypto primitives manually.
+
 ```typescript
+import { aes_256_gcm } from '@noble/ciphers/aes';
+import { randomBytes } from '@noble/ciphers/utils';
+
 // Encrypt file with password
+// Uses PBKDF2 (Web Crypto API) to derive key from password
+// Uses @noble/ciphers AES-256-GCM for encryption
 export async function encryptWithPassword(
     file: File,
     password: string
 ): Promise<Blob>;
 
 // Encrypt file with keyfile
+// Derives key from keyfile content using SHA-256
+// Uses @noble/ciphers AES-256-GCM for encryption
 export async function encryptWithKeyfile(
     file: File,
     keyfile: File
 ): Promise<Blob>;
 
 // Decrypt file with password
+// Uses PBKDF2 to derive key, then @noble/ciphers for decryption
 export async function decryptWithPassword(
     encryptedFile: File,
     password: string
 ): Promise<Blob>;
 
 // Decrypt file with keyfile
+// Derives key from keyfile, then @noble/ciphers for decryption
 export async function decryptWithKeyfile(
     encryptedFile: File,
     keyfile: File
 ): Promise<Blob>;
 
 // Generate a random keyfile
+// Creates a secure random 256-bit (32-byte) keyfile
 export async function generateKeyfile(): Promise<Blob>;
 ```
 
+### Implementation Approach
+
+**Why `@noble/ciphers`?**
+-   **Audited**: The library has undergone security audits
+-   **Minimal**: Small bundle size, important for free tier constraints
+-   **Well-maintained**: Actively maintained by security experts
+-   **Type-safe**: Full TypeScript support
+-   **No dependencies**: Self-contained, reducing attack surface
+
+**Security Best Practices**:
+1.   **Never implement crypto primitives manually** - Always use well-tested libraries
+2.   **Use authenticated encryption** - AES-GCM provides both confidentiality and integrity
+3.   **Unique IV per encryption** - Never reuse IVs
+4.   **Strong key derivation** - PBKDF2 with sufficient iterations (100k+)
+5.   **Secure random generation** - Use `crypto.getRandomValues()` for all randomness
+6.   **Error handling** - Don't leak information about decryption failures
+7.   **Client-side only** - All encryption/decryption happens in the browser, never on the server
+
 ### Encryption Algorithm
 
--   Use Web Crypto API with AES-GCM algorithm
--   Generate random IV for each encryption
--   Derive key from password using PBKDF2
--   Include IV and metadata in encrypted file format
--   Use authenticated encryption (GCM mode) for integrity
+**Library**: `@noble/ciphers` (audited, secure, minimal bundle size)
+
+**Implementation Details**:
+-   Use `@noble/ciphers` AES-GCM implementation for encryption/decryption
+-   Use Web Crypto API's `crypto.subtle.deriveBits()` with PBKDF2 for password-based key derivation
+-   Generate random IV (12 bytes for AES-GCM) for each encryption using `crypto.getRandomValues()`
+-   Use authenticated encryption (GCM mode) for integrity - the library handles authentication tag automatically
+-   For keyfile-based encryption: derive key from keyfile content using SHA-256 hash
+
+**Key Derivation Parameters** (PBKDF2):
+-   Algorithm: PBKDF2 with SHA-256
+-   Iterations: 100,000 (configurable, but minimum 100k for security)
+-   Salt: Random 16-byte salt generated per encryption
+-   Key length: 256 bits (32 bytes) for AES-256-GCM
 
 ### File Format
 
-Encrypted files should include:
--   IV (Initialization Vector)
--   Encrypted data
--   Metadata (original filename, encryption method)
--   Authentication tag
+Encrypted files use a custom binary format that includes:
+-   **Header** (JSON, length-prefixed):
+    -   `version`: File format version (currently `1`)
+    -   `method`: `"password"` or `"keyfile"`
+    -   `originalFilename`: Original filename (if available)
+    -   `salt`: Base64-encoded salt (for password method)
+    -   `iv`: Base64-encoded IV
+-   **Encrypted Data**: AES-GCM encrypted file content (includes authentication tag automatically)
+
+**Format Structure**:
+```
+[4 bytes: JSON header length (big-endian)]
+[JSON header (UTF-8)]
+[Encrypted data + authentication tag]
+```
+
+**Note**: The `@noble/ciphers` library handles IV and authentication tag management internally. Our file format wraps the encrypted output with metadata needed for decryption.
 
 ## API Integration
 
@@ -334,11 +387,14 @@ export const deleteTempFile = async (fileId: string): Promise<void> => {
 
 ### Encryption Logic
 
--   [ ] Encryption functions (password and keyfile)
--   [ ] Decryption functions (password and keyfile)
--   [ ] Keyfile generation function
--   [ ] File format handling
--   [ ] Error handling for encryption/decryption
+-   [ ] Install and configure `@noble/ciphers` library
+-   [ ] Encryption functions (password and keyfile) using `@noble/ciphers`
+-   [ ] Decryption functions (password and keyfile) using `@noble/ciphers`
+-   [ ] PBKDF2 key derivation using Web Crypto API
+-   [ ] Keyfile generation function (random secure keyfile)
+-   [ ] File format serialization (header + encrypted data)
+-   [ ] File format deserialization (parse header, extract encrypted data)
+-   [ ] Error handling for encryption/decryption (wrong password, corrupted file, etc.)
 
 ### State Management
 
@@ -356,7 +412,9 @@ export const deleteTempFile = async (fileId: string): Promise<void> => {
 
 ### Integration
 
--   [ ] Web Crypto API integration
+-   [ ] `@noble/ciphers` library integration
+-   [ ] Web Crypto API integration for PBKDF2
+-   [ ] File format serialization/deserialization
 -   [ ] File download functionality
 -   [ ] Error handling gracefully
 
@@ -369,8 +427,13 @@ export const deleteTempFile = async (fileId: string): Promise<void> => {
 
 ### Encryption Libraries
 
--   Web Crypto API (native browser API)
--   No external encryption libraries needed
+-   `@noble/ciphers`: Audited, secure AES-GCM implementation
+    -   Package: `@noble/ciphers`
+    -   Why: Well-tested, audited, minimal bundle size, actively maintained
+    -   Usage: Provides `aes_256_gcm` for encryption/decryption operations
+-   Web Crypto API: For PBKDF2 key derivation and random number generation
+    -   `crypto.subtle.deriveBits()`: PBKDF2 key derivation from passwords
+    -   `crypto.getRandomValues()`: Secure random number generation for IVs and salts
 
 ## Performance Considerations
 
