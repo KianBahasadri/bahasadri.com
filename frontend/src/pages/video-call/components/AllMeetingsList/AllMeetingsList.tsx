@@ -107,20 +107,10 @@ export default function AllMeetingsList(): React.JSX.Element {
                             className={styles["joinButton"]}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/video-call/basic/${meeting.id}`);
-                            }}
-                        >
-                            Basic
-                        </button>
-                        <button
-                            type="button"
-                            className={styles["joinButton"]}
-                            onClick={(e) => {
-                                e.stopPropagation();
                                 navigate(`/video-call/${meeting.id}`);
                             }}
                         >
-                            Custom
+                            Join
                         </button>
                     </div>
                 </div>

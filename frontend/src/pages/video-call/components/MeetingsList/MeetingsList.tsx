@@ -113,27 +113,13 @@ export default function MeetingsList(): React.JSX.Element {
                         onClick={(e) => {
                             e.stopPropagation();
                             console.log(
-                                "[MeetingsList] Basic join clicked:",
-                                session.meeting_id
-                            );
-                            navigate(`/video-call/basic/${session.meeting_id}`);
-                        }}
-                    >
-                        Basic
-                    </button>
-                    <button
-                        type="button"
-                        className={styles["joinButton"]}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            console.log(
-                                "[MeetingsList] Custom join clicked:",
+                                "[MeetingsList] Join clicked:",
                                 session.meeting_id
                             );
                             navigate(`/video-call/${session.meeting_id}`);
                         }}
                     >
-                        Custom
+                        Join
                     </button>
                 </div>
             </div>
