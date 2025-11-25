@@ -510,6 +510,12 @@ main {
     align-content: start;
 }
 
+@media (max-width: 768px) {
+    .toolsGrid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+}
+
 /* ----- Cards ----- */
 .cardMenhera {
     background: white;
