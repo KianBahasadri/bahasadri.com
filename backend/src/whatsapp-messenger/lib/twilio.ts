@@ -9,6 +9,10 @@ export async function sendWhatsApp(
     to: string,
     body: string
 ): Promise<{ sid: string; status: string }> {
+    if (!config.whatsappNumber) {
+        throw new Error("WhatsApp number is not configured");
+    }
+
     const url = `https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`;
 
     // Ensure From has whatsapp: prefix if not already present

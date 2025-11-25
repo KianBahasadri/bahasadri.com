@@ -33,6 +33,9 @@ type HttpStatusCode = 400 | 404 | 500 | 502;
 
 // Helper to get Twilio config from env
 function getTwilioConfig(env: Env): { accountSid: string; authToken: string; whatsappNumber: string } {
+  if (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN || !env.TWILIO_WHATSAPP_NUMBER) {
+    throw new Error("Twilio configuration is missing. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_WHATSAPP_NUMBER environment variables.");
+  }
   return {
     accountSid: env.TWILIO_ACCOUNT_SID,
     authToken: env.TWILIO_AUTH_TOKEN,
