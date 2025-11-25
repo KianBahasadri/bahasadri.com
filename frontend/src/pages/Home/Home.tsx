@@ -316,7 +316,10 @@ export default function Home(): React.JSX.Element {
                                     to="/whatsapp-messenger"
                                     className={styles["cardMenhera"]}
                                     onMouseEnter={(e) => {
-                                        handleCardHover("whatsapp-messenger", e);
+                                        handleCardHover(
+                                            "whatsapp-messenger",
+                                            e
+                                        );
                                         startHeartbeat(e.currentTarget);
                                     }}
                                     onMouseLeave={() => {
@@ -440,7 +443,10 @@ export default function Home(): React.JSX.Element {
                                     className={styles["cardMenhera"]}
                                     disabled
                                     onMouseEnter={(e) => {
-                                        handleCardHover("rideshare-comparison", e);
+                                        handleCardHover(
+                                            "rideshare-comparison",
+                                            e
+                                        );
                                     }}
                                     onMouseLeave={handleCardLeave}
                                 >
