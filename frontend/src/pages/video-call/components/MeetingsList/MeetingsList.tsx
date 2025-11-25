@@ -20,14 +20,34 @@ function formatDate(dateString: string): string {
 }
 
 export default function MeetingsList(): React.JSX.Element {
+    console.log("[MeetingsList] Component rendering");
     const navigate = useNavigate();
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ["video-call", "sessions"],
-        queryFn: listSessions,
+        queryFn: async () => {
+            console.log("[MeetingsList] listSessions: Fetching sessions...");
+            try {
+                const result = await listSessions();
+                console.log(
+                    "[MeetingsList] listSessions: Success, sessions:",
+                    result
+                );
+                return result;
+            } catch (err) {
+                console.error("[MeetingsList] listSessions: Error:", err);
+                throw err;
+            }
+        },
         refetchInterval: 5000,
+    });
+    console.log("[MeetingsList] Query state:", {
+        isLoading,
+        hasError: !!error,
+        hasData: !!data,
     });
 
     if (isLoading) {
+        console.log("[MeetingsList] Render: Loading state");
         return (
             <div className={styles["container"]}>
                 <div className={styles["loading"]}>Loading meetings... ⏳</div>
@@ -36,6 +56,7 @@ export default function MeetingsList(): React.JSX.Element {
     }
 
     if (error) {
+        console.error("[MeetingsList] Render: Error state:", error);
         return (
             <div className={styles["container"]}>
                 <div className={styles["error"]}>
@@ -44,6 +65,7 @@ export default function MeetingsList(): React.JSX.Element {
                         type="button"
                         className={styles["retryButton"]}
                         onClick={() => {
+                            console.log("[MeetingsList] Retry button clicked");
                             void refetch();
                         }}
                     >
@@ -55,6 +77,10 @@ export default function MeetingsList(): React.JSX.Element {
     }
 
     const sessions: Session[] = data?.sessions ?? [];
+    console.log(
+        "[MeetingsList] Render: Rendering sessions list, count:",
+        sessions.length
+    );
 
     const renderSessionItem = (session: Session): React.JSX.Element => {
         return (
@@ -63,6 +89,10 @@ export default function MeetingsList(): React.JSX.Element {
                 type="button"
                 className={styles["meetingItem"]}
                 onClick={() => {
+                    console.log(
+                        "[MeetingsList] Session item clicked:",
+                        session.meeting_id
+                    );
                     navigate(`/video-call/${session.meeting_id}`);
                 }}
             >
@@ -84,6 +114,7 @@ export default function MeetingsList(): React.JSX.Element {
         );
     };
 
+    console.log("[MeetingsList] Render: Rendering sessions list");
     return (
         <div className={styles["container"]}>
             <div className={styles["section"]}>

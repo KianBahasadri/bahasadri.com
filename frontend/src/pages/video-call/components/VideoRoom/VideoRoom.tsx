@@ -120,12 +120,60 @@ function MeetingContent(): React.JSX.Element {
     const { meeting } = useRealtimeKitMeeting();
     const roomState = useRealtimeKitSelector((m) => m.self.roomState);
     const roomJoined = useRealtimeKitSelector((m) => m.self.roomJoined);
-    console.log(
-        "[VideoRoom] MeetingContent: roomState:",
-        roomState,
-        "roomJoined:",
-        roomJoined
+    const participantName = useRealtimeKitSelector((m) => m.self.name);
+    const canEditDisplayName = useRealtimeKitSelector(
+        (m) => m.self.permissions.canEditDisplayName
     );
+
+    // Track roomState changes
+    useEffect(() => {
+        console.log(
+            "[VideoRoom] MeetingContent: roomState changed:",
+            roomState,
+            "roomJoined:",
+            roomJoined,
+            "participantName:",
+            participantName
+        );
+
+        if (roomState === "init") {
+            console.log(
+                "[VideoRoom] MeetingContent: Room state is 'init' - setup screen visible, waiting for join button click"
+            );
+        }
+
+        if (roomState === "joined" && roomJoined) {
+            console.log(
+                "[VideoRoom] MeetingContent: Successfully joined room!",
+                {
+                    roomState,
+                    roomJoined,
+                    participantName,
+                    hasMeeting: !!meeting,
+                }
+            );
+        }
+    }, [roomState, roomJoined, participantName, meeting]);
+
+    // Track participant name changes
+    useEffect(() => {
+        if (participantName) {
+            console.log(
+                "[VideoRoom] MeetingContent: Participant name set/changed:",
+                participantName,
+                "canEditDisplayName:",
+                canEditDisplayName
+            );
+        }
+    }, [participantName, canEditDisplayName]);
+
+    console.log("[VideoRoom] MeetingContent: Current state:", {
+        roomState,
+        roomJoined,
+        participantName,
+        canEditDisplayName,
+        hasMeeting: !!meeting,
+    });
 
     if (roomState === "ended" || roomState === "left") {
         console.log("[VideoRoom] MeetingContent: Showing ended screen");
@@ -137,7 +185,9 @@ function MeetingContent(): React.JSX.Element {
         return <InMeetingRoom />;
     }
 
-    console.log("[VideoRoom] MeetingContent: Showing setup screen");
+    console.log(
+        "[VideoRoom] MeetingContent: Showing setup screen (waiting for join button click)"
+    );
     return (
         <div className={styles["setupScreenWrapper"]}>
             <RtkSetupScreen meeting={meeting} size="sm" />
@@ -253,6 +303,14 @@ export default function VideoRoom({
                     "[VideoRoom] handleJoinMeeting: Token received, initializing meeting..."
                 );
 
+                console.log(
+                    "[VideoRoom] handleJoinMeeting: Calling initMeeting with token...",
+                    {
+                        tokenLength: tokenResponse.auth_token?.length || 0,
+                        hasToken: !!tokenResponse.auth_token,
+                    }
+                );
+                const initStartTime = Date.now();
                 const initializedMeeting = await initMeeting({
                     authToken: tokenResponse.auth_token,
                     defaults: {
@@ -265,10 +323,17 @@ export default function VideoRoom({
                         },
                     },
                 });
+                const initDuration = Date.now() - initStartTime;
                 console.log(
                     "[VideoRoom] handleJoinMeeting: Meeting initialized:",
                     {
                         hasMeeting: !!initializedMeeting,
+                        initDuration: `${String(initDuration)}ms`,
+                        initialRoomState: initializedMeeting?.self.roomState,
+                        initialName: initializedMeeting?.self.name,
+                        canEditName:
+                            initializedMeeting?.self.permissions
+                                .canEditDisplayName,
                     }
                 );
 
@@ -286,6 +351,16 @@ export default function VideoRoom({
                     }
 
                     // Set default name to "admin-kun" if none was provided and user has permission
+                    console.log(
+                        "[VideoRoom] handleJoinMeeting: Checking participant name...",
+                        {
+                            currentName: initializedMeeting.self.name,
+                            participantNameProp: participantName,
+                            canEditDisplayName:
+                                initializedMeeting.self.permissions
+                                    .canEditDisplayName,
+                        }
+                    );
                     if (
                         initializedMeeting.self.permissions
                             .canEditDisplayName &&
@@ -293,10 +368,14 @@ export default function VideoRoom({
                     ) {
                         const nameToSet = participantName ?? "admin-kun";
                         console.log(
-                            "[VideoRoom] handleJoinMeeting: Setting participant name:",
+                            "[VideoRoom] handleJoinMeeting: Setting participant name (no name currently set):",
                             nameToSet
                         );
                         initializedMeeting.self.setName(nameToSet);
+                        console.log(
+                            "[VideoRoom] handleJoinMeeting: Name set, new name:",
+                            initializedMeeting.self.name
+                        );
                     } else if (
                         participantName &&
                         initializedMeeting.self.permissions
@@ -304,18 +383,51 @@ export default function VideoRoom({
                         initializedMeeting.self.name !== participantName
                     ) {
                         console.log(
-                            "[VideoRoom] handleJoinMeeting: Updating participant name from prop"
+                            "[VideoRoom] handleJoinMeeting: Updating participant name from prop:",
+                            {
+                                oldName: initializedMeeting.self.name,
+                                newName: participantName,
+                            }
                         );
                         initializedMeeting.self.setName(participantName);
+                        console.log(
+                            "[VideoRoom] handleJoinMeeting: Name updated, current name:",
+                            initializedMeeting.self.name
+                        );
+                    } else {
+                        console.log(
+                            "[VideoRoom] handleJoinMeeting: No name change needed",
+                            {
+                                currentName: initializedMeeting.self.name,
+                                participantNameProp: participantName,
+                            }
+                        );
                     }
 
                     setMeeting(initializedMeeting);
                     console.log(
+                        "[VideoRoom] handleJoinMeeting: Meeting set in state, about to call joinRoom()...",
+                        {
+                            currentName: initializedMeeting.self.name,
+                            canEditName:
+                                initializedMeeting.self.permissions
+                                    .canEditDisplayName,
+                            roomState: initializedMeeting.self.roomState,
+                        }
+                    );
+                    console.log(
                         "[VideoRoom] handleJoinMeeting: Calling joinRoom()..."
                     );
+                    const joinStartTime = Date.now();
                     await initializedMeeting.joinRoom();
+                    const joinDuration = Date.now() - joinStartTime;
                     console.log(
-                        "[VideoRoom] handleJoinMeeting: joinRoom() completed"
+                        "[VideoRoom] handleJoinMeeting: joinRoom() completed",
+                        {
+                            duration: `${String(joinDuration)}ms`,
+                            newRoomState: initializedMeeting.self.roomState,
+                            roomJoined: initializedMeeting.self.roomJoined,
+                        }
                     );
                     if (!isMountedRef.current) {
                         console.log(
@@ -528,7 +640,15 @@ export default function VideoRoom({
 
     if (roomState === "connected" && meeting) {
         console.log(
-            "[VideoRoom] Render: Rendering connected state with RealtimeKitProvider"
+            "[VideoRoom] Render: Rendering connected state with RealtimeKitProvider",
+            {
+                meetingRoomState: meeting.self.roomState,
+                meetingRoomJoined: meeting.self.roomJoined,
+                participantName: meeting.self.name,
+            }
+        );
+        console.log(
+            "[VideoRoom] Render: Setup screen is now available - join button should be visible"
         );
         return (
             <RealtimeKitProvider

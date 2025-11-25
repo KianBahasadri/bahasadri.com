@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import styles from "./NetworkMesh.module.css";
 
 interface Node {
@@ -9,25 +9,75 @@ interface Node {
     pulseDelay: number;
 }
 
+function generateRandomNodes(count: number): Node[] {
+    const nodes: Node[] = [];
+    const minDistance = 8;
+    const maxConnections = 4;
+    const minConnections = 1;
+    const xRange = 150;
+    const yRange = 150;
+    const centerX = 50;
+    const centerY = 50;
+
+    for (let i = 0; i < count; i++) {
+        let x: number;
+        let y: number;
+        let attempts = 0;
+        do {
+            x = centerX + (Math.random() - 0.5) * xRange;
+            y = centerY + (Math.random() - 0.5) * yRange;
+            attempts++;
+        } while (
+            attempts < 50 &&
+            nodes.some(
+                (node) =>
+                    Math.sqrt(
+                        Math.pow(node.x - x, 2) + Math.pow(node.y - y, 2)
+                    ) < minDistance
+            )
+        );
+
+        nodes.push({
+            id: i,
+            x,
+            y,
+            connections: [],
+            pulseDelay: Math.random() * 4,
+        });
+    }
+
+    nodes.forEach((node) => {
+        const connectionCount =
+            Math.floor(Math.random() * (maxConnections - minConnections + 1)) +
+            minConnections;
+        const candidates = nodes
+            .filter((n) => n.id !== node.id)
+            .map((n) => ({
+                node: n,
+                distance: Math.sqrt(
+                    Math.pow(node.x - n.x, 2) + Math.pow(node.y - n.y, 2)
+                ),
+            }))
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, connectionCount)
+            .map((c) => c.node.id);
+
+        node.connections = candidates;
+    });
+
+    return nodes;
+}
+
 export default function NetworkMesh(): React.JSX.Element {
-    const nodes: Node[] = [
-        { id: 0, x: 10, y: 15, connections: [1, 3], pulseDelay: 0 },
-        { id: 1, x: 25, y: 20, connections: [0, 2, 4], pulseDelay: 0.3 },
-        { id: 2, x: 40, y: 10, connections: [1, 5], pulseDelay: 0.6 },
-        { id: 3, x: 15, y: 40, connections: [0, 4, 6], pulseDelay: 0.9 },
-        { id: 4, x: 35, y: 45, connections: [1, 3, 5, 7], pulseDelay: 1.2 },
-        { id: 5, x: 55, y: 35, connections: [2, 4, 8], pulseDelay: 1.5 },
-        { id: 6, x: 20, y: 65, connections: [3, 7], pulseDelay: 1.8 },
-        { id: 7, x: 45, y: 70, connections: [4, 6, 8], pulseDelay: 2.1 },
-        { id: 8, x: 70, y: 60, connections: [5, 7], pulseDelay: 2.4 },
-        { id: 9, x: 80, y: 25, connections: [2, 5], pulseDelay: 2.7 },
-        { id: 10, x: 5, y: 50, connections: [0, 3], pulseDelay: 3 },
-        { id: 11, x: 90, y: 80, connections: [7, 8], pulseDelay: 3.3 },
-    ];
+    const nodes = useMemo(() => generateRandomNodes(40), []);
 
     return (
         <div className={styles["networkMesh"]}>
-            <svg className={styles["connections"]} viewBox="0 0 100 100" preserveAspectRatio="none">
+            <svg
+                className={styles["connections"]}
+                viewBox="0 0 150 150"
+                preserveAspectRatio="none"
+            >
                 {nodes.map((node) =>
                     node.connections.map((targetId) => {
                         const target = nodes[targetId];
@@ -49,20 +99,24 @@ export default function NetworkMesh(): React.JSX.Element {
                 )}
             </svg>
             <div className={styles["nodes"]}>
-                {nodes.map((node) => (
-                    <div
-                        key={node.id}
-                        className={styles["node"]}
-                        style={{
-                            left: `${String(node.x)}%`,
-                            top: `${String(node.y)}%`,
-                            animationDelay: `${String(node.pulseDelay)}s`,
-                        }}
-                    >
-                        <div className={styles["nodeCore"]} />
-                        <div className={styles["nodeRing"]} />
-                    </div>
-                ))}
+                {nodes.map((node) => {
+                    const xPercent = (node.x / 150) * 100;
+                    const yPercent = (node.y / 150) * 100;
+                    return (
+                        <div
+                            key={node.id}
+                            className={styles["node"]}
+                            style={{
+                                left: `${String(xPercent)}%`,
+                                top: `${String(yPercent)}%`,
+                                animationDelay: `${String(node.pulseDelay)}s`,
+                            }}
+                        >
+                            <div className={styles["nodeCore"]} />
+                            <div className={styles["nodeRing"]} />
+                        </div>
+                    );
+                })}
             </div>
             <div className={styles["gradientOverlay"]} />
         </div>

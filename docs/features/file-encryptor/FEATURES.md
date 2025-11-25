@@ -12,17 +12,25 @@ A secure file encryption and decryption utility that allows users to encrypt fil
 
 Users can upload any file and encrypt it using either a password or a keyfile. The encrypted file can then be downloaded for secure storage or sharing.
 
+### Text Encryption
+
+Users can paste text directly into the interface instead of uploading a file. The text is encrypted using either a password or a keyfile, and the encrypted result can be downloaded as a file or copied as text.
+
 ### File Decryption
 
 Users can upload an encrypted file and decrypt it using the same password or keyfile that was used for encryption, restoring the original file.
 
+### Text Decryption
+
+Users can paste encrypted text directly into the interface to decrypt it. The decrypted result can be downloaded as a file or displayed as text (if the original content was text).
+
 ### Password-Based Encryption
 
-Users can encrypt files using a password of their choice. The same password must be used to decrypt the file later.
+Users can encrypt files or text using a password of their choice. The same password must be used to decrypt later.
 
 ### Keyfile-Based Encryption
 
-Users can encrypt files using a keyfile (a file used as the encryption key). The system can generate a keyfile automatically, or users can provide their own. The same keyfile must be used to decrypt the file later.
+Users can encrypt files or text using a keyfile (a file used as the encryption key). The system can generate a keyfile automatically, or users can provide their own. The same keyfile must be used to decrypt later.
 
 ## User Workflows
 
@@ -59,6 +67,23 @@ Users can encrypt files using a keyfile (a file used as the encryption key). The
 
 **Result**: Encrypted file and keyfile (if generated) are available for download
 
+### Encrypt Text with Password
+
+**Goal**: Encrypt text content using a password without creating a file
+
+**Steps**:
+
+1. Navigate to the file encryptor page
+2. Select "Encrypt" mode
+3. Choose "Password" as the encryption method
+4. Select "Text" input mode
+5. Paste or type the text to encrypt
+6. Enter a password
+7. Click "Encrypt"
+8. Copy the encrypted text or download as a file
+
+**Result**: Encrypted text is available to copy or download
+
 ### Decrypt a File with Password
 
 **Goal**: Decrypt a previously encrypted file using the password
@@ -91,15 +116,36 @@ Users can encrypt files using a keyfile (a file used as the encryption key). The
 
 **Result**: Original file is restored and available for download
 
+### Decrypt Text with Password
+
+**Goal**: Decrypt encrypted text using the password
+
+**Steps**:
+
+1. Navigate to the file encryptor page
+2. Select "Decrypt" mode
+3. Choose "Password" as the decryption method
+4. Select "Text" input mode
+5. Paste the encrypted text
+6. Enter the password used for encryption
+7. Click "Decrypt"
+8. View the decrypted text or download as a file
+
+**Result**: Original text is restored and displayed or available for download
+
 ## User Capabilities
 
 -   Encrypt any file type (documents, images, videos, etc.)
+-   Encrypt text by pasting directly into the interface
 -   Decrypt previously encrypted files
+-   Decrypt encrypted text by pasting directly into the interface
 -   Choose between password or keyfile encryption methods
 -   Generate secure keyfiles automatically
 -   Use custom keyfiles for encryption
 -   Download encrypted files for secure storage
+-   Copy encrypted text to clipboard
 -   Download decrypted files to restore originals
+-   View decrypted text directly in the interface
 -   All encryption/decryption happens client-side for maximum security
 
 ## Use Cases
@@ -120,6 +166,10 @@ Encrypt important backups to protect them from unauthorized access, while still 
 
 Encrypt personal files to ensure privacy, even if devices are lost, stolen, or accessed by unauthorized parties.
 
+### Quick Text Encryption
+
+Quickly encrypt sensitive text content like passwords, private notes, or confidential messages without needing to create a file first. Perfect for secure sharing of text snippets.
+
 ## User Benefits
 
 -   **Secure**: Client-side encryption ensures files are never transmitted or stored in unencrypted form
@@ -132,4 +182,3 @@ Encrypt personal files to ensure privacy, even if devices are lost, stolen, or a
 ---
 
 **Note**: This document describes features from the user's perspective. For technical implementation details, see `API_CONTRACT.md`, `FRONTEND.md`, and `BACKEND.md`.
-
