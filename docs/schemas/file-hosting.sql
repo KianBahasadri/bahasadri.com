@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS files (
     compression_ratio REAL,
     access_count INTEGER NOT NULL DEFAULT 0,
     last_accessed DATETIME,
-    deleted INTEGER NOT NULL DEFAULT 0 CHECK (deleted IN (0, 1))
+    deleted INTEGER NOT NULL DEFAULT 0 CHECK (deleted IN (0, 1)),
+    is_public INTEGER NOT NULL DEFAULT 1 CHECK (is_public IN (0, 1))
 );
 
 -- Access logs capture every download request with enriched metadata.

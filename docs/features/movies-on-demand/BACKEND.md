@@ -12,8 +12,11 @@ Backend implementation for the Movies on Demand utility. An ephemeral movie stre
 -   **NZBGeek API** for Usenet release searching
 -   **Cloudflare infrastructure** for on-demand acquisition, storage, and streaming
 -   **Job queue system** for asynchronous movie downloads and processing
+-   **Cloudflare D1** for relational metadata storage and job tracking
 
 Movies are fetched from Usenet on-demand and automatically deleted after viewing.
+
+**Storage choice**: This design uses Cloudflare D1 for metadata and job tracking (relational storage), and R2 for movie files (binary objects). D1 is chosen because the feature requires rich queries (filter by status, expiration checks, sorted pagination, partial updates) which are harder to implement efficiently with KV. KV (and the Workers Cache) can still be used as a short-term cache for hot data.
 
 ## Code Location
 
@@ -26,6 +29,26 @@ Movies are fetched from Usenet on-demand and automatically deleted after viewing
 
 This document focuses solely on backend implementation details not covered in the API contract.
 
+## Common Implementation Patterns
+
+**TMDB API Integration:**
+
+-   All TMDB API calls require Bearer token authentication: `Authorization: Bearer {TMDB_API_KEY}`
+-   All pagination parameters default to `page=1` if not provided
+-   TMDB returns paginated results with 20 items per page
+-   Query parameters must be URL-encoded before sending to TMDB
+
+**Input Validation:**
+
+-   All movie IDs must be validated as positive integers
+-   All IDs must be validated as integers before use
+-   Page numbers default to 1 if not provided or invalid
+
+**Error Mapping:**
+
+-   Error handling and mapping logic is documented in the "Error Codes" section below
+-   All endpoints follow standard HTTP request/response flow: extract parameters → validate → process → transform → return
+
 ## API Endpoints
 
 > **Note**: Request/response schemas are defined in `API_CONTRACT.yml`. This section focuses on implementation details only.
@@ -36,26 +59,11 @@ This document focuses solely on backend implementation details not covered in th
 
 **Description**: Searches for movies using TMDB's search API endpoint.
 
-**Implementation Flow**:
+**Implementation**:
 
-1. Extract `query` and `page` query parameters
-2. Validate query parameter is present and non-empty
-3. Call TMDB API: `GET /3/search/movie?query={query}&page={page}`
-4. Transform TMDB response to match API contract schema
-5. Return response per API contract
-
-**Implementation Notes**:
-
--   TMDB API requires API key in Authorization header
--   Query parameter must be URL-encoded
--   Page defaults to 1 if not provided
--   TMDB returns paginated results with 20 items per page
-
-**Error Handling**:
-
--   Missing or empty query → `INVALID_INPUT` (400)
--   TMDB API errors → `TMDB_ERROR` (502)
--   Network errors → `INTERNAL_ERROR` (500)
+-   Validate query parameter is present and non-empty
+-   Call TMDB API: `GET /3/search/movie?query={query}&page={page}`
+-   Transform TMDB response to match API contract schema
 
 ### `GET /api/movies-on-demand/popular`
 
@@ -63,23 +71,10 @@ This document focuses solely on backend implementation details not covered in th
 
 **Description**: Retrieves popular movies from TMDB's popular movies endpoint.
 
-**Implementation Flow**:
+**Implementation**:
 
-1. Extract `page` query parameter (defaults to 1)
-2. Call TMDB API: `GET /3/movie/popular?page={page}`
-3. Transform TMDB response to match API contract schema
-4. Return response per API contract
-
-**Implementation Notes**:
-
--   TMDB API requires API key in Authorization header
--   Page defaults to 1 if not provided
--   TMDB returns paginated results with 20 items per page
-
-**Error Handling**:
-
--   TMDB API errors → `TMDB_ERROR` (502)
--   Network errors → `INTERNAL_ERROR` (500)
+-   Call TMDB API: `GET /3/movie/popular?page={page}`
+-   Transform TMDB response to match API contract schema
 
 ### `GET /api/movies-on-demand/top`
 
@@ -87,23 +82,10 @@ This document focuses solely on backend implementation details not covered in th
 
 **Description**: Retrieves top-rated movies of all time from TMDB's top rated endpoint.
 
-**Implementation Flow**:
+**Implementation**:
 
-1. Extract `page` query parameter (defaults to 1)
-2. Call TMDB API: `GET /3/movie/top_rated?page={page}`
-3. Transform TMDB response to match API contract schema
-4. Return response per API contract
-
-**Implementation Notes**:
-
--   TMDB API requires API key in Authorization header
--   Page defaults to 1 if not provided
--   TMDB returns paginated results with 20 items per page
-
-**Error Handling**:
-
--   TMDB API errors → `TMDB_ERROR` (502)
--   Network errors → `INTERNAL_ERROR` (500)
+-   Call TMDB API: `GET /3/movie/top_rated?page={page}`
+-   Transform TMDB response to match API contract schema
 
 ### `GET /api/movies-on-demand/movies/{id}`
 
@@ -111,34 +93,12 @@ This document focuses solely on backend implementation details not covered in th
 
 **Description**: Retrieves detailed movie information including cast, crew, production details from TMDB, and current job status if the movie is being fetched or ready.
 
-**Implementation Flow**:
+**Implementation**:
 
-1. Extract movie `id` from path parameters
-2. Validate id is a valid integer
-3. Call TMDB API: `GET /3/movie/{id}?append_to_response=credits`
-4. Transform TMDB response to match API contract schema
-5. Check KV for any active or completed job for this movie ID
-6. If job exists, include `job_status` in response with:
-    - job_id
-    - status (queued, downloading, preparing, ready, error)
-    - progress (if downloading)
-    - error_message (if error)
-7. Return response per API contract
-
-**Implementation Notes**:
-
--   TMDB API requires API key in Authorization header
--   Uses `append_to_response=credits` to get cast and crew in single request
--   TMDB movie details include extensive metadata
--   Job status lookup: check KV for key `job:movie:{movie_id}` to get current job_id
--   Then fetch job details from `job:{job_id}` key
-
-**Error Handling**:
-
--   Invalid movie ID → `INVALID_INPUT` (400)
--   Movie not found → `NOT_FOUND` (404)
--   TMDB API errors → `TMDB_ERROR` (502)
--   Network errors → `INTERNAL_ERROR` (500)
+-   Call TMDB API: `GET /3/movie/{id}?append_to_response=credits` (includes cast and crew)
+-   Query D1 for the most recent job for this movie ID: `SELECT * FROM jobs WHERE movie_id = ? ORDER BY created_at DESC LIMIT 1`
+-   If job exists, include `job_status` in response (job_id, status, progress, error_message)
+-   Transform TMDB response to match API contract schema
 
 ### `GET /api/movies-on-demand/movies/{id}/releases`
 
@@ -146,39 +106,16 @@ This document focuses solely on backend implementation details not covered in th
 
 **Description**: Retrieves available Usenet releases for a movie from NZBGeek API.
 
-**Implementation Flow**:
+**Implementation**:
 
-1. Extract movie `id` from path parameters
-2. Validate id is a valid integer
-3. Get movie details from TMDB to obtain IMDb ID
-4. If no IMDb ID, return empty releases list
-5. Call NZBGeek API: `GET /api?t=movie&imdbid={imdb_id}&apikey={key}`
-6. Parse NZBGeek XML/JSON response
-7. Extract release information:
-    - Release ID
-    - Title (parse quality, codec, source, group from title)
-    - Size (in bytes)
-    - NZB download URL
-8. Sort releases by quality preference (1080p → 720p → 4K → others)
-9. Transform to API contract schema
-10. Return response per API contract
-
-**Implementation Notes**:
-
--   NZBGeek API requires API key as query parameter
--   NZBGeek returns releases in XML or JSON format (depending on API call)
--   Parse release titles to extract metadata: `Movie.Title.2024.1080p.BluRay.x264-GROUP`
--   Quality detection: look for `720p`, `1080p`, `2160p` (4K), etc.
--   Filter for movie releases only (not TV shows)
--   Limit results to reasonable number (e.g., 20 releases)
-
-**Error Handling**:
-
--   Invalid movie ID → `INVALID_INPUT` (400)
--   Movie not found on TMDB → `NOT_FOUND` (404)
--   No IMDb ID available → Return empty releases list (not an error)
--   NZBGeek API errors → `NZBGEEK_ERROR` (502)
--   Network errors → `INTERNAL_ERROR` (500)
+-   Get movie details from TMDB to obtain IMDb ID
+-   If no IMDb ID, return empty releases list
+-   Call NZBGeek API: `GET /api?t=movie&imdbid={imdb_id}&apikey={key}`
+-   Parse NZBGeek XML/JSON response
+-   Extract release information (ID, title, size, NZB URL)
+-   Parse release titles to extract metadata: `Movie.Title.2024.1080p.BluRay.x264-GROUP` (quality, codec, source, group)
+-   Sort releases by quality preference (1080p → 720p → 4K → others)
+-   Filter for movie releases only and limit to ~20 results
 
 ### `POST /api/movies-on-demand/movies/{id}/fetch`
 
@@ -186,54 +123,24 @@ This document focuses solely on backend implementation details not covered in th
 
 **Description**: Initiates on-demand acquisition of a movie from Usenet. Creates a job that downloads, prepares, and makes the movie available for streaming. Always starts a download job.
 
-**Implementation Flow**:
+**Implementation**:
 
-1. Extract movie `id` from path parameters
-2. Parse request body: `mode` (auto/manual), `release_id`, `quality_preference`
-3. Validate mode is "auto" or "manual"
-4. Validate inputs based on mode:
-    - Manual mode: `release_id` is **required** (return 400 if missing)
-    - Auto mode: `release_id` is optional (will select best release automatically)
-5. Select release:
-    - Auto mode: Choose best release based on `quality_preference` (default 1080p)
-    - Manual mode: Use specified `release_id`
-6. Generate unique job ID: `job_{timestamp}_{random}`
-7. Create job record in KV with status "queued"
-8. Enqueue job to Cloudflare Queue for processing
-9. Store job metadata in KV:
-    - Key: `job:{job_id}` → full job details
-    - Key: `job:movie:{movie_id}` → maps movie to current job_id
-10. Return job_id and status per API contract
-
-**Implementation Notes**:
-
--   This endpoint **always** initiates a download job
--   Clients should use `GET /api/movies-on-demand/movies/{id}/releases` first to get available releases for manual selection
--   Job processing happens asynchronously in Queue consumer
--   Queue consumer will:
-
-1. Download NZB file from NZBGeek
-2. Parse NZB file to get Usenet article references
-3. Download movie file from Usenet servers (using NZB metadata)
-4. Upload to R2 storage: `movies/{job_id}/movie.{ext}`
-5. Update job status throughout: queued → downloading → preparing → ready
-6. Set expiration timestamp (e.g., 24 hours after ready)
-
--   Best release selection logic (auto mode):
--   Prefer quality matching `quality_preference`
--   Prefer BluRay/WEB-DL over CAM/HDTS
--   Prefer smaller file sizes within same quality tier
--   Prefer known release groups
-
-**Error Handling**:
-
--   Invalid movie ID → `INVALID_INPUT` (400)
--   Invalid mode → `INVALID_INPUT` (400)
--   Manual mode without release_id → `INVALID_INPUT` (400)
--   Movie not found → `NOT_FOUND` (404)
--   No releases available → `NOT_FOUND` (404)
--   NZBGeek API errors → `NZBGEEK_ERROR` (502)
--   Queue enqueue errors → `JOB_ERROR` (500)
+-   Parse request body: `mode` (auto/manual), `release_id`, `quality_preference`
+-   Validate mode is "auto" or "manual"
+-   Validate inputs based on mode:
+    -   Manual mode: `release_id` is **required** (return 400 if missing)
+    -   Auto mode: `release_id` is optional (will select best release automatically)
+-   Select release:
+    -   Auto mode: Choose best release based on `quality_preference` (default 1080p)
+        -   Prefer quality matching `quality_preference`
+        -   Prefer BluRay/WEB-DL over CAM/HDTS
+        -   Prefer smaller file sizes within same quality tier
+        -   Prefer known release groups
+    -   Manual mode: Use specified `release_id`
+-   Generate unique job ID: `job_{timestamp}_{random}`
+-   Create job record in D1 with status "queued"
+-   Enqueue job to Cloudflare Queue for processing
+-   Job processing happens asynchronously in Queue consumer (see Queue Consumer section)
 
 ### `GET /api/movies-on-demand/jobs/{jobId}`
 
@@ -241,30 +148,10 @@ This document focuses solely on backend implementation details not covered in th
 
 **Description**: Retrieves the current status of a movie acquisition job.
 
-**Implementation Flow**:
+**Implementation**:
 
-1. Extract `jobId` from path parameters
-2. Query KV for job details: `job:{jobId}`
-3. If not found, return 404
-4. Return job status per API contract with:
-    - job_id
-    - movie_id
-    - status
-    - progress (if downloading)
-    - error_message (if error)
-    - release_title
-    - timestamps (created_at, updated_at, ready_at, expires_at)
-
-**Implementation Notes**:
-
--   Job details stored in KV with key: `job:{job_id}`
--   Job progress updated by Queue consumer during download
--   Expiration timestamp set when status becomes "ready"
-
-**Error Handling**:
-
--   Job not found → `NOT_FOUND` (404)
--   KV errors → `INTERNAL_ERROR` (500)
+-   Query D1 for job details: `SELECT * FROM jobs WHERE job_id = ?`
+-   Return job status per API contract (job_id, movie_id, status, progress, error_message, release_title, timestamps)
 
 ### `GET /api/movies-on-demand/jobs`
 
@@ -272,24 +159,12 @@ This document focuses solely on backend implementation details not covered in th
 
 **Description**: Retrieves a list of all active jobs (queued, downloading, preparing, ready).
 
-**Implementation Flow**:
+**Implementation**:
 
-1. Extract optional `status` query parameter
-2. Query KV for all jobs with prefix: `job:`
-3. Filter out job:movie:{id} mapping keys (they start differently)
-4. If status filter provided, filter jobs by status
-5. Sort by updated_at DESC (most recent first)
-6. Return jobs list per API contract
-
-**Implementation Notes**:
-
--   KV prefix query: `job:` returns all job records
+-   Extract optional `status` query parameter
+-   Query D1: `SELECT * FROM jobs WHERE status = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?`
+-   If no status provided, include all active statuses (queued, downloading, preparing, ready)
 -   Exclude deleted jobs from listing
--   Consider pagination if job list becomes large
-
-**Error Handling**:
-
--   KV errors → `INTERNAL_ERROR` (500)
 
 ### `GET /api/movies-on-demand/movies/{id}/stream`
 
@@ -297,35 +172,16 @@ This document focuses solely on backend implementation details not covered in th
 
 **Description**: Retrieves the streaming URL for a movie that is ready. Returns a signed URL or direct stream URL from R2.
 
-**Implementation Flow**:
+**Implementation**:
 
-1. Extract `id` from path parameters (can be movie_id or job_id; treat as string to support both formats)
-2. Determine if ID is movie_id or job_id:
-    - If starts with "job\_", it's a job_id
-    - Otherwise, assume movie_id and lookup current job: `job:movie:{movie_id}`
-3. Get job details from KV
-4. Verify job status is "ready"
-5. Generate R2 presigned URL for streaming:
-    - R2 key: `movies/{job_id}/movie.{ext}`
-    - Expiration: 4 hours
-6. Get content type and file size from R2 metadata
-7. Return stream URL per API contract
-
-**Implementation Notes**:
-
--   R2 presigned URLs valid for 4 hours
--   Movie files stored at: `movies/{job_id}/movie.{ext}`
--   Content type detected from file extension: mp4, mkv, avi
--   File size included for client buffering hints
--   Path parameter remains a string throughout validation to avoid incorrectly rejecting legitimate job IDs with the `job_` prefix
-
-**Error Handling**:
-
--   Invalid ID format → `INVALID_INPUT` (400)
--   Job not found → `NOT_FOUND` (404)
--   Movie not ready (status != "ready") → `INVALID_INPUT` (400)
--   R2 access errors → `STORAGE_ERROR` (502)
--   Presigned URL generation errors → `STORAGE_ERROR` (502)
+-   Extract `id` from path parameters (can be movie_id or job_id; treat as string to support both formats)
+-   Determine if ID is movie_id or job_id:
+    -   If starts with "job\_", it's a job_id
+    -   Otherwise, assume movie_id and query D1 for the latest job: `SELECT * FROM jobs WHERE movie_id = ? ORDER BY created_at DESC LIMIT 1`
+-   Verify job status is "ready"
+-   Update `last_watched_at` in the `jobs` table: `UPDATE jobs SET last_watched_at = ?, updated_at = ? WHERE job_id = ?`
+-   Generate R2 presigned URL for streaming (R2 key: `movies/{job_id}/movie.{ext}`, expiration: 4 hours)
+-   Get content type and file size from R2 metadata
 
 ### `GET /api/movies-on-demand/movies/{id}/similar`
 
@@ -333,43 +189,68 @@ This document focuses solely on backend implementation details not covered in th
 
 **Description**: Retrieves movies similar to the specified movie from TMDB.
 
-**Implementation Flow**:
+**Implementation**:
 
-1. Extract movie `id` from path parameters and `page` from query
-2. Validate id is a valid integer
-3. Call TMDB API: `GET /3/movie/{id}/similar?page={page}`
-4. Transform TMDB response to match API contract schema
-5. Return response per API contract
-
-**Implementation Notes**:
-
--   TMDB API requires API key in Authorization header
--   Page defaults to 1 if not provided
--   TMDB returns paginated results with 20 items per page
-
-**Error Handling**:
-
--   Invalid movie ID → `INVALID_INPUT` (400)
--   Movie not found → `NOT_FOUND` (404)
--   TMDB API errors → `TMDB_ERROR` (502)
--   Network errors → `INTERNAL_ERROR` (500)
+-   Call TMDB API: `GET /3/movie/{id}/similar?page={page}`
+-   Transform TMDB response to match API contract schema
 
 ## Data Models
 
 > **Note**: API request/response types are defined in `API_CONTRACT.yml`. This section covers internal data models only.
 
-### KV Storage Structure
+### D1 Storage Schema
 
-**Job Records**: `job:{job_id}`
+We store job state and metadata in a relational schema in D1. This enables rich queries, indexing, pagination, and reliable updates. The D1 schema (SQLite-compatible) includes the following tables:
 
--   Stores full job details (status, progress, timestamps, release info)
--   Updated throughout job lifecycle by Queue consumer
+```sql
+-- Jobs: tracks lifecycle of each fetch/download job
+CREATE TABLE IF NOT EXISTS jobs (
+    job_id TEXT PRIMARY KEY,
+    movie_id INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    progress REAL,
+    release_title TEXT,
+    release_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    ready_at TEXT,
+    expires_at TEXT,
+    last_watched_at TEXT,
+    error_message TEXT
+);
 
-**Movie-to-Job Mapping**: `job:movie:{movie_id}`
+CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+CREATE INDEX IF NOT EXISTS idx_jobs_movie_id ON jobs(movie_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_expires_at ON jobs(expires_at);
 
--   Maps TMDB movie ID to current/most recent job_id
--   Used to check if movie is already being fetched or ready
--   Value is simple string: `job_abc123`
+-- Watch history: persisted metadata about movies watched
+CREATE TABLE IF NOT EXISTS watch_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    movie_id INTEGER NOT NULL,
+    title TEXT,
+    poster_path TEXT,
+    last_watched_at TEXT NOT NULL,
+    job_id TEXT,
+    status TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_watch_last_watched ON watch_history(last_watched_at DESC);
+
+-- Optional: store a cached TMDB metadata row for faster reads
+CREATE TABLE IF NOT EXISTS movie_metadata (
+    movie_id INTEGER PRIMARY KEY,
+    title TEXT,
+    poster_path TEXT,
+    backdrop_path TEXT,
+    overview TEXT,
+    updated_at TEXT
+);
+```
+
+**Notes:**
+
+-   Use `jobs.movie_id` to map movies to latest jobs — a separate mapping key is not required.
+-   `watch_history` preserves recently watched metadata; it is append-only.
+-   Indexes provide efficient filtering (by status, by expiration, by movie_id).
 
 **Job Lifecycle States**:
 
@@ -380,119 +261,13 @@ This document focuses solely on backend implementation details not covered in th
 5. `error` - Failed (error_message populated)
 6. `deleted` - Expired and removed from R2
 
-### Internal TypeScript Types
+### Internal Type Mapping
 
-> Only include types NOT defined in the API contract (e.g., TMDB response types, NZBGeek types, internal utilities)
+Map external API responses (TMDB, NZBGeek) to the API contract format. Reference external API documentation for response structures:
 
-```typescript
-// TMDB API response types (internal representation)
-interface TMDBMovieResponse {
-    id: number;
-    title: string;
-    overview: string;
-    release_date: string;
-    poster_path: string | null;
-    backdrop_path: string | null;
-    vote_average: number;
-    vote_count: number;
-    popularity: number;
-    genre_ids: number[];
-}
-
-interface TMDBMovieDetailsResponse extends TMDBMovieResponse {
-    runtime: number | null;
-    imdb_id: string | null;
-    genres: Array<{ id: number; name: string }>;
-    production_companies: Array<{
-        id: number;
-        name: string;
-        logo_path: string | null;
-    }>;
-    budget: number;
-    revenue: number;
-    credits: {
-        cast: Array<{
-            id: number;
-            name: string;
-            character: string;
-            profile_path: string | null;
-        }>;
-        crew: Array<{
-            id: number;
-            name: string;
-            job: string;
-            profile_path: string | null;
-        }>;
-    };
-}
-
-interface TMDBSearchResponse {
-    page: number;
-    results: TMDBMovieResponse[];
-    total_pages: number;
-    total_results: number;
-}
-
-// NZBGeek API response types (internal representation)
-interface NZBGeekRelease {
-    guid: string; // Release ID
-    title: string; // Full release title
-    size: number; // Size in bytes
-    link: string; // NZB download URL
-    pubDate: string; // Publication date
-    // Additional fields from NZBGeek API
-}
-
-interface NZBGeekSearchResponse {
-    channel: {
-        item: NZBGeekRelease[];
-    };
-}
-
-// Job Queue message types (internal)
-interface MovieFetchJobMessage {
-    job_id: string;
-    movie_id: number;
-    release_id: string;
-    nzb_url: string;
-    release_title: string;
-}
-
-// Release metadata parser (internal utility)
-interface ParsedRelease {
-    quality: string; // "720p" | "1080p" | "4K" | "unknown"
-    codec: string | null; // "x264" | "x265" | "HEVC" | null
-    source: string | null; // "BluRay" | "WEB-DL" | "WEBRip" | null
-    group: string | null; // Release group name
-}
-
-// Helper function to transform TMDB response to API contract format
-function transformTMDBMovie(tmdbMovie: TMDBMovieResponse): Movie {
-    return {
-        id: tmdbMovie.id,
-        title: tmdbMovie.title,
-        overview: tmdbMovie.overview,
-        release_date: tmdbMovie.release_date,
-        poster_path: tmdbMovie.poster_path,
-        backdrop_path: tmdbMovie.backdrop_path,
-        vote_average: tmdbMovie.vote_average,
-        vote_count: tmdbMovie.vote_count,
-        popularity: tmdbMovie.popularity,
-        genre_ids: tmdbMovie.genre_ids,
-    };
-}
-
-// Helper function to parse release title metadata
-function parseReleaseTitle(title: string): ParsedRelease {
-    // Parse: "Movie.Title.2024.1080p.BluRay.x264-GROUP"
-    const quality = title.match(/\d{3,4}p/)?.[0] || "unknown";
-    const codec = title.match(/x26[45]|HEVC/i)?.[0] || null;
-    const source = title.match(/BluRay|WEB-DL|WEBRip|HDTV/i)?.[0] || null;
-    const group = title.split("-").pop() || null;
-
-    return { quality, codec, source, group };
-}
-```
+-   TMDB API: See `third-party-docs/themoviedb/` for response schemas
+-   NZBGeek API: Returns RSS/XML feed with release items (title, size, guid, link)
+-   Parse release titles to extract metadata: `Movie.Title.2024.1080p.BluRay.x264-GROUP` (quality, codec, source, group)
 
 ## Cloudflare Services
 
@@ -593,55 +368,76 @@ const contentType = object.customMetadata?.contentType;
 await env.MOVIES_R2.delete(`movies/${jobId}/movie.mp4`);
 ```
 
-### KV: Job State and Mappings
+### D1: Job State and Mappings
 
-**Binding**: `MOVIES_KV`
+**Binding**: `MOVIES_D1`
 
 **Usage**:
 
--   Store job records and status
--   Map movie IDs to job IDs
--   Track download progress
-
-**Key Structure**:
-
--   Job details: `job:{job_id}` → full JobStatus object
--   Movie mapping: `job:movie:{movie_id}` → current job_id string
+-   Store job records and status as relational rows in D1
+-   Map movie IDs to job rows via `jobs.movie_id` (no mapping keys required)
+-   Track download progress and watch times with reliable updates and indexing
 
 **Operations**:
 
 ```typescript
-// Create job record
-await env.MOVIES_KV.put(
-    `job:${jobId}`,
-    JSON.stringify({
-        job_id: jobId,
-        movie_id: movieId,
-        status: "queued",
-        release_title: releaseTitle,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-    })
-);
+// Insert job record into D1
+await env.MOVIES_D1.prepare(
+    `INSERT INTO jobs (job_id, movie_id, status, release_title, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?)`
+)
+    .bind(jobId, movieId, "queued", releaseTitle, createdAt, createdAt)
+    .run();
 
-// Map movie to job
-await env.MOVIES_KV.put(`job:movie:${movieId}`, jobId);
+// Concurrency: only one active job per movie
+// Use a transaction to enforce uniqueness checks for active jobs
+// Typical pattern:
+// 1. BEGIN TRANSACTION
+// 2. SELECT job_id FROM jobs WHERE movie_id = ? AND status IN ('queued','downloading','preparing','ready') LIMIT 1
+// 3. If exists, return existing job_id
+// 4. Else INSERT job and COMMIT
+// Using a transaction prevents duplicated job creation in concurrent requests
 
-// Update job status
-const job = JSON.parse(await env.MOVIES_KV.get(`job:${jobId}`));
-job.status = "downloading";
-job.progress = 25.5;
-job.updated_at = new Date().toISOString();
-await env.MOVIES_KV.put(`job:${jobId}`, JSON.stringify(job));
+// Get the latest job for a movie
+const job = await env.MOVIES_D1.prepare(
+    `SELECT * FROM jobs WHERE movie_id = ? ORDER BY created_at DESC LIMIT 1`
+)
+    .bind(movieId)
+    .first();
 
-// Get job for movie
-const jobId = await env.MOVIES_KV.get(`job:movie:${movieId}`);
-if (jobId) {
-    const job = JSON.parse(await env.MOVIES_KV.get(`job:${jobId}`));
-}
+// Get job by job_id
+const job = await env.MOVIES_D1.prepare(`SELECT * FROM jobs WHERE job_id = ?`)
+    .bind(jobId)
+    .first();
 
-// List all jobs
-const jobs = await env.MOVIES_KV.list({ prefix: "job:" });
+// Update job status and progress
+await env.MOVIES_D1.prepare(
+    `UPDATE jobs SET status = ?, progress = ?, updated_at = ? WHERE job_id = ?`
+)
+    .bind(status, progress, updatedAt, jobId)
+    .run();
+
+// List jobs with status filter and pagination
+const jobs = await env.MOVIES_D1.prepare(
+    `SELECT * FROM jobs WHERE status = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?`
+)
+    .bind(status, limit, offset)
+    .all();
+
+// Update last_watched_at when streaming
+await env.MOVIES_D1.prepare(
+    `UPDATE jobs SET last_watched_at = ?, updated_at = ? WHERE job_id = ?`
+)
+    .bind(now, now, jobId)
+    .run();
+
+// Insert watch history row
+await env.MOVIES_D1.prepare(
+    `INSERT INTO watch_history (movie_id, title, poster_path, last_watched_at, job_id, status)
+     VALUES (?, ?, ?, ?, ?, ?)`
+)
+    .bind(movieId, title, posterPath, now, jobId, status)
+    .run();
 ```
 
 ### Queue: Asynchronous Movie Processing
@@ -650,65 +446,38 @@ const jobs = await env.MOVIES_KV.list({ prefix: "job:" });
 
 **Usage**:
 
--   Process movie downloads asynchronously
--   Handle NZB parsing and Usenet downloads
--   Update job status throughout lifecycle
--   Upload to R2 when complete
+-   Trigger Container-based movie downloads asynchronously
+-   Worker queue handler receives job message and spins up Cloudflare Container
+-   Container handles heavy lifting (NZB parsing, Usenet downloads, file processing)
 
 **Message Format**:
 
-```typescript
-interface MovieFetchJobMessage {
-    job_id: string;
-    movie_id: number;
-    release_id: string;
-    nzb_url: string;
-    release_title: string;
-}
-```
+-   `job_id`: string
+-   `movie_id`: number
+-   `release_id`: string
+-   `nzb_url`: string
+-   `release_title`: string
 
-**Queue Consumer Logic**:
+**Queue Consumer Logic (Worker Handler)**:
 
-```typescript
-// Pseudocode for Queue consumer
-async function processMovieFetchJob(message: MovieFetchJobMessage, env: Env) {
-    const { job_id, movie_id, nzb_url, release_title } = message;
+-   Receive job message from Queue
+-   Update job status to "downloading" (progress: 0%) in D1
+-   Spin up Cloudflare Container instance, passing job details (job_id, nzb_url, Usenet credentials, R2 destination)
+-   Container handles the rest (see Container Processing Logic below)
 
-    try {
-        // 1. Update status: downloading
-        await updateJobStatus(env.MOVIES_KV, job_id, "downloading", 0);
+**Container Processing Logic**:
 
-        // 2. Download NZB file from NZBGeek
-        const nzbContent = await fetch(nzb_url).then((r) => r.text());
-
-        // 3. Parse NZB (XML) to get Usenet article references
-        const articles = parseNZB(nzbContent);
-
-        // 4. Download movie from Usenet (track progress)
-        const movieFile = await downloadFromUsenet(articles, (progress) => {
-            updateJobStatus(env.MOVIES_KV, job_id, "downloading", progress);
-        });
-
-        // 5. Update status: preparing
-        await updateJobStatus(env.MOVIES_KV, job_id, "preparing");
-
-        // 6. Upload to R2
-        await env.MOVIES_R2.put(`movies/${job_id}/movie.mp4`, movieFile);
-
-        // 7. Update status: ready (set expiration timestamp)
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-        await updateJobStatus(env.MOVIES_KV, job_id, "ready", 100, {
-            ready_at: new Date().toISOString(),
-            expires_at: expiresAt.toISOString(),
-        });
-    } catch (error) {
-        // Update status: error
-        await updateJobStatus(env.MOVIES_KV, job_id, "error", null, {
-            error_message: error.message,
-        });
-    }
-}
-```
+-   Download NZB file from NZBGeek URL
+-   Parse NZB (XML) to extract Usenet article references
+-   Connect to Usenet servers (NNTP protocol) using Usenet client (e.g., SABnzbd, NZBGet)
+-   Download movie file from Usenet (track progress, update D1 periodically)
+-   Verify and repair using parity data if available
+-   Unpack/reconstruct final movie file
+-   Update job status to "preparing" in D1
+-   Upload movie file to R2 storage: `movies/{job_id}/movie.{ext}`
+-   Update job status to "ready" and set expiration timestamp (24 hours after ready) in D1
+-   Clean up local temporary data and exit
+-   On error: Update job status to "error" with error_message in D1
 
 **Operations**:
 
@@ -722,6 +491,30 @@ await env.MOVIES_QUEUE.send({
     release_title: releaseTitle,
 });
 ```
+
+### Containers: Heavy Movie Processing
+
+**Binding**: `MOVIES_CONTAINER`
+
+**Usage**:
+
+-   Run resource-intensive Usenet downloads and file processing
+-   Execute Usenet clients (e.g., SABnzbd, NZBGet) that require full Linux environment
+-   Handle binary operations, large file processing, and unpacking
+-   Short-lived, job-specific instances that spin up on-demand
+
+**Why Containers**:
+
+-   Workers have CPU/memory limits and cannot easily run binary Usenet clients
+-   Containers provide full Linux environment with required runtime dependencies
+-   Ephemeral instances scale to zero when not in use
+
+**Container Operations**:
+
+-   Worker queue handler spins up container instance via `getContainer()` API
+-   Container receives job details (job_id, nzb_url, Usenet credentials, R2 destination)
+-   Container processes job independently and updates D1 status throughout lifecycle
+-   Container exits after completion, allowing instance to go idle
 
 ## Workers Logic
 
@@ -737,7 +530,7 @@ await env.MOVIES_QUEUE.send({
    - Search movies (GET /search) → Call TMDB API
    - Get popular movies (GET /popular) → Call TMDB API
    - Get top movies (GET /top) → Call TMDB API
-   - Get movie details (GET /movies/{id}) → Call TMDB + check KV for job status
+    - Get movie details (GET /movies/{id}) → Call TMDB + check D1 for job status
    - Get similar movies (GET /movies/{id}/similar) → Call TMDB API
 
    Usenet Integration:
@@ -745,11 +538,11 @@ await env.MOVIES_QUEUE.send({
    - Fetch movie (POST /movies/{id}/fetch) → Validate, create job, enqueue to Queue
 
    Job Management:
-   - Get job status (GET /jobs/{jobId}) → Query KV
-   - List jobs (GET /jobs) → Query KV with prefix
+    - Get job status (GET /jobs/{jobId}) → Query D1
+    - List jobs (GET /jobs) → Query D1 with SQL filters and pagination
 
    Streaming:
-   - Get stream URL (GET /movies/{id}/stream) → Check KV for ready job, generate R2 presigned URL
+    - Get stream URL (GET /movies/{id}/stream) → Check D1 for ready job, generate R2 presigned URL
 
 5. Transform response to API contract format
 6. Return response
@@ -757,23 +550,27 @@ await env.MOVIES_QUEUE.send({
 
 ### Queue Consumer Processing Flow
 
-```
-Queue Consumer (background worker):
-1. Receive job message from Queue
-2. Update job status: downloading (0%)
-3. Download NZB file from NZBGeek URL
-4. Parse NZB XML to extract Usenet article references
-5. Connect to Usenet servers (NNTP protocol)
-6. Download movie file parts (update progress in KV)
-7. Reassemble parts into complete movie file
-8. Update job status: preparing
-9. Upload movie file to R2 storage
-10. Update job status: ready
-11. Set expiration timestamp (24 hours)
-12. Job complete
+**Worker Queue Handler:**
 
-On error: Update status to "error" with error_message
-```
+1. Receive job message from Queue
+2. Update job status to "downloading" (0%) in D1
+3. Spin up Cloudflare Container instance with job details
+4. Container takes over processing
+
+**Container Processing:**
+
+1. Download NZB file from NZBGeek URL
+2. Parse NZB XML to extract Usenet article references
+3. Connect to Usenet servers (NNTP protocol) using Usenet client
+4. Download movie file parts (update progress in D1 periodically)
+5. Verify and repair using parity data if available
+6. Reassemble/unpack parts into complete movie file
+7. Update job status to "preparing" in D1
+8. Upload movie file to R2 storage
+9. Update job status to "ready" and set expiration timestamp (24 hours) in D1
+10. Clean up local temporary data and exit
+
+On error: Container updates job status to "error" with error_message in D1
 
 ### Error Handling
 
@@ -813,20 +610,20 @@ app.get("/movies/:id", async (c) => {
 
         const tmdbData = await tmdbResponse.json();
 
-        // Check for active job
-        const jobId = await c.env.MOVIES_KV.get(`job:movie:${movieId}`);
+        // Check for active job (query D1 for latest job)
+        const job = await c.env.MOVIES_D1.prepare(
+            `SELECT * FROM jobs WHERE movie_id = ? ORDER BY created_at DESC LIMIT 1`
+        )
+            .bind(movieId)
+            .first();
         let jobStatus = null;
-        if (jobId) {
-            const job = await c.env.MOVIES_KV.get(`job:${jobId}`);
-            if (job) {
-                const jobData = JSON.parse(job);
-                jobStatus = {
-                    job_id: jobData.job_id,
-                    status: jobData.status,
-                    progress: jobData.progress,
-                    error_message: jobData.error_message,
-                };
-            }
+        if (job) {
+            jobStatus = {
+                job_id: job.job_id,
+                status: job.status,
+                progress: job.progress,
+                error_message: job.error_message,
+            };
         }
 
         return c.json({
@@ -966,31 +763,77 @@ function validateQualityPreference(quality?: string): boolean {
 
 -   Consider caching popular and top-rated movie lists (they update daily)
 -   Cache movie details from TMDB (rarely change)
--   Use Cloudflare Workers cache API or KV for short-term caching
+-   Use Cloudflare Workers cache API or KV for short-term caching where helpful; D1 remains the source-of-truth for metadata
 -   Cache TTL: 1 hour for popular/top lists, 24 hours for movie details
 -   Cache NZBGeek release searches (short TTL, 15 minutes)
--   Job status cached in KV (no additional caching needed)
+-   Job status stored in D1; short-term caching in Workers Cache or KV is optional for hot records
 
 ### Edge Computing Benefits
 
 -   Requests served from edge locations globally
 -   Low latency for movie search and browsing
 -   TMDB API calls made from edge workers
--   Job status lookups from KV at edge
+-   Job status lookups from D1 at the edge; consider caching reads with Cloudflare Workers cache or KV for high-traffic items
 
 ### Queue Processing
 
 -   Queue consumer handles heavy lifting (downloads, processing)
 -   Decouples API requests from download operations
 -   Prevents API timeouts during long-running downloads
--   Progress updates stored in KV for polling
+-   Progress updates stored in D1 for polling (SQL writing; paginate for reads to limit bandwidth)
 
 ### Storage Optimization
 
--   Movies automatically deleted after 24 hours (ephemeral storage)
--   R2 storage lifecycle policies for automatic cleanup
+-   Movies automatically deleted if not watched for 1 week (ephemeral storage)
+-   Cleanup process checks `last_watched_at` timestamp in job records
+-   If `last_watched_at` is null or older than 7 days, delete from R2 and set job status to `deleted` in D1
+-   R2 storage lifecycle policies for automatic cleanup (backup)
 -   Compress video during preparation phase (optional)
 -   Use adaptive bitrate streaming for bandwidth optimization
+
+### Watch Time Tracking
+
+**Purpose**: Track when movies are watched to implement 1-week cleanup policy
+
+**Storage**:
+
+-   `last_watched_at` field in job record (`jobs.last_watched_at` in D1)
+-   Updated when user requests stream URL or starts playback
+-   Used by cleanup process to determine which movies to delete
+
+**Cleanup Process**:
+
+-   Scheduled Worker runs periodically (e.g., daily)
+-   Scans all jobs with status "ready"
+-   For each job:
+    -   If `last_watched_at` is null and `ready_at` is older than 7 days → delete
+    -   If `last_watched_at` exists and is older than 7 days → delete
+-   Deletes movie file from R2
+    -- Updates job status to "deleted" in D1 (set `status = 'deleted'` and `updated_at = ?`), and optionally delete R2 object
+-   Optionally archives watch history metadata (without file reference)
+
+**Example cleanup worker (D1 + R2)**:
+
+```typescript
+const threshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+const rows = await env.MOVIES_D1.prepare(
+    `SELECT job_id FROM jobs WHERE status = 'ready' AND ((last_watched_at IS NULL AND ready_at < ?) OR (last_watched_at IS NOT NULL AND last_watched_at < ?))`
+)
+    .bind(threshold, threshold)
+    .all();
+
+for (const row of rows.results) {
+    const jobId = row.job_id;
+    // Delete file from R2
+    await env.MOVIES_R2.delete(`movies/${jobId}/movie.mp4`);
+    // Mark job as deleted in D1
+    await env.MOVIES_D1.prepare(
+        `UPDATE jobs SET status = 'deleted', updated_at = ? WHERE job_id = ?`
+    )
+        .bind(new Date().toISOString(), jobId)
+        .run();
+}
+```
 
 ## Implementation Checklist
 
@@ -1015,8 +858,10 @@ function validateQualityPreference(quality?: string): boolean {
 -   [ ] Response transformation functions
 -   [ ] Error mapping logic
 -   [ ] R2 storage operations for movie files
--   [ ] KV operations for job tracking
--   [ ] KV operations for movie-to-job mappings
+-   [ ] D1 operations for job tracking
+-   [ ] D1 queries for movie-to-job mappings (via `jobs.movie_id`)
+-   [ ] Watch time tracking (last_watched_at updates)
+-   [ ] Watch history metadata storage
 -   [ ] Presigned URL generation for streaming
 -   [ ] Release metadata parsing
 
@@ -1030,6 +875,8 @@ function validateQualityPreference(quality?: string): boolean {
 -   [ ] Best release selection logic (auto mode)
 -   [ ] Stream URL generation (R2 presigned URLs)
 -   [ ] Job status tracking
+-   [ ] Watch time tracking (update last_watched_at on stream requests)
+-   [ ] Cleanup process (scheduled worker to delete movies not watched for 1 week)
 
 ### Queue Consumer
 
@@ -1047,7 +894,7 @@ function validateQualityPreference(quality?: string): boolean {
 
 -   [ ] Scheduled job for deleting expired movies
 -   [ ] R2 lifecycle policies
--   [ ] KV cleanup for old job records
+-   [ ] D1 cleanup for old job records
 -   [ ] Monitoring and alerting
 
 ## Dependencies
@@ -1082,13 +929,13 @@ How to map internal errors to API contract error codes:
 -   NZBGeek API errors (4xx, 5xx) → `NZBGEEK_ERROR` (502)
 -   Usenet download failures → `USENET_ERROR` (502)
 -   R2 storage errors → `STORAGE_ERROR` (502)
--   KV access errors → `STORAGE_ERROR` (502)
+-   D1 access errors → `STORAGE_ERROR` (502)
 -   File upload failures → `STORAGE_ERROR` (502)
 -   Queue enqueue failures → `JOB_ERROR` (500)
 -   Network errors → `INTERNAL_ERROR` (500)
 -   Missing TMDB API key → `INTERNAL_ERROR` (500)
 -   Missing NZBGeek API key → `INTERNAL_ERROR` (500)
--   Missing R2/KV/Queue bindings → `INTERNAL_ERROR` (500)
+-   Missing R2/D1/Queue bindings → `INTERNAL_ERROR` (500)
 -   Unexpected errors → `INTERNAL_ERROR` (500)
 
 ## Monitoring & Logging

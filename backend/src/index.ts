@@ -5,6 +5,7 @@ import whatsappMessengerRoutes from "./whatsapp-messenger";
 import calculatorRoutes from "./calculator";
 import homeRoutes from "./home";
 import videoCallRoutes from "./video-call";
+import fileHostingRoutes from "./file-hosting";
 
 const app = new Hono();
 
@@ -39,6 +40,7 @@ app.route("/api/whatsapp-messenger", whatsappMessengerRoutes);
 app.route("/api/calculator", calculatorRoutes);
 app.route("/api/home", homeRoutes);
 app.route("/api/video-call", videoCallRoutes);
+app.route("/api/file-hosting", fileHostingRoutes);
 
 // Health check
 app.get("/", (c) => c.json({ success: true, message: "bahasadri.com API" }));
