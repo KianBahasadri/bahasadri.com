@@ -8,7 +8,7 @@ Backend implementation for the platformer game. The backend is minimal and optio
 
 ## Code Location
 
-`backend/src/routes/platformer-game/`
+`backend/src/platformer-game/`
 
 ## API Contract Reference
 

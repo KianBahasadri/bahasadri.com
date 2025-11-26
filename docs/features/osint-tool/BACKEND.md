@@ -10,7 +10,7 @@ Backend implementation for the OSINT Tool utility. Handles gathering publicly av
 
 ## Code Location
 
-`backend/src/routes/osint-tool/`
+`backend/src/osint-tool/`
 
 ## API Contract Reference
 

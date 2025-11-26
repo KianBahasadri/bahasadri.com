@@ -10,7 +10,7 @@ Backend implementation for the Movies on Demand utility. Handles TMDB API integr
 
 ## Code Location
 
-`backend/src/routes/movies-on-demand/`
+`backend/src/movies-on-demand/`
 
 ## API Contract Reference
 
@@ -239,7 +239,8 @@ function transformTMDBMovie(tmdbMovie: TMDBMovieResponse): Movie {
 -   Retrieve popular and trending movies
 -   Fetch movie details with cast and crew
 -   Get similar movie recommendations
--   No local storage needed (stateless proxy)
+-   Get watch providers (streaming service availability)
+-   No local storage needed for TMDB data (stateless proxy)
 
 **API Endpoints**:
 
@@ -248,6 +249,7 @@ function transformTMDBMovie(tmdbMovie: TMDBMovieResponse): Movie {
 -   `GET https://api.themoviedb.org/3/trending/movie/day` - Get trending movies
 -   `GET https://api.themoviedb.org/3/movie/{id}` - Get movie details
 -   `GET https://api.themoviedb.org/3/movie/{id}/similar` - Get similar movies
+-   `GET https://api.themoviedb.org/3/movie/{id}/watch/providers` - Get watch providers
 
 **Configuration**:
 
@@ -259,6 +261,59 @@ function transformTMDBMovie(tmdbMovie: TMDBMovieResponse): Movie {
 -   API key should be sent in `Authorization` header: `Bearer {TMDB_API_KEY}`
 -   Alternatively, TMDB supports `api_key` query parameter
 
+**Important**: JustWatch attribution required when using watch providers data (per TMDB API terms)
+
+### R2: Movie File Storage
+
+**Binding**: `MOVIES_R2` (or similar)
+
+**Usage**:
+
+-   Store hosted movie files
+-   Generate presigned URLs for streaming
+-   Stream movies directly from R2
+
+**Operations**:
+
+```typescript
+// Store movie file
+await env.MOVIES_R2.put(`movies/${movieId}.mp4`, movieFile);
+
+// Get presigned URL for streaming
+const url = await env.MOVIES_R2.createMultipartUpload(`movies/${movieId}.mp4`);
+
+// Stream movie file
+const object = await env.MOVIES_R2.get(`movies/${movieId}.mp4`);
+```
+
+### KV: Hosted Movies Tracking
+
+**Binding**: `MOVIES_KV` (or similar)
+
+**Usage**:
+
+-   Track which movies are hosted
+-   Store mapping: movie ID → R2 key
+-   Store metadata: file size, content type, upload date
+
+**Operations**:
+
+```typescript
+// Record hosted movie
+await env.MOVIES_KV.put(
+    `movie:${movieId}`,
+    JSON.stringify({
+        r2Key: `movies/${movieId}.mp4`,
+        fileSize: 1572864000,
+        contentType: "video/mp4",
+        uploadedAt: new Date().toISOString(),
+    })
+);
+
+// Check if movie is hosted
+const hosted = await env.MOVIES_KV.get(`movie:${movieId}`);
+```
+
 ## Workers Logic
 
 ### Request Processing Flow
@@ -268,14 +323,17 @@ function transformTMDBMovie(tmdbMovie: TMDBMovieResponse): Movie {
 2. Parse request (query parameters, path parameters)
 3. Validate input
 4. Get TMDB API key from environment
-5. Call TMDB API:
+5. Call TMDB API or access storage:
    - Search movies (GET /search)
    - Get popular movies (GET /popular)
    - Get trending movies (GET /trending)
    - Get movie details (GET /movies/{id})
    - Get similar movies (GET /movies/{id}/similar)
-6. Parse TMDB response
-7. Transform TMDB response to API contract format
+   - Get watch providers (GET /movies/{id}/watch-providers)
+   - Get stream URL (check R2/KV or validate external URL)
+   - Host movie (download/upload to R2, record in KV)
+6. Parse TMDB response or process storage operations
+7. Transform response to API contract format
 8. Return response
 ```
 
@@ -297,11 +355,7 @@ try {
         if (tmdbResponse.status === 404) {
             return errorResponse(404, "NOT_FOUND", "Movie not found");
         }
-        return errorResponse(
-            502,
-            "TMDB_ERROR",
-            "TMDB API request failed"
-        );
+        return errorResponse(502, "TMDB_ERROR", "TMDB API request failed");
     }
 
     const tmdbData = await tmdbResponse.json();
@@ -310,11 +364,7 @@ try {
     // Map implementation errors to API contract error codes
     if (error instanceof TypeError) {
         // Network error
-        return errorResponse(
-            500,
-            "INTERNAL_ERROR",
-            "Network request failed"
-        );
+        return errorResponse(500, "INTERNAL_ERROR", "Network request failed");
     }
     return errorResponse(500, "INTERNAL_ERROR", "Unexpected error");
 }
@@ -344,7 +394,11 @@ function validateSearchQuery(query: string): { ok: boolean; error?: string } {
 }
 
 // Validate movie ID
-function validateMovieId(id: string): { ok: boolean; error?: string; id?: number } {
+function validateMovieId(id: string): {
+    ok: boolean;
+    error?: string;
+    id?: number;
+} {
     const movieId = parseInt(id, 10);
     if (isNaN(movieId) || movieId <= 0) {
         return { ok: false, error: "Invalid movie ID" };
@@ -414,7 +468,10 @@ function validatePage(page: string | null): number {
 -   [ ] GET /popular endpoint
 -   [ ] GET /trending endpoint
 -   [ ] GET /movies/{id} endpoint
+-   [ ] GET /movies/{id}/watch-providers endpoint
 -   [ ] GET /movies/{id}/similar endpoint
+-   [ ] GET /movies/{id}/stream endpoint
+-   [ ] POST /movies/{id}/host endpoint
 -   [ ] Error handling (per API_CONTRACT.yml)
 
 ### Data Layer
@@ -422,12 +479,18 @@ function validatePage(page: string | null): number {
 -   [ ] TMDB API client functions
 -   [ ] Response transformation functions
 -   [ ] Error mapping logic
+-   [ ] R2 storage operations for movie files
+-   [ ] KV operations for tracking hosted movies
+-   [ ] Presigned URL generation for streaming
 
 ### Business Logic
 
 -   [ ] Input validation
 -   [ ] TMDB API integration
 -   [ ] Response transformation
+-   [ ] Movie file download/upload logic
+-   [ ] Stream URL generation and validation
+-   [ ] Hosted movie tracking
 
 ## Dependencies
 
@@ -446,10 +509,16 @@ How to map internal errors to API contract error codes:
 
 -   Missing or invalid query parameter → `INVALID_INPUT` (400)
 -   Invalid movie ID format → `INVALID_INPUT` (400)
+-   Invalid URL format → `INVALID_INPUT` (400)
 -   TMDB API 404 response → `NOT_FOUND` (404)
+-   Movie not hosted → `NOT_FOUND` (404)
 -   TMDB API errors (4xx, 5xx) → `TMDB_ERROR` (502)
+-   R2 storage errors → `STORAGE_ERROR` (502)
+-   KV access errors → `STORAGE_ERROR` (502)
+-   File download/upload failures → `STORAGE_ERROR` (502)
 -   Network errors → `INTERNAL_ERROR` (500)
 -   Missing TMDB API key → `INTERNAL_ERROR` (500)
+-   Missing R2/KV bindings → `INTERNAL_ERROR` (500)
 -   Unexpected errors → `INTERNAL_ERROR` (500)
 
 ## Monitoring & Logging
@@ -470,4 +539,3 @@ How to map internal errors to API contract error codes:
 -   **DO** focus on implementation-specific details (TMDB API integration, response transformation, error mapping)
 -   **DO** reference the API contract when discussing endpoints or data structures
 -   All API responses **MUST** match the contract defined in `API_CONTRACT.yml`
-

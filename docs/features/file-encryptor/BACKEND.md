@@ -16,7 +16,7 @@ Backend implementation for the File Encryptor utility. All encryption/decryption
 
 ## Code Location
 
-`backend/src/routes/file-encryptor/`
+`backend/src/file-encryptor/`
 
 ## API Contract Reference
 

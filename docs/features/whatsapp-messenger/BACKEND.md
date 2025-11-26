@@ -10,7 +10,7 @@ Backend implementation for the WhatsApp Messenger utility. Handles WhatsApp mess
 
 ## Code Location
 
-`backend/src/routes/whatsapp-messenger/`
+`backend/src/whatsapp-messenger/`
 
 ## API Contract Reference
 

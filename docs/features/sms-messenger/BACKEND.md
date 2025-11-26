@@ -10,7 +10,7 @@ Backend implementation for the SMS Messenger utility. Handles SMS sending via Tw
 
 ## Code Location
 
-`backend/src/routes/sms-messenger/`
+`backend/src/sms-messenger/`
 
 ## API Contract Reference
 

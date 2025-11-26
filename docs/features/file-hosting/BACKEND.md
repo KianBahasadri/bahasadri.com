@@ -10,7 +10,7 @@ Backend implementation for the File Hosting utility. Handles file uploads to R2,
 
 ## Code Location
 
-`backend/src/routes/file-hosting/`
+`backend/src/file-hosting/`
 
 ## API Contract Reference
 

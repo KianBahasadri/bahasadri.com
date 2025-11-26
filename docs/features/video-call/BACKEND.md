@@ -10,7 +10,7 @@ Backend implementation for the Video Call utility. Handles RealtimeKit API integ
 
 ## Code Location
 
-`backend/src/routes/video-call/`
+`backend/src/video-call/`
 
 ## API Contract Reference
 

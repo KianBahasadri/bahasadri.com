@@ -10,7 +10,7 @@ Backend implementation for the [Feature Name] utility. [Brief description of wha
 
 ## Code Location
 
-`backend/src/routes/[feature-name]/`
+`backend/src/[feature-name]/`
 
 ## API Contract Reference
 
