@@ -12,37 +12,39 @@
 
 .tabs {
     display: flex;
-    gap: 8px;
+    gap: 32px;
     justify-content: center;
     margin-bottom: 32px;
     flex-wrap: wrap;
+    border-bottom: 1px solid var(--dark-surface);
+    padding-bottom: 8px;
 }
 
 .tab {
-    padding: 12px 24px;
-    background: var(--dark-elevated);
-    border: 2px solid var(--dark-surface);
-    border-radius: 8px;
+    padding: 12px 0;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
     color: var(--pink-light);
     cursor: pointer;
     transition: all 0.2s ease;
     font-size: 1rem;
     font-weight: 600;
+    position: relative;
 }
 
 .tab:hover {
-    border-color: var(--pink-hot);
-    background: var(--dark-surface);
+    color: var(--pink-hot);
 }
 
 .tab.active {
-    background: var(--pink-hot);
-    border-color: var(--pink-hot);
-    color: white;
+    color: var(--pink-hot);
+    border-bottom-color: var(--pink-hot);
 }
 
 .tab:focus-visible {
     outline: 2px solid var(--pink-hot);
     outline-offset: 2px;
+    border-radius: 4px;
 }
 
