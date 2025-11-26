@@ -375,6 +375,64 @@ components:
                     format: date-time
                     nullable: true
                     description: When movie will be automatically deleted
+                last_watched_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: When movie was last watched
+                    example: "2024-01-20T15:30:00Z"
+
+        WatchHistoryItem:
+            type: object
+            required:
+                - movie_id
+                - title
+                - last_watched_at
+            properties:
+                movie_id:
+                    type: integer
+                    description: TMDB movie ID
+                    example: 550
+                title:
+                    type: string
+                    description: Movie title
+                    example: "Fight Club"
+                poster_path:
+                    type: string
+                    nullable: true
+                    description: Path to movie poster image
+                    example: "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg"
+                last_watched_at:
+                    type: string
+                    format: date-time
+                    description: When movie was last watched
+                    example: "2024-01-20T15:30:00Z"
+                job_id:
+                    type: string
+                    nullable: true
+                    description: Job ID if movie is still available
+                    example: "job_abc123"
+                status:
+                    type: string
+                    nullable: true
+                    enum: [ready, deleted]
+                    description: Current status (ready if still available, deleted if cleaned up)
+                    example: "deleted"
+
+        WatchHistoryResponse:
+            type: object
+            required:
+                - movies
+                - total
+            properties:
+                movies:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/WatchHistoryItem"
+                total:
+                    type: integer
+                    description: Total number of watched movies
+                    example: 25
 
         StreamResponse:
             type: object
@@ -519,6 +577,8 @@ tags:
       description: Movie acquisition job management endpoints
     - name: Streaming
       description: Movie streaming endpoints
+    - name: History
+      description: Movie watch history endpoints
 
 paths:
     /movies-on-demand/search:
@@ -770,12 +830,49 @@ paths:
                                         items:
                                             $ref: "#/components/schemas/JobStatus"
 
+    /movies-on-demand/history:
+        get:
+            tags:
+                - History
+            operationId: getWatchHistory
+            summary: Get watch history
+            description: Retrieves a list of movies that have been watched, sorted by most recently watched first. Includes both movies that are still available and those that have been deleted.
+            parameters:
+                - name: limit
+                  in: query
+                  required: false
+                  description: Maximum number of items to return
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                      default: 20
+                      example: 20
+                - name: offset
+                  in: query
+                  required: false
+                  description: Number of items to skip for pagination
+                  schema:
+                      type: integer
+                      minimum: 0
+                      default: 0
+                      example: 0
+            responses:
+                "200":
+                    description: Watch history
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/WatchHistoryResponse"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
     /movies-on-demand/movies/{id}/stream:
         parameters:
             - name: id
               in: path
               required: true
-              description: TMDB movie ID or job ID
+              description: TMDB movie ID
               schema:
                   type: string
                   example: "550"

@@ -167,7 +167,7 @@ Movies are automatically deleted if they have not been watched for 1 week. This 
 
 **Result**: Movie plays in the browser with full video player controls
 
-### View Recently Watched
+### View Movie History
 
 **Goal**: See history of movies you've requested
 
