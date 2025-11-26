@@ -1,0 +1,247 @@
+.container {
+    min-height: 100vh;
+    background: var(--dark-void);
+}
+
+.loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--pink-light);
+}
+
+.hero {
+    position: relative;
+    min-height: 500px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: flex-end;
+    padding: 40px 20px;
+}
+
+.heroContent {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    gap: 32px;
+    align-items: flex-end;
+}
+
+.poster {
+    width: 300px;
+    height: 450px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.heroInfo {
+    flex: 1;
+    color: var(--pink-light);
+}
+
+.title {
+    font-size: 3rem;
+    margin: 0 0 16px 0;
+    color: white;
+}
+
+.meta {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    font-size: 1rem;
+    color: var(--pink-soft);
+}
+
+.genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.genre {
+    background: var(--pink-hot);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.875rem;
+}
+
+.overview {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    max-width: 800px;
+    color: var(--pink-soft);
+}
+
+.content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.section {
+    margin-bottom: 48px;
+}
+
+.sectionTitle {
+    font-size: 2rem;
+    margin: 0 0 24px 0;
+    color: var(--pink-light);
+}
+
+.castGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.castMember {
+    text-align: center;
+}
+
+.castPhoto {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: var(--dark-surface);
+}
+
+.castInfo {
+    padding: 8px;
+}
+
+.castName {
+    margin: 0 0 4px 0;
+    font-weight: 600;
+    color: var(--pink-light);
+    font-size: 0.875rem;
+}
+
+.castCharacter {
+    margin: 0;
+    color: var(--pink-soft);
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.fetchControls {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+    background: var(--dark-elevated);
+    border-radius: 8px;
+}
+
+.modeSelector {
+    display: flex;
+    gap: 16px;
+}
+
+.radioLabel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--pink-light);
+    cursor: pointer;
+}
+
+.radioLabel input[type="radio"] {
+    cursor: pointer;
+}
+
+.qualitySelect {
+    padding: 8px 12px;
+    background: var(--dark-surface);
+    border: 2px solid var(--dark-surface);
+    border-radius: 6px;
+    color: var(--pink-light);
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.qualitySelect:focus {
+    outline: none;
+    border-color: var(--pink-hot);
+}
+
+.selectedRelease {
+    padding: 12px;
+    background: var(--dark-surface);
+    border-radius: 6px;
+    color: var(--pink-light);
+    font-size: 0.875rem;
+}
+
+.selectReleaseButton {
+    padding: 12px 24px;
+    background: var(--dark-elevated);
+    border: 2px solid var(--dark-surface);
+    border-radius: 6px;
+    color: var(--pink-light);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+}
+
+.selectReleaseButton:hover {
+    border-color: var(--pink-hot);
+    background: var(--dark-surface);
+}
+
+.fetchButton {
+    padding: 12px 24px;
+    background: var(--pink-hot);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.fetchButton:hover:not(:disabled) {
+    background: var(--pink-darker);
+}
+
+.fetchButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.similarGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .heroContent {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .poster {
+        width: 200px;
+        height: 300px;
+    }
+
+    .title {
+        font-size: 2rem;
+    }
+
+    .castGrid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 16px;
+    }
+}
+

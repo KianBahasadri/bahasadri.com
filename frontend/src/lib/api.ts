@@ -41,6 +41,17 @@ import type {
     ListPresetsResponse,
     DeleteMeetingResponse,
 } from "../types/video-call";
+import type {
+    MovieSearchResponse,
+    MovieDetails,
+    ReleasesResponse,
+    SimilarMoviesResponse,
+    FetchMovieRequest,
+    FetchMovieResponse,
+    JobStatus,
+    StreamResponse,
+    WatchHistoryResponse,
+} from "../types/movies-on-demand";
 
 const API_BASE_URL =
     import.meta.env.MODE === "production"
@@ -504,4 +515,244 @@ export const deleteMeeting = async (
     }
 
     return response.json() as Promise<DeleteMeetingResponse>;
+};
+
+export const searchMovies = async (
+    query: string,
+    page: number = 1
+): Promise<MovieSearchResponse> => {
+    const response = await fetch(
+        `${API_BASE_URL}/movies-on-demand/search?query=${encodeURIComponent(
+            query
+        )}&page=${page}`,
+        {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        }
+    );
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "searchMovies",
+            "Failed to search movies"
+        );
+    }
+
+    return response.json() as Promise<MovieSearchResponse>;
+};
+
+export const getPopularMovies = async (
+    page: number = 1
+): Promise<MovieSearchResponse> => {
+    const response = await fetch(
+        `${API_BASE_URL}/movies-on-demand/popular?page=${page}`,
+        {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        }
+    );
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "getPopularMovies",
+            "Failed to get popular movies"
+        );
+    }
+
+    return response.json() as Promise<MovieSearchResponse>;
+};
+
+export const getTopMovies = async (
+    page: number = 1
+): Promise<MovieSearchResponse> => {
+    const response = await fetch(
+        `${API_BASE_URL}/movies-on-demand/top?page=${page}`,
+        {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        }
+    );
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "getTopMovies",
+            "Failed to get top movies"
+        );
+    }
+
+    return response.json() as Promise<MovieSearchResponse>;
+};
+
+export const getMovieDetails = async (id: number): Promise<MovieDetails> => {
+    const response = await fetch(
+        `${API_BASE_URL}/movies-on-demand/movies/${id}`,
+        {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        }
+    );
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "getMovieDetails",
+            "Failed to get movie details"
+        );
+    }
+
+    return response.json() as Promise<MovieDetails>;
+};
+
+export const getMovieReleases = async (
+    id: number
+): Promise<ReleasesResponse> => {
+    const response = await fetch(
+        `${API_BASE_URL}/movies-on-demand/movies/${id}/releases`,
+        {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        }
+    );
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "getMovieReleases",
+            "Failed to get movie releases"
+        );
+    }
+
+    return response.json() as Promise<ReleasesResponse>;
+};
+
+export const getSimilarMovies = async (
+    id: number,
+    page: number = 1
+): Promise<SimilarMoviesResponse> => {
+    const response = await fetch(
+        `${API_BASE_URL}/movies-on-demand/movies/${id}/similar?page=${page}`,
+        {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        }
+    );
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "getSimilarMovies",
+            "Failed to get similar movies"
+        );
+    }
+
+    return response.json() as Promise<SimilarMoviesResponse>;
+};
+
+export const fetchMovie = async (
+    id: number,
+    request: FetchMovieRequest
+): Promise<FetchMovieResponse> => {
+    const response = await fetch(
+        `${API_BASE_URL}/movies-on-demand/movies/${id}/fetch`,
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(request),
+        }
+    );
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "fetchMovie",
+            "Failed to fetch movie"
+        );
+    }
+
+    return response.json() as Promise<FetchMovieResponse>;
+};
+
+export const getJobStatus = async (jobId: string): Promise<JobStatus> => {
+    const response = await fetch(
+        `${API_BASE_URL}/movies-on-demand/jobs/${jobId}`,
+        {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        }
+    );
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "getJobStatus",
+            "Failed to get job status"
+        );
+    }
+
+    return response.json() as Promise<JobStatus>;
+};
+
+export const listActiveJobs = async (): Promise<{ jobs: JobStatus[] }> => {
+    const response = await fetch(`${API_BASE_URL}/movies-on-demand/jobs`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "listActiveJobs",
+            "Failed to list jobs"
+        );
+    }
+
+    return response.json() as Promise<{ jobs: JobStatus[] }>;
+};
+
+export const getMovieStream = async (
+    movieId: number
+): Promise<StreamResponse> => {
+    const response = await fetch(
+        `${API_BASE_URL}/movies-on-demand/movies/${movieId}/stream`,
+        {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        }
+    );
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "getMovieStream",
+            "Failed to get movie stream"
+        );
+    }
+
+    return response.json() as Promise<StreamResponse>;
+};
+
+export const getWatchHistory = async (
+    limit: number = 20,
+    offset: number = 0
+): Promise<WatchHistoryResponse> => {
+    const response = await fetch(
+        `${API_BASE_URL}/movies-on-demand/history?limit=${limit}&offset=${offset}`,
+        {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        }
+    );
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "getWatchHistory",
+            "Failed to get watch history"
+        );
+    }
+
+    return response.json() as Promise<WatchHistoryResponse>;
 };

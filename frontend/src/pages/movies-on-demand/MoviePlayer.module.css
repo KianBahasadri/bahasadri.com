@@ -1,0 +1,151 @@
+.container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading,
+.error {
+    color: var(--pink-light);
+    text-align: center;
+    padding: 40px;
+    font-size: 1.25rem;
+}
+
+.video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.controlsTop {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.controlsBottom {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.progressContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.progressBar {
+    width: 100%;
+    height: 6px;
+    cursor: pointer;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.progressBar::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--pink-hot);
+    cursor: pointer;
+}
+
+.progressBar::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--pink-hot);
+    cursor: pointer;
+    border: none;
+}
+
+.timeDisplay {
+    display: flex;
+    justify-content: space-between;
+    color: white;
+    font-size: 0.875rem;
+}
+
+.controlButton {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 8px;
+    transition: opacity 0.2s ease;
+}
+
+.controlButton:hover {
+    opacity: 0.8;
+}
+
+.volumeContainer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    max-width: 200px;
+}
+
+.volumeBar {
+    flex: 1;
+    height: 4px;
+    cursor: pointer;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+}
+
+.volumeBar::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+}
+
+.volumeBar::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    border: none;
+}
+
+.backButton {
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid var(--pink-hot);
+    border-radius: 6px;
+    color: var(--pink-light);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+}
+
+.backButton:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+

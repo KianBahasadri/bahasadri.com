@@ -1,0 +1,114 @@
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.content {
+    background: var(--dark-elevated);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.content h2 {
+    margin: 0 0 20px 0;
+    color: var(--pink-light);
+    font-size: 1.5rem;
+}
+
+.releasesList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.releaseItem {
+    background: var(--dark-surface);
+    border: 2px solid var(--dark-surface);
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.releaseItem:hover {
+    border-color: var(--pink-hot);
+    background: var(--dark-elevated);
+}
+
+.releaseItem:focus-visible {
+    outline: 2px solid var(--pink-hot);
+    outline-offset: 2px;
+}
+
+.releaseHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.releaseTitle {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--pink-light);
+    flex: 1;
+    word-break: break-word;
+}
+
+.qualityBadge {
+    background: var(--pink-hot);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.releaseDetails {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.875rem;
+}
+
+.size,
+.codec,
+.source,
+.group {
+    color: var(--pink-soft);
+    opacity: 0.8;
+}
+
+.cancelButton {
+    width: 100%;
+    padding: 12px;
+    background: var(--dark-surface);
+    border: 2px solid var(--dark-surface);
+    border-radius: 6px;
+    color: var(--pink-light);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+}
+
+.cancelButton:hover {
+    border-color: var(--pink-hot);
+    background: var(--dark-elevated);
+}
+

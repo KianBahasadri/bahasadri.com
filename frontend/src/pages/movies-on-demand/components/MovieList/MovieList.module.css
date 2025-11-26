@@ -1,0 +1,75 @@
+.container {
+    width: 100%;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+@media (max-width: 768px) {
+    .grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 16px;
+    }
+}
+
+.skeleton {
+    aspect-ratio: 2 / 3;
+    background: var(--dark-elevated);
+    border-radius: 8px;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--pink-soft);
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 0;
+}
+
+.pageButton {
+    padding: 8px 16px;
+    background: var(--dark-elevated);
+    border: 2px solid var(--dark-surface);
+    border-radius: 6px;
+    color: var(--pink-light);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.pageButton:hover:not(:disabled) {
+    border-color: var(--pink-hot);
+    background: var(--dark-surface);
+}
+
+.pageButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pageInfo {
+    color: var(--pink-light);
+    font-size: 0.875rem;
+}
+
