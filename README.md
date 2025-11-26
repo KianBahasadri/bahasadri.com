@@ -7,23 +7,26 @@
 These steps are in sequential order
 
 ### Not Started
-- torrenting
-- remote computer vnc
 - C2C for remote computers
-- AI CTF platform
+- AI CTF solving platform
 
-### Started Writing Design Documents
+### Writing Design Documents
 - whatsapp-messenger
 - File Hosting
 - File Encryptor
 - OSINT Tool
-
-### Finished Writing Design Documents
+- diagnostic-panel
+- movies-on-demand
+- platformer-game
+- remote-browser
+- rideshare-comparison
+- route-comparison
 
 ### Started Building
 - Video Call
 
 ### Finished Building
-- Homepage
+- home-button
+- home
 - SMS Messenger
 - Calculator
