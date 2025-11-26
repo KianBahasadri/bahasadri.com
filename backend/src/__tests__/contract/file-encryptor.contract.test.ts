@@ -16,6 +16,30 @@ vitestOpenAPI(openapiSpec);
 
 describe("file-encryptor API Contract Tests", () => {
 
+    it("encryptFile satisfies OpenAPI spec", async () => {
+        
+        const res = await app.request("/api/file-encryptor/encrypt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+        });
+        expect([200, 400, 413, 500]).toContain(res.status);
+        const formattedRes = await formatResponseForValidation(res, "/api/file-encryptor/encrypt", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
+    });
+
+    it("decryptFile satisfies OpenAPI spec", async () => {
+        
+        const res = await app.request("/api/file-encryptor/decrypt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+        });
+        expect([200, 400, 404, 500]).toContain(res.status);
+        const formattedRes = await formatResponseForValidation(res, "/api/file-encryptor/decrypt", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
+    });
+
     it("uploadTempFile satisfies OpenAPI spec", async () => {
         
         const res = await app.request("/api/file-encryptor/upload-temp", {
