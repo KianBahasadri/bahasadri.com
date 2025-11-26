@@ -1,0 +1,548 @@
+openapi: 3.1.0
+info:
+  title: Remote Browser API
+  description: >-
+    API contract for remote browser container management and control.
+    This API allows users to create, control, and manage isolated browser containers.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8787/api
+    description: Development Server
+  - url: https://bahasadri.com/api
+    description: Production Server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: A descriptive error message.
+          example: "Invalid input provided."
+        code:
+          type: string
+          description: Machine-readable error code.
+          enum:
+            - INVALID_INPUT
+            - NOT_FOUND
+            - INTERNAL_ERROR
+            - SESSION_LIMIT_EXCEEDED
+            - CONTAINER_START_FAILED
+            - CONTAINER_NOT_READY
+            - SESSION_EXPIRED
+            - RESOURCE_LIMIT_EXCEEDED
+          example: INVALID_INPUT
+
+    BrowserSession:
+      type: object
+      required:
+        - id
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the browser session.
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        status:
+          type: string
+          enum:
+            - starting
+            - ready
+            - active
+            - paused
+            - terminated
+            - error
+          description: Current status of the browser session.
+          example: "ready"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the session was created.
+          example: "2023-10-27T10:00:00Z"
+        containerId:
+          type: string
+          description: Container identifier (internal).
+          example: "browser-container-abc123"
+        websocketUrl:
+          type: string
+          format: uri
+          description: WebSocket URL for browser control and screen streaming.
+          example: "wss://browser.example.com/session/123e4567-e89b-12d3-a456-426614174000"
+        expiresAt:
+          type: string
+          format: date-time
+          description: Timestamp when the session will expire.
+          example: "2023-10-27T12:00:00Z"
+        resourceUsage:
+          type: object
+          properties:
+            cpuPercent:
+              type: number
+              description: CPU usage percentage.
+              example: 45.2
+            memoryMB:
+              type: number
+              description: Memory usage in megabytes.
+              example: 512
+            networkBytes:
+              type: number
+              description: Network bytes transferred.
+              example: 1048576
+
+    CreateSessionRequest:
+      type: object
+      properties:
+        torEnabled:
+          type: boolean
+          description: Enable Tor network for anonymous browsing.
+          default: false
+        sessionTimeout:
+          type: integer
+          description: Session timeout in seconds (default: 3600).
+          minimum: 300
+          maximum: 28800
+          default: 3600
+        resourceLimits:
+          type: object
+          properties:
+            maxMemoryMB:
+              type: integer
+              description: Maximum memory in MB.
+              minimum: 256
+              maximum: 2048
+              default: 512
+            maxCPUPercent:
+              type: integer
+              description: Maximum CPU percentage.
+              minimum: 25
+              maximum: 100
+              default: 50
+
+    SessionListResponse:
+      type: object
+      required:
+        - sessions
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/BrowserSession"
+        total:
+          type: integer
+          description: Total number of sessions.
+          example: 5
+
+    ScreenshotResponse:
+      type: object
+      required:
+        - sessionId
+        - screenshotUrl
+        - timestamp
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+          description: Session ID where screenshot was captured.
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        screenshotUrl:
+          type: string
+          format: uri
+          description: URL to download the screenshot.
+          example: "https://storage.example.com/screenshots/abc123.png"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp when screenshot was captured.
+          example: "2023-10-27T10:30:00Z"
+
+    BrowserControlMessage:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - navigate
+            - click
+            - type
+            - scroll
+            - keypress
+            - screenshot
+            - getUrl
+            - getTitle
+          description: Type of browser control action.
+          example: "navigate"
+        data:
+          type: object
+          description: Action-specific data.
+          example:
+            url: "https://example.com"
+            x: 100
+            y: 200
+            text: "Hello World"
+            key: "Enter"
+
+    BrowserControlResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          description: Whether the action succeeded.
+          example: true
+        data:
+          type: object
+          description: Response data (varies by action type).
+          example:
+            url: "https://example.com"
+            title: "Example Domain"
+
+  responses:
+    BadRequest:
+      description: Invalid input provided (400).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            invalid_input:
+              value:
+                error: "Session timeout must be between 300 and 28800 seconds."
+                code: "INVALID_INPUT"
+
+    Unauthorized:
+      description: Authentication required (401).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    NotFound:
+      description: Resource not found (404).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            not_found:
+              value:
+                error: "Session with ID 123 not found."
+                code: "NOT_FOUND"
+
+    InternalError:
+      description: Server error (500).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            server_error:
+              value:
+                error: "Failed to start browser container."
+                code: "CONTAINER_START_FAILED"
+
+paths:
+  /remote-browser/sessions:
+    get:
+      operationId: listSessions
+      summary: List all browser sessions
+      description: Retrieve a list of all browser sessions (active and terminated).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter sessions by status.
+          schema:
+            type: string
+            enum:
+              - starting
+              - ready
+              - active
+              - paused
+              - terminated
+              - error
+        - name: limit
+          in: query
+          description: Maximum number of sessions to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: Number of sessions to skip.
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: List of browser sessions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      operationId: createSession
+      summary: Create a new browser session
+      description: Spins up a new isolated browser container and creates a session.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionRequest"
+      responses:
+        "201":
+          description: Browser session created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrowserSession"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          description: Too many active sessions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                session_limit:
+                  value:
+                    error: "Maximum number of concurrent sessions exceeded."
+                    code: "SESSION_LIMIT_EXCEEDED"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /remote-browser/sessions/{sessionId}:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: The ID of the browser session.
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      operationId: getSession
+      summary: Get session details
+      description: Retrieve details about a specific browser session.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Browser session details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrowserSession"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: terminateSession
+      summary: Terminate a browser session
+      description: Terminates the browser session and destroys the container.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Session terminated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Session terminated successfully."
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /remote-browser/sessions/{sessionId}/pause:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: The ID of the browser session.
+        schema:
+          type: string
+          format: uuid
+
+    post:
+      operationId: pauseSession
+      summary: Pause a browser session
+      description: Pauses the browser session (container remains running but browser is paused).
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Session paused successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrowserSession"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "400":
+          description: Session cannot be paused in current state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /remote-browser/sessions/{sessionId}/resume:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: The ID of the browser session.
+        schema:
+          type: string
+          format: uuid
+
+    post:
+      operationId: resumeSession
+      summary: Resume a paused browser session
+      description: Resumes a paused browser session.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Session resumed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrowserSession"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "400":
+          description: Session cannot be resumed in current state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /remote-browser/sessions/{sessionId}/screenshot:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: The ID of the browser session.
+        schema:
+          type: string
+          format: uuid
+
+    post:
+      operationId: captureScreenshot
+      summary: Capture a screenshot
+      description: Captures a screenshot of the current browser state.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Screenshot captured successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScreenshotResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "400":
+          description: Screenshot cannot be captured (session not ready).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /remote-browser/sessions/{sessionId}/control:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: The ID of the browser session.
+        schema:
+          type: string
+          format: uuid
+
+    post:
+      operationId: controlBrowser
+      summary: Send browser control command
+      description: Sends a control command to the browser (navigate, click, type, etc.).
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrowserControlMessage"
+      responses:
+        "200":
+          description: Command executed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrowserControlResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "400":
+          description: Invalid command or session not ready.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
