@@ -5,10 +5,13 @@ import {
     getPopularMovies,
     getTopMovies,
     getWatchHistory,
+    listActiveJobs,
+    getMovieDetails,
 } from "../../lib/api";
 import MovieSearch from "./components/MovieSearch/MovieSearch";
 import MovieList from "./components/MovieList/MovieList";
 import WatchHistoryList from "./components/WatchHistoryList/WatchHistoryList";
+import type { Movie } from "../../types/movies-on-demand";
 import styles from "./MoviesOnDemand.module.css";
 
 const queryKeys = {
@@ -18,15 +21,16 @@ const queryKeys = {
     top: (page: number) => ["movies-on-demand", "top", page] as const,
     history: (limit: number, offset: number) =>
         ["movies-on-demand", "history", limit, offset] as const,
+    available: () => ["movies-on-demand", "available"] as const,
 };
 
-type ViewType = "search" | "popular" | "top" | "history";
+type ViewType = "search" | "popular" | "top" | "history" | "available";
 
 export default function MoviesOnDemand(): React.JSX.Element {
     const [activeView, setActiveView] = useState<ViewType>("popular");
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    const [historyLimit] = useState(20);
+    const historyLimit = 20;
     const [historyOffset, setHistoryOffset] = useState(0);
 
     const { data: searchData, isLoading: isSearchLoading } = useQuery({
@@ -57,7 +61,32 @@ export default function MoviesOnDemand(): React.JSX.Element {
         enabled: activeView === "history",
     });
 
-    const handleSearch = (query: string) => {
+    const { data: availableData, isLoading: isAvailableLoading } = useQuery({
+        queryKey: queryKeys.available(),
+        queryFn: async (): Promise<Movie[]> => {
+            const jobsResponse = await listActiveJobs();
+            const relevantJobs = jobsResponse.jobs.filter(
+                (job) => job.status === "ready" || job.status === "downloading"
+            );
+
+            const moviePromises = relevantJobs.map(
+                async (job) => await getMovieDetails(job.movie_id)
+            );
+
+            const movies = await Promise.all(moviePromises);
+            return movies;
+        },
+        enabled: activeView === "available",
+        refetchInterval: (query): number | false => {
+            const data = query.state.data;
+            if (data && data.length > 0) {
+                return 5000;
+            }
+            return false;
+        },
+    });
+
+    const handleSearch = (query: string): void => {
         setSearchQuery(query);
         if (query.length > 0) {
             setActiveView("search");
@@ -65,13 +94,13 @@ export default function MoviesOnDemand(): React.JSX.Element {
         }
     };
 
-    const handleViewChange = (view: ViewType) => {
+    const handleViewChange = (view: ViewType): void => {
         setActiveView(view);
         setCurrentPage(1);
         setSearchQuery("");
     };
 
-    const handlePageChange = (page: number) => {
+    const handlePageChange = (page: number): void => {
         setCurrentPage(page);
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -84,7 +113,7 @@ export default function MoviesOnDemand(): React.JSX.Element {
         setHistoryOffset((prev) => prev + historyLimit);
     };
 
-    const getCurrentMovies = () => {
+    const getCurrentMovies = (): Movie[] => {
         switch (activeView) {
             case "search":
                 return searchData?.results ?? [];
@@ -92,12 +121,14 @@ export default function MoviesOnDemand(): React.JSX.Element {
                 return popularData?.results ?? [];
             case "top":
                 return topData?.results ?? [];
+            case "available":
+                return availableData ?? [];
             default:
                 return [];
         }
     };
 
-    const getCurrentTotalPages = () => {
+    const getCurrentTotalPages = (): number => {
         switch (activeView) {
             case "search":
                 return searchData?.total_pages ?? 0;
@@ -110,7 +141,7 @@ export default function MoviesOnDemand(): React.JSX.Element {
         }
     };
 
-    const getCurrentIsLoading = () => {
+    const getCurrentIsLoading = (): boolean => {
         switch (activeView) {
             case "search":
                 return isSearchLoading;
@@ -118,6 +149,8 @@ export default function MoviesOnDemand(): React.JSX.Element {
                 return isPopularLoading;
             case "top":
                 return isTopLoading;
+            case "available":
+                return isAvailableLoading;
             default:
                 return false;
         }
@@ -162,6 +195,16 @@ export default function MoviesOnDemand(): React.JSX.Element {
                 >
                     History
                 </button>
+                <button
+                    className={`${styles["tab"]} ${
+                        activeView === "available" ? styles["active"] : ""
+                    }`}
+                    onClick={() => {
+                        handleViewChange("available");
+                    }}
+                >
+                    Available/Downloading
+                </button>
             </div>
             {activeView === "history" ? (
                 <WatchHistoryList
@@ -175,8 +218,8 @@ export default function MoviesOnDemand(): React.JSX.Element {
                 <MovieList
                     movies={getCurrentMovies()}
                     isLoading={getCurrentIsLoading()}
-                    currentPage={currentPage}
-                    totalPages={getCurrentTotalPages()}
+                    currentPage={activeView === "available" ? 1 : currentPage}
+                    totalPages={activeView === "available" ? 1 : getCurrentTotalPages()}
                     onPageChange={handlePageChange}
                     onMovieClick={handleMovieClick}
                 />
