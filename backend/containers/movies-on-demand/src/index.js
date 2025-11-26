@@ -369,7 +369,7 @@ function startHealthCheckServer() {
     });
 
     const port = 8080;
-    
+
     // Start listening immediately and log when ready
     // This ensures the port is available as fast as possible for Cloudflare's health checks
     server.listen(port, "0.0.0.0", () => {
@@ -429,24 +429,20 @@ async function main() {
 
         const nzbgetProcess = spawn(
             "/app/nzbget/nzbget",
-            [
-                "-D",
-                "-c",
-                "/app/nzbget/share/nzbget/nzbget.conf",
-            ],
+            ["-D", "-c", "/app/nzbget/share/nzbget/nzbget.conf"],
             {
-            stdio: "inherit",
-            env: {
-                ...process.env,
-                // Override NZBGet config via environment
-                NZBOP_MAINDIR: "/downloads",
-                NZBOP_DESTDIR: config.nzbgetDownloadDir,
-                NZBOP_INTERDIR: config.nzbgetTempDir,
-                NZBOP_CONTROLPORT: String(config.nzbgetPort),
-                NZBOP_CONTROLIP: "127.0.0.1",
-                NZBOP_CONTROLUSERNAME: config.nzbgetUsername,
-                NZBOP_CONTROLPASSWORD: config.nzbgetPassword,
-            },
+                stdio: "inherit",
+                env: {
+                    ...process.env,
+                    // Override NZBGet config via environment
+                    NZBOP_MAINDIR: "/downloads",
+                    NZBOP_DESTDIR: config.nzbgetDownloadDir,
+                    NZBOP_INTERDIR: config.nzbgetTempDir,
+                    NZBOP_CONTROLPORT: String(config.nzbgetPort),
+                    NZBOP_CONTROLIP: "127.0.0.1",
+                    NZBOP_CONTROLUSERNAME: config.nzbgetUsername,
+                    NZBOP_CONTROLPASSWORD: config.nzbgetPassword,
+                },
             }
         );
 
@@ -528,6 +524,26 @@ async function main() {
 
                 await reporter.report("downloading", Math.min(progress, 99));
             } else {
+                // Group not found - might be queued or just added
+                // Log debug info on first few iterations
+                if (groups.length > 0) {
+                    console.log(
+                        `Group not found. Looking for NZBID: ${nzbId}, Release: ${
+                            config.releaseTitle
+                        }. Found ${groups.length} group(s): ${groups
+                            .map((g) => `NZBID=${g.NZBID}, Name=${g.NZBName}`)
+                            .join("; ")}`
+                    );
+                } else {
+                    console.log(
+                        `No groups found yet. Looking for NZBID: ${nzbId}, Release: ${config.releaseTitle}`
+                    );
+                }
+
+                // Report small progress to indicate we're waiting for the download to start
+                // This ensures the frontend shows the progress bar
+                await reporter.report("downloading", 0);
+
                 // Check history for completion
                 const history = await nzbget.getHistory();
                 const ourHistory = history.find(

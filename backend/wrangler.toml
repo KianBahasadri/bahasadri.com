@@ -77,3 +77,6 @@ new_sqlite_classes = ["MovieDownloaderContainer"]
 
 [placement]
 mode = "smart"
+
+[observability]
+enabled = true

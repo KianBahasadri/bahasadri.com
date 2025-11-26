@@ -26,8 +26,8 @@ export class MovieDownloaderContainer extends Container<Env> {
     // Default port for health checks (the container exposes 8080)
     defaultPort = 8080;
 
-    // Container can run for up to 4 hours for large downloads
-    sleepAfter = "4h";
+    // Container can run for up to 20 minutes for downloads
+    sleepAfter = "20m";
 
     // Don't auto-start - we start manually with job-specific env vars
     manualStart = true;

@@ -18,6 +18,7 @@
         "backend:generate-tests": "pnpm --filter backend generate-tests",
         "backend:upload-secrets": "pnpm --filter backend run upload-secrets",
         "backend:deploy": "pnpm --filter backend run deploy",
+        "backend:tail": "pnpm --filter backend exec wrangler tail",
         "typecheck": "pnpm frontend:typecheck && pnpm backend:typecheck",
         "api:lint": "spectral lint \"docs/features/**/*.yml\" --fail-severity info",
         "lint": "pnpm api:lint && pnpm frontend:lint && pnpm backend:lint",
