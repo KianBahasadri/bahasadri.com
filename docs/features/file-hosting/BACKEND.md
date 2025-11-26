@@ -39,7 +39,7 @@ This document focuses solely on backend implementation details not covered in th
 6. Upload to R2 with proper content type
 7. Store metadata in D1 (including `isPublic` field)
 8. Format response per API contract
-9. Return file ID and download URL
+9. Return file ID and download URL (uses `/api/file-hosting/public/[fileId]` for public files, `/api/file-hosting/private/[fileId]` for private files)
 
 **Implementation Notes**:
 
@@ -72,7 +72,7 @@ This document focuses solely on backend implementation details not covered in th
 9. Upload to R2 with proper content type
 10. Store metadata in D1 (including `isPublic` field)
 11. Format response per API contract
-12. Return file ID and download URL
+12. Return file ID and download URL (uses `/api/file-hosting/public/[fileId]` for public files, `/api/file-hosting/private/[fileId]` for private files)
 
 **Implementation Notes**:
 
@@ -86,11 +86,11 @@ This document focuses solely on backend implementation details not covered in th
 -   URL returns 404 → `NOT_FOUND` (404)
 -   Download failure, R2 upload failure, database error → `INTERNAL_ERROR` (500)
 
-### `GET /api/file-hosting/download/[fileId]`
+### `GET /api/file-hosting/public/[fileId]`
 
-**Handler**: `downloadFile()`
+**Handler**: `downloadPublicFile()`
 
-**Description**: Retrieves file from R2, logs access, returns file content. Enforces access control for private files.
+**Description**: Retrieves public file from R2, logs access, returns file content. This URL pattern is configured to bypass Cloudflare Zero Trust authentication. Only files marked as public (`isPublic = true`) are accessible at this endpoint.
 
 **Implementation Flow**:
 
@@ -99,7 +99,7 @@ This document focuses solely on backend implementation details not covered in th
 3. Check if file exists and not deleted
 4. Check access permissions:
     - If file is public (`isPublic = true`): Allow access
-    - If file is private (`isPublic = false`): Only allow if `uiAccess=true` query parameter is present
+    - If file is private (`isPublic = false`): Return 403 Forbidden
 5. If access denied, return 403 Forbidden
 6. Increment access count in D1
 7. Log access entry (IP, timestamp, user agent, referrer, geolocation)
@@ -109,12 +109,40 @@ This document focuses solely on backend implementation details not covered in th
 **Implementation Notes**:
 
 -   Access control enforced based on `isPublic` field
+-   Public files: Accessible at `/api/file-hosting/public/[fileId]` (URL pattern bypasses Zero Trust)
+-   Private files: Return 403 Forbidden if accessed via public endpoint
+
+### `GET /api/file-hosting/private/[fileId]`
+
+**Handler**: `downloadPrivateFile()`
+
+**Description**: Retrieves private file from R2, logs access, returns file content. This URL pattern is protected by Cloudflare Zero Trust authentication. Only files marked as private (`isPublic = false`) are accessible at this endpoint.
+
+**Implementation Flow**:
+
+1. Validate fileId format (per API contract)
+2. Query D1 for file metadata
+3. Check if file exists and not deleted
+4. Check access permissions:
+    - If file is private (`isPublic = false`): Allow access
+    - If file is public (`isPublic = true`): Return 403 Forbidden
+5. If access denied, return 403 Forbidden
+6. Increment access count in D1
+7. Log access entry (IP, timestamp, user agent, referrer, geolocation)
+8. Retrieve file from R2
+9. Return file with proper headers (Content-Type, Content-Disposition)
+
+**Implementation Notes**:
+
+-   Access control enforced based on `isPublic` field
+-   Private files: Accessible at `/api/file-hosting/private/[fileId]` (URL pattern protected by Zero Trust)
+-   Public files: Return 403 Forbidden if accessed via private endpoint
 -   Access logging includes WHOIS data (country, organization, ASN)
 -   Supports compressed file download via query parameter
 
 **Error Handling**:
 
--   Private file accessed without UI access → `FORBIDDEN` (403)
+-   Private file accessed → `FORBIDDEN` (403)
 -   File not found or deleted → `NOT_FOUND` (404)
 -   R2 retrieval failure or database error → `INTERNAL_ERROR` (500)
 
@@ -383,9 +411,10 @@ function validateUrl(url: string): { ok: boolean; error?: string } {
 -   Access count: Increment on download
 -   URL validation: Must be valid HTTP/HTTPS URL
 -   Public/private access control:
-    -   Public files (`isPublic = true`): Accessible via direct link
-    -   Private files (`isPublic = false`): Only accessible with `uiAccess=true` query parameter
+    -   Public files (`isPublic = true`): Accessible at `/api/file-hosting/public/[fileId]` (URL pattern bypasses Zero Trust)
+    -   Private files (`isPublic = false`): Accessible at `/api/file-hosting/private/[fileId]` (URL pattern protected by Zero Trust)
     -   Default to public (`isPublic = true`) if not specified during upload
+    -   Files accessed via wrong endpoint return 403 Forbidden (public file via private endpoint, or vice versa)
 
 ## Security Considerations
 
@@ -395,9 +424,10 @@ function validateUrl(url: string): { ok: boolean; error?: string } {
 
 ### Authorization
 
--   **Public files**: Accessible to anyone with the download link
--   **Private files**: Only accessible when `uiAccess=true` query parameter is present (UI access)
--   Access control is enforced in the download endpoint based on `isPublic` field and `uiAccess` query parameter
+-   **Public files**: Accessible at `/api/file-hosting/public/[fileId]` (URL pattern bypasses Zero Trust)
+-   **Private files**: Accessible at `/api/file-hosting/private/[fileId]` (URL pattern protected by Zero Trust)
+-   Access control is enforced in both download endpoints based on `isPublic` field
+-   Files accessed via wrong endpoint return 403 Forbidden
 
 ### Input Sanitization
 
@@ -425,7 +455,8 @@ function validateUrl(url: string): { ok: boolean; error?: string } {
 
 -   [ ] POST /upload endpoint
 -   [ ] POST /upload-from-url endpoint
--   [ ] GET /download/[fileId] endpoint
+-   [ ] GET /public/[fileId] endpoint (public files)
+-   [ ] GET /private/[fileId] endpoint (private files)
 -   [ ] GET /files endpoint (list)
 -   [ ] GET /files/[fileId] endpoint (metadata)
 -   [ ] GET /access-logs/[fileId] endpoint
@@ -464,7 +495,7 @@ function validateUrl(url: string): { ok: boolean; error?: string } {
 How to map internal errors to API contract error codes:
 
 -   Invalid file or missing fields → `INVALID_INPUT` (400)
--   Private file accessed without UI access → `FORBIDDEN` (403)
+-   Private file accessed → `FORBIDDEN` (403)
 -   File not found or deleted → `NOT_FOUND` (404)
 -   R2 upload/retrieval failures → `INTERNAL_ERROR` (500)
 -   Database errors → `INTERNAL_ERROR` (500)

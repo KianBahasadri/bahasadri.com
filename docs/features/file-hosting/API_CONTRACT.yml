@@ -78,14 +78,14 @@ components:
                 originalUrl:
                     type: string
                     format: uri
-                    description: URL to download the original file
-                    example: "https://bahasadri.com/api/file-hosting/download/550e8400-e29b-41d4-a716-446655440000"
+                    description: URL to download the original file. For public files, uses `/api/file-hosting/public/[fileId]`. For private files, uses `/api/file-hosting/private/[fileId]`.
+                    example: "https://bahasadri.com/api/file-hosting/public/550e8400-e29b-41d4-a716-446655440000"
                 compressedUrl:
                     type: string
                     format: uri
                     nullable: true
-                    description: URL to download the compressed file (if available)
-                    example: "https://bahasadri.com/api/file-hosting/download/550e8400-e29b-41d4-a716-446655440000?compressed=true"
+                    description: URL to download the compressed file (if available). Uses the same URL pattern as originalUrl with `?compressed=true` query parameter.
+                    example: "https://bahasadri.com/api/file-hosting/public/550e8400-e29b-41d4-a716-446655440000?compressed=true"
                 compressionRatio:
                     type: number
                     format: float
@@ -180,8 +180,8 @@ components:
                 downloadUrl:
                     type: string
                     format: uri
-                    description: URL to download the file
-                    example: "https://bahasadri.com/api/file-hosting/download/550e8400-e29b-41d4-a716-446655440000"
+                    description: URL to download the file. For public files, uses `/api/file-hosting/public/[fileId]`. For private files, uses `/api/file-hosting/private/[fileId]`.
+                    example: "https://bahasadri.com/api/file-hosting/public/550e8400-e29b-41d4-a716-446655440000"
                 compressionStatus:
                     $ref: "#/components/schemas/CompressionStatus"
 
@@ -262,7 +262,7 @@ components:
                     examples:
                         forbidden:
                             value:
-                                error: "Private file accessed without UI access"
+                                error: "Private file - access denied"
 
         NotFound:
             description: Resource not found (404).
@@ -358,14 +358,17 @@ paths:
                     $ref: "#/components/responses/InternalError"
 
     # ---------------------------------------------------------------------------
-    # DOWNLOAD ENDPOINT
+    # DOWNLOAD ENDPOINTS
     # ---------------------------------------------------------------------------
-    /file-hosting/download/{fileId}:
+    /file-hosting/public/{fileId}:
         get:
-            operationId: downloadFile
-            summary: Download a hosted file
+            operationId: downloadPublicFile
+            summary: Download a public file
             description: >-
-                Download a hosted file. Returns the file content as a binary stream.
+                Download a public file. Returns the file content as a binary stream.
+                This URL pattern is configured to bypass Cloudflare Zero Trust authentication.
+                Only files marked as public (`isPublic = true`) are accessible at this endpoint.
+                Private files accessed via this endpoint will return 403 Forbidden.
             tags:
                 - File Hosting
             parameters:
@@ -377,13 +380,47 @@ paths:
                       type: string
                       format: uuid
                       example: "550e8400-e29b-41d4-a716-446655440000"
-                - name: uiAccess
-                  in: query
-                  required: false
-                  description: Set to true when accessing from the UI
+            responses:
+                "200":
+                    description: File found and returned.
+                    content:
+                        application/octet-stream:
+                            schema:
+                                type: string
+                                format: binary
+                    headers:
+                        Content-Disposition:
+                            schema:
+                                type: string
+                                description: Attachment with filename
+                                example: "attachment; filename=document.pdf"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    /file-hosting/private/{fileId}:
+        get:
+            operationId: downloadPrivateFile
+            summary: Download a private file
+            description: >-
+                Download a private file. Returns the file content as a binary stream.
+                This URL pattern is protected by Cloudflare Zero Trust authentication.
+                Only files marked as private (`isPublic = false`) are accessible at this endpoint.
+                Public files accessed via this endpoint will return 403 Forbidden.
+            tags:
+                - File Hosting
+            parameters:
+                - name: fileId
+                  in: path
+                  required: true
+                  description: File ID (UUID)
                   schema:
-                      type: boolean
-                      example: true
+                      type: string
+                      format: uuid
+                      example: "550e8400-e29b-41d4-a716-446655440000"
             responses:
                 "200":
                     description: File found and returned.

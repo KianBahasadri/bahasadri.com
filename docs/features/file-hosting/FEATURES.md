@@ -16,8 +16,8 @@ Users can upload files through a simple drag-and-drop interface or by clicking t
 
 Users can control the accessibility of their uploaded files:
 
--   **Public Files**: Anyone with the download link can access the file. No authentication required - the link can be shared freely and accessed from anywhere.
--   **Private Files**: Only accessible through the file hosting UI. Direct download links will not work - users must access the file through the main file hosting page interface.
+-   **Public Files**: Accessible at `/api/file-hosting/public/[fileId]`. This URL pattern is configured to bypass Cloudflare Zero Trust authentication, allowing anyone with the link to access the file without authentication. The link can be shared freely and accessed from anywhere.
+-   **Private Files**: Accessible at `/api/file-hosting/private/[fileId]`. This URL pattern is protected by Cloudflare Zero Trust authentication, requiring authentication to access. Private files cannot be accessed via the public URL pattern.
 
 Users can toggle between public and private sharing when uploading files, allowing them to choose the appropriate access level for each file.
 
@@ -60,8 +60,8 @@ Users can provide a URL to a file, and the system will download that file and ho
 
 **Result**:
 
--   **Public files**: File is accessible to anyone with the link or QR code
--   **Private files**: File is only accessible through the UI, direct links will not work
+-   **Public files**: File is accessible to anyone with the link or QR code at `/api/file-hosting/public/[fileId]` (URL bypasses Zero Trust)
+-   **Private files**: File is accessible at `/api/file-hosting/private/[fileId]` (protected by Zero Trust, requires authentication)
 
 ### Host a File from URL
 
@@ -79,8 +79,8 @@ Users can provide a URL to a file, and the system will download that file and ho
 
 **Result**:
 
--   **Public files**: File from the external URL is downloaded, hosted, and accessible to anyone with the link or QR code
--   **Private files**: File is downloaded and hosted, but only accessible through the UI
+-   **Public files**: File from the external URL is downloaded, hosted, and accessible to anyone with the link or QR code at `/api/file-hosting/public/[fileId]` (URL bypasses Zero Trust)
+-   **Private files**: File is downloaded and hosted, accessible at `/api/file-hosting/private/[fileId]` (protected by Zero Trust, requires authentication)
 
 ### Generate QR Code for File Link
 
@@ -118,21 +118,21 @@ Users can provide a URL to a file, and the system will download that file and ho
 
 1. Receive a file sharing link
 2. Click the link or paste it in a browser
-3. **For public files**: File downloads automatically
-4. **For private files**: Access is denied - user must access the file through the file hosting UI
+3. **For public files** (`/api/file-hosting/public/[fileId]`): File downloads automatically (URL bypasses Zero Trust)
+4. **For private files** (`/api/file-hosting/private/[fileId]`): Access requires Zero Trust authentication
 
 **Result**:
 
 -   **Public files**: File is downloaded to the user's device
--   **Private files**: Access is denied when using direct link, file must be accessed through the UI
+-   **Private files**: Access requires Zero Trust authentication (protected by Zero Trust)
 
 ## User Capabilities
 
 -   Upload files of any type (images, documents, videos, etc.)
 -   Choose between public and private file sharing for each upload
 -   Host files from external URLs by providing a link
--   Share files instantly via public links (for public files)
--   Restrict file access to UI-only (for private files)
+-   Share files instantly via public links at `/api/file-hosting/public/[fileId]` (bypasses Zero Trust)
+-   Restrict file access by making files private, accessible at `/api/file-hosting/private/[fileId]` (protected by Zero Trust)
 -   Generate QR codes for download links (for public files)
 -   Download QR codes as images for sharing
 -   Track file access with detailed analytics

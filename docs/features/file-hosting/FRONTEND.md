@@ -139,7 +139,7 @@ interface FileListProps {
 
 **Interactions**:
 
--   Click download link (with `uiAccess=true` query parameter for UI access)
+-   Click download link (uses correct URL pattern: `/api/file-hosting/public/[fileId]` for public files, `/api/file-hosting/private/[fileId]` for private files)
 -   Display file metadata (size, type, access count, sharing status)
 -   Generate QR code for download link (only for public files)
 -   Display sharing status indicator (public/private)
@@ -288,6 +288,10 @@ export const fetchFileList = async (
     return response.json();
 };
 
+// Note: Download links use separate URL patterns:
+// - Public files: /api/file-hosting/public/[fileId] (bypasses Zero Trust)
+// - Private files: /api/file-hosting/private/[fileId] (protected by Zero Trust)
+
 // Get file metadata
 export const fetchFileMetadata = async (
     fileId: string
@@ -381,9 +385,9 @@ export const generateQRCodeBlob = async (url: string): Promise<Blob> => {
 
     -   Trigger: Click download link
     -   Flow:
-        -   **Public files**: Navigate to download URL (opens in new tab)
-        -   **Private files**: Navigate to download URL with `uiAccess=true` query parameter
-    -   Error handling: Handle 403 Forbidden for private files accessed directly
+        -   **Public files**: Navigate to `/api/file-hosting/public/[fileId]` (opens in new tab, bypasses Zero Trust)
+        -   **Private files**: Navigate to `/api/file-hosting/private/[fileId]` (protected by Zero Trust, requires authentication)
+    -   Error handling: Handle 403 Forbidden if file accessed via wrong endpoint
 
 -   **Generate QR Code**:
 

@@ -111,7 +111,7 @@ This document tracks what has been implemented vs what still needs to be done fo
     -   [ ] CSS styling
 -   [ ] **FileList** - File listing component
     -   [ ] File metadata display
-    -   [ ] Download link (with uiAccess param for private files)
+    -   [ ] Download link (public files only - private files return 403)
     -   [ ] Sharing status indicator (public/private badge)
     -   [ ] Empty state
     -   [ ] CSS styling

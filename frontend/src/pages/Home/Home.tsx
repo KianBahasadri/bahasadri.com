@@ -51,6 +51,10 @@ const toolPopups: Record<string, ToolPopup> = {
         text: "Not ready yet... but I'll show you the best routes! 🗺️💖",
         ascii: "♡( ◡‿◡ )",
     },
+    "movies-on-demand": {
+        text: "Click me, darling~ Let's watch movies together! 🎬💕",
+        ascii: "(♡ >ω< ♡)",
+    },
 };
 
 export default function Home(): React.JSX.Element {
@@ -392,6 +396,26 @@ export default function Home(): React.JSX.Element {
                                     </span>
                                     <h3 className={styles["cardTitle"]}>
                                         File Hosting
+                                    </h3>
+                                </Link>
+
+                                <Link
+                                    to="/movies-on-demand"
+                                    className={styles["cardMenhera"]}
+                                    onMouseEnter={(e) => {
+                                        handleCardHover("movies-on-demand", e);
+                                        startHeartbeat(e.currentTarget);
+                                    }}
+                                    onMouseLeave={() => {
+                                        handleCardLeave();
+                                        stopHeartbeat();
+                                    }}
+                                >
+                                    <span className={styles["cardIcon"]}>
+                                        🎬
+                                    </span>
+                                    <h3 className={styles["cardTitle"]}>
+                                        Movies on Demand
                                     </h3>
                                 </Link>
 
