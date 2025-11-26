@@ -466,7 +466,7 @@ await env.MOVIES_D1.prepare(
 3. Spin up Container via `getContainer()` API, passing job details (job_id, nzb_url, Usenet credentials, R2 destination)
 4. **Container takes over**:
     - Download and parse NZB file (XML) to extract Usenet article references
-    - Connect to Usenet servers (NNTP) using client (e.g., SABnzbd, NZBGet)
+    - Connect to Usenet servers (NNTP) using NZBGet (custom container)
     - Download movie file parts (update progress in D1 periodically)
     - Verify/repair using parity data, unpack into final movie file
     - Update job status to "preparing" in D1
@@ -831,7 +831,7 @@ for (const row of rows.results) {
 -   [ ] Queue message handler
 -   [ ] NZB file download
 -   [ ] NZB XML parsing
--   [ ] Usenet client (NNTP protocol)
+-   [ ] NZBGet container for Usenet downloads (NNTP protocol)
 -   [ ] Movie file download with progress tracking
 -   [ ] R2 upload logic
 -   [ ] Job status updates throughout lifecycle
@@ -853,7 +853,12 @@ for (const row of rows.results) {
 -   `@cloudflare/workers-types` for types
 -   Hono web framework
 -   XML parser library for NZB files (e.g., `fast-xml-parser`)
--   Usenet/NNTP client library (custom or third-party)
+
+### Container Dependencies
+
+-   Custom NZBGet container (`backend/containers/movies-on-demand/`)
+-   NZBGet daemon for Usenet downloads (NNTP protocol)
+-   Node.js wrapper script for orchestrating downloads and R2 uploads
 
 ## Error Codes
 

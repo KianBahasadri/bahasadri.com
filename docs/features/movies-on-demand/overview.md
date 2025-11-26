@@ -131,14 +131,14 @@ The job is designed to be **self‑contained and short‑lived**: it exists only
 
 #### 4.4. Downloading from Usenet Inside the Container
 
-Inside the container, a Usenet client (like SABnzbd or NZBGet, or an equivalent) runs in a fully isolated environment:
+Inside the container, a custom NZBGet instance runs in a fully isolated environment:
 
 - It connects to your Usenet provider over an encrypted connection.
 - It uses the NZB to download all the pieces of the movie at high speed.
 - It uses associated parity/repair data (if available) to verify and fix any missing or corrupt chunks.
 - It unpacks and reconstructs the final movie file (for example, turning a set of archive parts into a single video file).
 
-All of this happens on the container’s own ephemeral storage.
+All of this happens on the container's own ephemeral storage.
 
 The small job/state tracker is updated periodically with progress information, so your UI can show “downloading” and approximate progress.
 
