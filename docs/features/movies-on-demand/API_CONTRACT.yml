@@ -1,0 +1,429 @@
+openapi: 3.1.0
+info:
+    title: Movies on Demand API
+    description: >-
+        API contract document defining the interface between frontend and backend.
+        This serves as the single source of truth for coupling.
+        Movies on demand utility using The Movie Database (TMDB) API. Allows users to
+        search for movies, browse popular and trending films, and view detailed
+        movie information.
+    version: 1.0.0
+servers:
+    - url: http://localhost:8787/api
+      description: Development Server
+    - url: https://bahasadri.com/api
+      description: Production Server
+
+components:
+    securitySchemes:
+        BearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+
+    schemas:
+        ErrorResponse:
+            type: object
+            required:
+                - error
+            properties:
+                error:
+                    type: string
+                    description: A descriptive error message.
+                    example: "Invalid input provided."
+                code:
+                    type: string
+                    description: Machine-readable error code.
+                    enum: [INVALID_INPUT, NOT_FOUND, INTERNAL_ERROR, TMDB_ERROR]
+                    example: INVALID_INPUT
+
+        Movie:
+            type: object
+            required:
+                - id
+                - title
+            properties:
+                id:
+                    type: integer
+                    description: TMDB movie ID
+                    example: 550
+                title:
+                    type: string
+                    description: Movie title
+                    example: "Fight Club"
+                overview:
+                    type: string
+                    description: Movie plot summary
+                    example: "A ticking-time-bomb insomniac and a slippery soap salesman..."
+                release_date:
+                    type: string
+                    format: date
+                    description: Movie release date
+                    example: "1999-10-15"
+                poster_path:
+                    type: string
+                    nullable: true
+                    description: Path to movie poster image
+                    example: "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg"
+                backdrop_path:
+                    type: string
+                    nullable: true
+                    description: Path to movie backdrop image
+                    example: "/87hTDiay2N2qWyX4ugm8Xk0gOZU.jpg"
+                vote_average:
+                    type: number
+                    format: float
+                    description: Average rating
+                    example: 8.433
+                vote_count:
+                    type: integer
+                    description: Number of votes
+                    example: 26280
+                popularity:
+                    type: number
+                    format: float
+                    description: Popularity score
+                    example: 61.416
+                genre_ids:
+                    type: array
+                    items:
+                        type: integer
+                    description: List of genre IDs
+                    example: [18, 53]
+
+        MovieDetails:
+            allOf:
+                - $ref: "#/components/schemas/Movie"
+                - type: object
+                  properties:
+                      runtime:
+                          type: integer
+                          nullable: true
+                          description: Movie runtime in minutes
+                          example: 139
+                      genres:
+                          type: array
+                          items:
+                              type: object
+                              properties:
+                                  id:
+                                      type: integer
+                                  name:
+                                      type: string
+                          description: List of genre objects
+                          example:
+                              - id: 18
+                                name: "Drama"
+                              - id: 53
+                                name: "Thriller"
+                      production_companies:
+                          type: array
+                          items:
+                              type: object
+                              properties:
+                                  id:
+                                      type: integer
+                                  name:
+                                      type: string
+                                  logo_path:
+                                      type: string
+                                      nullable: true
+                          description: List of production companies
+                      budget:
+                          type: integer
+                          description: Production budget
+                          example: 63000000
+                      revenue:
+                          type: integer
+                          description: Box office revenue
+                          example: 100853753
+                      credits:
+                          type: object
+                          properties:
+                              cast:
+                                  type: array
+                                  items:
+                                      type: object
+                                      properties:
+                                          id:
+                                              type: integer
+                                          name:
+                                              type: string
+                                          character:
+                                              type: string
+                                          profile_path:
+                                              type: string
+                                              nullable: true
+                                  description: List of cast members
+                              crew:
+                                  type: array
+                                  items:
+                                      type: object
+                                      properties:
+                                          id:
+                                              type: integer
+                                          name:
+                                              type: string
+                                          job:
+                                              type: string
+                                          profile_path:
+                                              type: string
+                                              nullable: true
+                                  description: List of crew members
+
+        MovieSearchResponse:
+            type: object
+            required:
+                - results
+                - total_results
+                - page
+                - total_pages
+            properties:
+                results:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Movie"
+                total_results:
+                    type: integer
+                    description: Total number of results
+                    example: 100
+                page:
+                    type: integer
+                    description: Current page number
+                    example: 1
+                total_pages:
+                    type: integer
+                    description: Total number of pages
+                    example: 5
+
+        SimilarMoviesResponse:
+            type: object
+            required:
+                - results
+                - page
+                - total_pages
+                - total_results
+            properties:
+                results:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Movie"
+                page:
+                    type: integer
+                total_pages:
+                    type: integer
+                total_results:
+                    type: integer
+
+    responses:
+        BadRequest:
+            description: Invalid input provided (400).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        invalid_input:
+                            value:
+                                error: "Query parameter 'query' is required."
+                                code: "INVALID_INPUT"
+
+        Unauthorized:
+            description: Authentication required (401).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+
+        NotFound:
+            description: Resource not found (404).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        not_found:
+                            value:
+                                error: "Movie with ID 123 not found."
+                                code: "NOT_FOUND"
+
+        InternalError:
+            description: Server error (500).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        server_error:
+                            value:
+                                error: "Unexpected database error."
+                                code: "INTERNAL_ERROR"
+
+        TMDBError:
+            description: TMDB API error (502).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        tmdb_error:
+                            value:
+                                error: "TMDB API request failed."
+                                code: "TMDB_ERROR"
+
+paths:
+    /movies-on-demand/search:
+        get:
+            operationId: searchMovies
+            summary: Search for movies
+            description: Searches for movies by title using TMDB API.
+            parameters:
+                - name: query
+                  in: query
+                  required: true
+                  description: Search query (movie title)
+                  schema:
+                      type: string
+                      minLength: 1
+                      example: "Fight Club"
+                - name: page
+                  in: query
+                  required: false
+                  description: Page number for pagination
+                  schema:
+                      type: integer
+                      minimum: 1
+                      default: 1
+                      example: 1
+            responses:
+                "200":
+                    description: Search results
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/MovieSearchResponse"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+                "502":
+                    $ref: "#/components/responses/TMDBError"
+
+    /movies-on-demand/popular:
+        get:
+            operationId: getPopularMovies
+            summary: Get popular movies
+            description: Retrieves a list of currently popular movies from TMDB.
+            parameters:
+                - name: page
+                  in: query
+                  required: false
+                  description: Page number for pagination
+                  schema:
+                      type: integer
+                      minimum: 1
+                      default: 1
+                      example: 1
+            responses:
+                "200":
+                    description: List of popular movies
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/MovieSearchResponse"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+                "502":
+                    $ref: "#/components/responses/TMDBError"
+
+    /movies-on-demand/trending:
+        get:
+            operationId: getTrendingMovies
+            summary: Get trending movies
+            description: Retrieves a list of currently trending movies from TMDB.
+            parameters:
+                - name: page
+                  in: query
+                  required: false
+                  description: Page number for pagination
+                  schema:
+                      type: integer
+                      minimum: 1
+                      default: 1
+                      example: 1
+            responses:
+                "200":
+                    description: List of trending movies
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/MovieSearchResponse"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+                "502":
+                    $ref: "#/components/responses/TMDBError"
+
+    /movies-on-demand/movies/{id}:
+        parameters:
+            - name: id
+              in: path
+              required: true
+              description: TMDB movie ID
+              schema:
+                  type: integer
+                  example: 550
+        get:
+            operationId: getMovieDetails
+            summary: Get movie details
+            description: Retrieves detailed information about a specific movie from TMDB.
+            responses:
+                "200":
+                    description: Movie details
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/MovieDetails"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+                "502":
+                    $ref: "#/components/responses/TMDBError"
+
+    /movies-on-demand/movies/{id}/similar:
+        parameters:
+            - name: id
+              in: path
+              required: true
+              description: TMDB movie ID
+              schema:
+                  type: integer
+                  example: 550
+        get:
+            operationId: getSimilarMovies
+            summary: Get similar movies
+            description: Retrieves a list of movies similar to the specified movie.
+            parameters:
+                - name: page
+                  in: query
+                  required: false
+                  description: Page number for pagination
+                  schema:
+                      type: integer
+                      minimum: 1
+                      default: 1
+                      example: 1
+            responses:
+                "200":
+                    description: List of similar movies
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/SimilarMoviesResponse"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+                "502":
+                    $ref: "#/components/responses/TMDBError"
+
