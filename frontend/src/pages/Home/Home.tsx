@@ -12,8 +12,8 @@ interface ToolPopup {
 
 const toolPopups: Record<string, ToolPopup> = {
     "file-hosting": {
-        text: "Coming soon~ 🥺 I'm still working on it for you! 💾✨",
-        ascii: "(⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄)",
+        text: "Click me, darling~ Upload and share your files! 💾✨",
+        ascii: "(>▽<)",
     },
     "file-encryptor": {
         text: "Not ready yet... but I'll keep your secrets safe! 🔒💖",
@@ -45,7 +45,7 @@ const toolPopups: Record<string, ToolPopup> = {
     },
     "rideshare-comparison": {
         text: "Coming soon~ I'll help you find the best ride! 🚗✨",
-        ascii: "(⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄)",
+        ascii: "(>▽<)",
     },
     "route-comparison": {
         text: "Not ready yet... but I'll show you the best routes! 🗺️💖",
@@ -375,13 +375,17 @@ export default function Home(): React.JSX.Element {
                                     </h3>
                                 </Link>
 
-                                <button
+                                <Link
+                                    to="/file-hosting"
                                     className={styles["cardMenhera"]}
-                                    disabled
                                     onMouseEnter={(e) => {
                                         handleCardHover("file-hosting", e);
+                                        startHeartbeat(e.currentTarget);
                                     }}
-                                    onMouseLeave={handleCardLeave}
+                                    onMouseLeave={() => {
+                                        handleCardLeave();
+                                        stopHeartbeat();
+                                    }}
                                 >
                                     <span className={styles["cardIcon"]}>
                                         💾
@@ -389,7 +393,7 @@ export default function Home(): React.JSX.Element {
                                     <h3 className={styles["cardTitle"]}>
                                         File Hosting
                                     </h3>
-                                </button>
+                                </Link>
 
                                 <button
                                     className={styles["cardMenhera"]}
