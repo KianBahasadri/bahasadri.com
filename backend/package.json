@@ -2,7 +2,7 @@
     "name": "backend",
     "private": true,
     "scripts": {
-        "dev": "wrangler dev --local",
+        "dev": "wrangler dev --local --ip 0.0.0.0",
         "preview": "wrangler dev",
         "deploy": "wrangler deploy",
         "lint": "eslint .",

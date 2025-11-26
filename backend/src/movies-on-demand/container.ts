@@ -86,7 +86,9 @@ export async function handleMovieQueue(
             );
 
             // Detect dev mode (local development) - for connection count adjustment
-            const isDev = callbackUrl.includes("host.docker.internal") || callbackUrl.includes("localhost");
+            const isDev =
+                callbackUrl.includes("host.docker.internal") ||
+                callbackUrl.includes("localhost");
 
             // Build environment variables for the container
             const envVars: Record<string, string> = {
@@ -134,7 +136,9 @@ export async function handleMovieQueue(
             // Acknowledge the message - container will handle the rest
             message.ack();
 
-            console.log(`Container started for job: ${job.job_id}, status updated to downloading`);
+            console.log(
+                `Container started for job: ${job.job_id}, status updated to downloading`
+            );
         } catch (error) {
             console.error(
                 `Failed to start container for job ${job.job_id}:`,

@@ -16,7 +16,6 @@ const REQUIRED_ENV = [
     "JOB_ID",
     "MOVIE_ID",
     "NZB_URL",
-    "CALLBACK_URL",
     "CF_ACCESS_CLIENT_ID",
     "CF_ACCESS_CLIENT_SECRET",
     "USENET_HOST",
@@ -40,7 +39,7 @@ const config = {
     movieId: process.env.MOVIE_ID,
     nzbUrl: process.env.NZB_URL,
     releaseTitle: process.env.RELEASE_TITLE || "movie",
-    callbackUrl: process.env.CALLBACK_URL,
+    callbackUrl: resolveCallbackUrl(),
     cfId: process.env.CF_ACCESS_CLIENT_ID,
     cfSecret: process.env.CF_ACCESS_CLIENT_SECRET,
     usenetHost: process.env.USENET_HOST,
@@ -137,10 +136,13 @@ main().catch((error) => {
 });
 
 async function main() {
+    console.log("[movies-on-demand] main start");
     notify("starting");
 
     const configPath = "/config/nzbget/nzbget.conf";
+    console.log("[movies-on-demand] writing NZBGet config");
     writeNZBConfig(configPath);
+    console.log("[movies-on-demand] starting NZBGet daemon");
     const nzbProcess = spawn("nzbget", ["-D", "-c", configPath], {
         stdio: "inherit",
     });
@@ -149,21 +151,31 @@ async function main() {
         throw new Error(`Failed to start nzbget: ${err.message}`);
     });
 
+    console.log("[movies-on-demand] waiting for NZBGet to become ready");
     await nzbClient.waitForReady();
     await configureServer();
 
+    console.log("[movies-on-demand] adding NZB to queue");
     const nzbId = await addDownload();
+    console.log(
+        `[movies-on-demand] queued NZB ${nzbId}, waiting for completion`
+    );
     await waitForCompletion(nzbId);
 
+    console.log("[movies-on-demand] locating downloaded video file");
     const videoFile = findVideoFile(config.downloadDir);
     if (!videoFile) {
         throw new Error("Download finished but no video file found");
     }
 
+    console.log("[movies-on-demand] uploading video to R2");
     const ext = extname(videoFile) || ".mp4";
     const r2Key = `movies/${config.jobId}/movie${ext}`;
     await upload(videoFile, r2Key);
 
+    console.log(
+        "[movies-on-demand] upload complete, sending ready notification"
+    );
     notify("ready", { r2_key: r2Key });
     nzbProcess.kill("SIGTERM");
 }
@@ -188,6 +200,7 @@ LogFile=/downloads/nzbget.log
 }
 
 async function configureServer() {
+    console.log("[movies-on-demand] configuring Usenet server");
     const settings = [
         { Name: "Server1.Active", Value: "yes" },
         { Name: "Server1.Host", Value: config.usenetHost },
@@ -209,6 +222,7 @@ async function configureServer() {
 }
 
 async function addDownload() {
+    console.log("[movies-on-demand] addDownload invoked");
     const url = decodeHtml(config.nzbUrl);
     const nzbContent = await fetchNzbAsBase64(url);
     const nzbId = await nzbClient.call("append", [
@@ -232,6 +246,7 @@ async function addDownload() {
 }
 
 async function fetchNzbAsBase64(url) {
+    console.log(`[movies-on-demand] downloading NZB from ${url}`);
     const response = await fetch(url, {
         headers: {
             "User-Agent": "movies-on-demand-container/1.0",
@@ -252,20 +267,79 @@ async function fetchNzbAsBase64(url) {
 }
 
 async function waitForCompletion(nzbId) {
+    console.log(`[movies-on-demand] waiting for NZB ${nzbId} to finish`);
+    let lastProgress = -1;
+    let lastStatus = "";
+
     while (true) {
-        const history = await nzbClient.call("history", [false]);
+        const [history, groups] = await Promise.all([
+            nzbClient.call("history", [false]),
+            nzbClient.call("listgroups", [0]),
+        ]);
+
+        const group = groups.find((g) => g.NZBID === nzbId);
+        if (group) {
+            const { progress, statusText } = extractProgress(group);
+            if (
+                progress !== null &&
+                (Math.abs(progress - lastProgress) >= 1 ||
+                    statusText !== lastStatus)
+            ) {
+                notify("downloading", {
+                    progress,
+                    nzb_status: statusText,
+                });
+                lastProgress = progress;
+                lastStatus = statusText;
+            }
+        } else if (lastStatus !== "queued") {
+            notify("downloading", { progress: 0, nzb_status: "queued" });
+            lastStatus = "queued";
+        }
+
         const entry = history.find((item) => item.NZBID === nzbId);
         if (entry) {
             if (entry.Status === "SUCCESS") {
+                if (lastProgress < 100) {
+                    notify("downloading", {
+                        progress: 100,
+                        nzb_status: "complete",
+                    });
+                }
                 return;
             }
             throw new Error(`NZB failed: ${entry.Status}`);
         }
+
         await sleep(5000);
     }
 }
 
+function extractProgress(group) {
+    const total = combineParts(group.FileSizeLo, group.FileSizeHi);
+    const remaining = combineParts(
+        group.RemainingSizeLo,
+        group.RemainingSizeHi
+    );
+
+    if (!total) {
+        return { progress: null, statusText: group.Status || "unknown" };
+    }
+
+    const downloaded = Math.max(total - remaining, 0);
+    const percent = Math.min(100, Math.max(0, (downloaded / total) * 100));
+    return {
+        progress: Number(percent.toFixed(1)),
+        statusText: group.Status || "downloading",
+    };
+}
+
+function combineParts(lo, hi) {
+    return (Number(hi) || 0) * 4294967296 + (Number(lo) || 0);
+}
+
 async function upload(filePath, key) {
+    console.log(`[movies-on-demand] upload started for ${key}`);
     const upload = new Upload({
         client: uploader,
         params: {
@@ -280,6 +354,7 @@ async function upload(filePath, key) {
 }
 
 function startHealthServer() {
+    console.log("[movies-on-demand] starting health server");
     const server = createServer((_, res) => {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: true, jobId: config.jobId }));
@@ -327,10 +402,13 @@ function decodeHtml(str) {
 }
 
 function notify(status, extra = {}) {
+    console.log(`[movies-on-demand] notify -> ${status}`);
     if (!config.callbackUrl) {
+        console.log("No callback URL configured!!!");
         return;
     }
 
+    console.log(`[movies-on-demand] sending callback to ${config.callbackUrl}`);
     fetch(config.callbackUrl, {
         method: "POST",
         headers: {
@@ -339,11 +417,36 @@ function notify(status, extra = {}) {
             "CF-Access-Client-Secret": config.cfSecret,
         },
         body: JSON.stringify({ job_id: config.jobId, status, ...extra }),
-    }).catch((err) => {
-        console.warn(`Failed to send callback: ${err.message}`);
-    });
+    })
+        .then(async (res) => {
+            if (!res.ok) {
+                const text = await res.text();
+                console.error(
+                    `[movies-on-demand] Callback failed with status ${res.status}: ${text}`
+                );
+            } else {
+                console.log(
+                    `[movies-on-demand] Callback succeeded for status ${status}`
+                );
+            }
+        })
+        .catch((err) => {
+            console.error(
+                `[movies-on-demand] Failed to send callback: ${err.message}`,
+                err
+            );
+        });
 }
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function resolveCallbackUrl() {
+    // CALLBACK_URL is always set by the worker (container.ts)
+    // The worker determines the URL based on ENVIRONMENT before passing it here
+    return (
+        process.env.CALLBACK_URL ||
+        "https://bahasadri.com/api/movies-on-demand/internal/progress"
+    );
 }

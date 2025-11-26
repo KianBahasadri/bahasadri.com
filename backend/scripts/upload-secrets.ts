@@ -13,6 +13,12 @@ import { spawn } from "node:child_process";
 const PROJECT_ROOT = path.resolve(path.join(__dirname, "../.."));
 const ENV_FILE = path.resolve(path.join(PROJECT_ROOT, ".env"));
 
+// Environment variables that should NOT be uploaded to Cloudflare
+// These are local-only configuration variables
+const EXCLUDED_KEYS = new Set([
+    "CALLBACK_URL", // Local testing override, not needed in production
+]);
+
 interface EnvEntry {
     key: string;
     value: string;
@@ -62,7 +68,7 @@ function parseEnvFile(filePath: string): EnvEntry[] {
             value = value.slice(1, -1);
         }
 
-        if (key && value) {
+        if (key && value && !EXCLUDED_KEYS.has(key)) {
             entries.push({ key, value });
         }
     }
@@ -121,7 +127,13 @@ async function main(): Promise<void> {
     }
 
     const countString = String(entries.length);
-    process.stdout.write(`Found ${countString} environment variable(s) to upload\n\n`);
+    const excludedCount = EXCLUDED_KEYS.size;
+    process.stdout.write(`Found ${countString} environment variable(s) to upload`);
+    if (excludedCount > 0) {
+        process.stdout.write(` (${excludedCount} excluded: ${Array.from(EXCLUDED_KEYS).join(", ")})\n\n`);
+    } else {
+        process.stdout.write(`\n\n`);
+    }
 
     for (const entry of entries) {
         await uploadSecret(entry.key, entry.value);

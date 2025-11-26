@@ -863,6 +863,13 @@ app.post(
     "/internal/progress",
     withErrorHandling(
         async (c) => {
+            // Log incoming request for debugging
+            console.log(
+                `[internal/progress] Received callback request from ${
+                    c.req.header("CF-Connecting-IP") || "unknown"
+                }`
+            );
+
             // Parse request body
             const body = await c.req.json<{
                 job_id: string;
@@ -870,6 +877,10 @@ app.post(
                 progress?: number | null;
                 error_message?: string | null;
             }>();
+
+            console.log(
+                `[internal/progress] Processing callback for job ${body.job_id} with status ${body.status}`
+            );
 
             // Validate required fields
             if (!body.job_id || !body.status) {
