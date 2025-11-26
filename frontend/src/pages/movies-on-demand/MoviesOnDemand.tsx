@@ -11,7 +11,8 @@ import {
 import MovieSearch from "./components/MovieSearch/MovieSearch";
 import MovieList from "./components/MovieList/MovieList";
 import WatchHistoryList from "./components/WatchHistoryList/WatchHistoryList";
-import type { Movie } from "../../types/movies-on-demand";
+import JobsList from "./components/JobsList/JobsList";
+import type { Movie, JobStatus } from "../../types/movies-on-demand";
 import styles from "./MoviesOnDemand.module.css";
 
 const queryKeys = {
@@ -63,27 +64,26 @@ export default function MoviesOnDemand(): React.JSX.Element {
 
     const { data: availableData, isLoading: isAvailableLoading } = useQuery({
         queryKey: queryKeys.available(),
-        queryFn: async (): Promise<Movie[]> => {
+        queryFn: async (): Promise<Array<{ movie: Movie; job: JobStatus }>> => {
             const jobsResponse = await listActiveJobs();
-            const relevantJobs = jobsResponse.jobs.filter(
-                (job) => job.status === "ready" || job.status === "downloading"
+            const allJobs = jobsResponse.jobs.sort((a, b) => {
+                const dateA = new Date(a.created_at).getTime();
+                const dateB = new Date(b.created_at).getTime();
+                return dateB - dateA;
+            });
+
+            const moviePromises = allJobs.map(
+                async (job) => {
+                    const movie = await getMovieDetails(job.movie_id);
+                    return { movie, job };
+                }
             );
 
-            const moviePromises = relevantJobs.map(
-                async (job) => await getMovieDetails(job.movie_id)
-            );
-
-            const movies = await Promise.all(moviePromises);
-            return movies;
+            const items = await Promise.all(moviePromises);
+            return items;
         },
         enabled: activeView === "available",
-        refetchInterval: (query): number | false => {
-            const data = query.state.data;
-            if (data && data.length > 0) {
-                return 5000;
-            }
-            return false;
-        },
+        refetchInterval: activeView === "available" ? 5000 : false,
     });
 
     const handleSearch = (query: string): void => {
@@ -121,8 +121,6 @@ export default function MoviesOnDemand(): React.JSX.Element {
                 return popularData?.results ?? [];
             case "top":
                 return topData?.results ?? [];
-            case "available":
-                return availableData ?? [];
             default:
                 return [];
         }
@@ -214,12 +212,17 @@ export default function MoviesOnDemand(): React.JSX.Element {
                     {...(hasMoreHistory && { onLoadMore: handleHistoryLoadMore })}
                     hasMore={hasMoreHistory ?? false}
                 />
+            ) : activeView === "available" ? (
+                <JobsList
+                    items={availableData ?? []}
+                    isLoading={isAvailableLoading}
+                />
             ) : (
                 <MovieList
                     movies={getCurrentMovies()}
                     isLoading={getCurrentIsLoading()}
-                    currentPage={activeView === "available" ? 1 : currentPage}
-                    totalPages={activeView === "available" ? 1 : getCurrentTotalPages()}
+                    currentPage={currentPage}
+                    totalPages={getCurrentTotalPages()}
                     onPageChange={handlePageChange}
                     onMovieClick={handleMovieClick}
                 />

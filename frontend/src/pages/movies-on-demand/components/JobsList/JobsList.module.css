@@ -1,0 +1,35 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.skeleton {
+    height: 300px;
+    background: var(--dark-elevated);
+    border-radius: 8px;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--pink-light);
+}
+

@@ -127,6 +127,10 @@ export default function MovieDetails(): React.JSX.Element {
     const currentJob = jobStatus;
     const isReady = currentJob?.status === "ready";
 
+    const handleBackClick = () => {
+        navigate("/movies-on-demand");
+    };
+
     return (
         <div className={styles["container"]}>
             {showReleaseSelector && (
@@ -145,6 +149,13 @@ export default function MovieDetails(): React.JSX.Element {
                     backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.9)), url(${backdropUrl})`,
                 }}
             >
+                <button
+                    className={styles["backButton"]}
+                    onClick={handleBackClick}
+                    aria-label="Back to movies"
+                >
+                    ← Back to Movies
+                </button>
                 <div className={styles["heroContent"]}>
                     <img
                         src={posterUrl}
@@ -189,37 +200,6 @@ export default function MovieDetails(): React.JSX.Element {
             </div>
 
             <div className={styles["content"]}>
-                {movieDetails.credits && movieDetails.credits.cast.length > 0 && (
-                    <section className={styles["section"]}>
-                        <h2 className={styles["sectionTitle"]}>Cast</h2>
-                        <div className={styles["castGrid"]}>
-                            {movieDetails.credits.cast.slice(0, 12).map((actor) => {
-                                const profileUrl = getImageUrl(
-                                    actor.profile_path,
-                                    "w500"
-                                );
-                                return (
-                                    <div key={actor.id} className={styles["castMember"]}>
-                                        <img
-                                            src={profileUrl}
-                                            alt={actor.name}
-                                            className={styles["castPhoto"]}
-                                        />
-                                        <div className={styles["castInfo"]}>
-                                            <p className={styles["castName"]}>
-                                                {actor.name}
-                                            </p>
-                                            <p className={styles["castCharacter"]}>
-                                                {actor.character}
-                                            </p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </section>
-                )}
-
                 <section className={styles["section"]}>
                     <h2 className={styles["sectionTitle"]}>Fetch & Watch</h2>
                     <div className={styles["fetchControls"]}>
@@ -301,6 +281,37 @@ export default function MovieDetails(): React.JSX.Element {
                         />
                     )}
                 </section>
+
+                {movieDetails.credits && movieDetails.credits.cast.length > 0 && (
+                    <section className={styles["section"]}>
+                        <h2 className={styles["sectionTitle"]}>Cast</h2>
+                        <div className={styles["castGrid"]}>
+                            {movieDetails.credits.cast.slice(0, 12).map((actor) => {
+                                const profileUrl = getImageUrl(
+                                    actor.profile_path,
+                                    "w500"
+                                );
+                                return (
+                                    <div key={actor.id} className={styles["castMember"]}>
+                                        <img
+                                            src={profileUrl}
+                                            alt={actor.name}
+                                            className={styles["castPhoto"]}
+                                        />
+                                        <div className={styles["castInfo"]}>
+                                            <p className={styles["castName"]}>
+                                                {actor.name}
+                                            </p>
+                                            <p className={styles["castCharacter"]}>
+                                                {actor.character}
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </section>
+                )}
 
                 {similarData && similarData.results.length > 0 && (
                     <section className={styles["section"]}>

@@ -1,11 +1,19 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import type { MessageBatch } from "@cloudflare/workers-types";
 import smsMessengerRoutes from "./sms-messenger";
 import whatsappMessengerRoutes from "./whatsapp-messenger";
 import calculatorRoutes from "./calculator";
 import homeRoutes from "./home";
 import videoCallRoutes from "./video-call";
 import fileHostingRoutes from "./file-hosting";
+import moviesOnDemandRoutes from "./movies-on-demand";
+import {
+    MovieDownloaderContainer,
+    handleMovieQueue,
+} from "./movies-on-demand/container";
+import type { Env } from "./types/env";
+import type { JobQueueMessage } from "./movies-on-demand/types";
 
 const app = new Hono();
 
@@ -41,8 +49,19 @@ app.route("/api/calculator", calculatorRoutes);
 app.route("/api/home", homeRoutes);
 app.route("/api/video-call", videoCallRoutes);
 app.route("/api/file-hosting", fileHostingRoutes);
+app.route("/api/movies-on-demand", moviesOnDemandRoutes);
 
 // Health check
 app.get("/", (c) => c.json({ success: true, message: "bahasadri.com API" }));
 
-export default app;
+// Export the Container class for Cloudflare Containers
+export { MovieDownloaderContainer };
+
+// Export default with fetch handler, queue consumer, and request method for testing
+export default {
+    fetch: app.fetch,
+    request: app.request.bind(app), // For test compatibility
+    async queue(batch: MessageBatch<JobQueueMessage>, env: Env): Promise<void> {
+        await handleMovieQueue(batch, env);
+    },
+};

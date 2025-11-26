@@ -1,6 +1,7 @@
 name = "bahasadri-backend"
 main = "src/index.ts"
 compatibility_date = "2025-11-22"
+compatibility_flags = ["nodejs_compat"]
 workers_dev = false
 
 routes = [
@@ -35,6 +36,44 @@ binding = "FILE_HOSTING_DB"
 database_name = "file-hosting"
 database_id = "00822e66-3363-42df-b80a-526c0a1efc30"
 remote = true
+
+# Movies on Demand bindings
+[[r2_buckets]]
+binding = "MOVIES_R2"
+bucket_name = "movies-on-demand"
+remote = true
+
+[[d1_databases]]
+binding = "MOVIES_D1"
+database_name = "movies-on-demand"
+database_id = "182548d2-a2dd-472c-a97c-87eda0cf63c9"
+remote = true
+
+[[queues.producers]]
+binding = "MOVIES_QUEUE"
+queue = "movies-on-demand-jobs"
+
+[[queues.consumers]]
+queue = "movies-on-demand-jobs"
+max_batch_size = 1
+max_batch_timeout = 0
+max_retries = 2
+dead_letter_queue = "movies-on-demand-dlq"
+
+# Movies on Demand Container
+[[containers]]
+class_name = "MovieDownloaderContainer"
+image = "./containers/movies-on-demand/Dockerfile"
+max_instances = 3
+instance_type = "standard-2"
+
+[[durable_objects.bindings]]
+class_name = "MovieDownloaderContainer"
+name = "MOVIE_DOWNLOADER"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MovieDownloaderContainer"]
 
 [placement]
 mode = "smart"

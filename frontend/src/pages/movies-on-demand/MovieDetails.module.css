@@ -20,6 +20,39 @@
     padding: 40px 20px;
 }
 
+.backButton {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 12px 24px;
+    background: rgba(26, 26, 46, 0.9);
+    border: 2px solid var(--pink-hot);
+    border-radius: 6px;
+    color: var(--pink-light);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+    backdrop-filter: blur(4px);
+}
+
+.backButton:hover {
+    background: var(--pink-hot);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 105, 180, 0.4);
+}
+
+.backButton:active {
+    transform: translateY(0);
+}
+
+.backButton:focus {
+    outline: 2px solid var(--pink-hot);
+    outline-offset: 2px;
+}
+
 .heroContent {
     max-width: 1200px;
     width: 100%;
