@@ -12,17 +12,17 @@ These steps are in sequential order
 
 ### Writing Design Documents
 - whatsapp-messenger
-- File Hosting
 - File Encryptor
 - OSINT Tool
 - diagnostic-panel
-- movies-on-demand
 - platformer-game
 - remote-browser
 - rideshare-comparison
 - route-comparison
+- movies-on-demand
 
 ### Started Building
+- File Hosting
 - Video Call
 
 ### Finished Building

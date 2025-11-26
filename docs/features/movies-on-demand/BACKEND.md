@@ -440,15 +440,16 @@ await env.MOVIES_D1.prepare(
     .run();
 ```
 
-### Queue: Asynchronous Movie Processing
+### Queue + Container: Asynchronous Movie Processing
 
-**Binding**: `MOVIES_QUEUE`
+**Bindings**: `MOVIES_QUEUE`, `MOVIES_CONTAINER`
 
-**Usage**:
+**Why this architecture**:
 
--   Trigger Container-based movie downloads asynchronously
--   Worker queue handler receives job message and spins up Cloudflare Container
--   Container handles heavy lifting (NZB parsing, Usenet downloads, file processing)
+-   Workers have CPU/memory limits and cannot run binary Usenet clients
+-   Containers provide full Linux environment with required runtime dependencies
+-   Queue decouples API requests from long-running downloads
+-   Ephemeral container instances scale to zero when not in use
 
 **Message Format**:
 
@@ -458,26 +459,21 @@ await env.MOVIES_D1.prepare(
 -   `nzb_url`: string
 -   `release_title`: string
 
-**Queue Consumer Logic (Worker Handler)**:
+**Processing Flow**:
 
--   Receive job message from Queue
--   Update job status to "downloading" (progress: 0%) in D1
--   Spin up Cloudflare Container instance, passing job details (job_id, nzb_url, Usenet credentials, R2 destination)
--   Container handles the rest (see Container Processing Logic below)
-
-**Container Processing Logic**:
-
--   Download NZB file from NZBGeek URL
--   Parse NZB (XML) to extract Usenet article references
--   Connect to Usenet servers (NNTP protocol) using Usenet client (e.g., SABnzbd, NZBGet)
--   Download movie file from Usenet (track progress, update D1 periodically)
--   Verify and repair using parity data if available
--   Unpack/reconstruct final movie file
--   Update job status to "preparing" in D1
--   Upload movie file to R2 storage: `movies/{job_id}/movie.{ext}`
--   Update job status to "ready" and set expiration timestamp (24 hours after ready) in D1
--   Clean up local temporary data and exit
--   On error: Update job status to "error" with error_message in D1
+1. Worker queue handler receives job message
+2. Update job status to "downloading" (progress: 0%) in D1
+3. Spin up Container via `getContainer()` API, passing job details (job_id, nzb_url, Usenet credentials, R2 destination)
+4. **Container takes over**:
+    - Download and parse NZB file (XML) to extract Usenet article references
+    - Connect to Usenet servers (NNTP) using client (e.g., SABnzbd, NZBGet)
+    - Download movie file parts (update progress in D1 periodically)
+    - Verify/repair using parity data, unpack into final movie file
+    - Update job status to "preparing" in D1
+    - Upload to R2: `movies/{job_id}/movie.{ext}`
+    - Update job status to "ready", set expiration (24 hours) in D1
+    - Clean up and exit
+5. On error: Container updates job status to "error" with error_message in D1
 
 **Operations**:
 
@@ -491,30 +487,6 @@ await env.MOVIES_QUEUE.send({
     release_title: releaseTitle,
 });
 ```
-
-### Containers: Heavy Movie Processing
-
-**Binding**: `MOVIES_CONTAINER`
-
-**Usage**:
-
--   Run resource-intensive Usenet downloads and file processing
--   Execute Usenet clients (e.g., SABnzbd, NZBGet) that require full Linux environment
--   Handle binary operations, large file processing, and unpacking
--   Short-lived, job-specific instances that spin up on-demand
-
-**Why Containers**:
-
--   Workers have CPU/memory limits and cannot easily run binary Usenet clients
--   Containers provide full Linux environment with required runtime dependencies
--   Ephemeral instances scale to zero when not in use
-
-**Container Operations**:
-
--   Worker queue handler spins up container instance via `getContainer()` API
--   Container receives job details (job_id, nzb_url, Usenet credentials, R2 destination)
--   Container processes job independently and updates D1 status throughout lifecycle
--   Container exits after completion, allowing instance to go idle
 
 ## Workers Logic
 
@@ -547,30 +519,6 @@ await env.MOVIES_QUEUE.send({
 5. Transform response to API contract format
 6. Return response
 ```
-
-### Queue Consumer Processing Flow
-
-**Worker Queue Handler:**
-
-1. Receive job message from Queue
-2. Update job status to "downloading" (0%) in D1
-3. Spin up Cloudflare Container instance with job details
-4. Container takes over processing
-
-**Container Processing:**
-
-1. Download NZB file from NZBGeek URL
-2. Parse NZB XML to extract Usenet article references
-3. Connect to Usenet servers (NNTP protocol) using Usenet client
-4. Download movie file parts (update progress in D1 periodically)
-5. Verify and repair using parity data if available
-6. Reassemble/unpack parts into complete movie file
-7. Update job status to "preparing" in D1
-8. Upload movie file to R2 storage
-9. Update job status to "ready" and set expiration timestamp (24 hours) in D1
-10. Clean up local temporary data and exit
-
-On error: Container updates job status to "error" with error_message in D1
 
 ### Error Handling
 
