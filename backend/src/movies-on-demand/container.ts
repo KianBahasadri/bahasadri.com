@@ -67,12 +67,25 @@ export async function handleMovieQueue(
             const containerStub = env.MOVIE_DOWNLOADER.get(containerId);
 
             // Build callback URL for progress updates
-            // Use host.docker.internal for local dev (container needs to reach host)
-            // For now, always use the Docker internal URL since we're testing locally
-            // TODO: In production, use: https://bahasadri.com/api/movies-on-demand/internal/progress
-            const callbackUrl = `http://host.docker.internal:8787/api/movies-on-demand/internal/progress`;
+            // Priority:
+            // 1. Explicit CALLBACK_URL env var (for local testing)
+            // 2. Auto-detect local dev (ENVIRONMENT === "development")
+            // 3. Default to production URL
+            // For local Docker testing, containers must use host.docker.internal to reach host
+            const callbackUrl =
+                env.CALLBACK_URL ||
+                (env.ENVIRONMENT === "development"
+                    ? `http://host.docker.internal:8787/api/movies-on-demand/internal/progress`
+                    : `https://bahasadri.com/api/movies-on-demand/internal/progress`);
 
-            // Detect dev mode (local development)
+            console.log(
+                `Using callback URL: ${callbackUrl.replace(
+                    /\/\/[^:]+:[^@]+@/,
+                    "//***:***@"
+                )}`
+            );
+
+            // Detect dev mode (local development) - for connection count adjustment
             const isDev = callbackUrl.includes("host.docker.internal") || callbackUrl.includes("localhost");
 
             // Build environment variables for the container
@@ -106,13 +119,22 @@ export async function handleMovieQueue(
                 R2_BUCKET_NAME: "movies-on-demand",
             };
 
+            // Update job status to "downloading" immediately when container starts
+            // This ensures the UI shows progress even if the first callback fails
+            const now = new Date().toISOString();
+            await env.MOVIES_D1.prepare(
+                `UPDATE jobs SET status = 'downloading', progress = 0, updated_at = ? WHERE job_id = ?`
+            )
+                .bind(now, job.job_id)
+                .run();
+
             // Call the container's startWithEnvVars method via Durable Object RPC
             await containerStub.startWithEnvVars(envVars);
 
             // Acknowledge the message - container will handle the rest
             message.ack();
 
-            console.log(`Container started for job: ${job.job_id}`);
+            console.log(`Container started for job: ${job.job_id}, status updated to downloading`);
         } catch (error) {
             console.error(
                 `Failed to start container for job ${job.job_id}:`,

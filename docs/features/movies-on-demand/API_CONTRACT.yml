@@ -579,6 +579,8 @@ tags:
       description: Movie streaming endpoints
     - name: History
       description: Movie watch history endpoints
+    - name: Internal
+      description: Internal endpoints for container callbacks (not for frontend use)
 
 paths:
     /movies-on-demand/search:
@@ -936,3 +938,70 @@ paths:
                     $ref: "#/components/responses/InternalError"
                 "502":
                     $ref: "#/components/responses/TMDBError"
+
+    /movies-on-demand/internal/progress:
+        post:
+            tags:
+                - Internal
+            operationId: reportJobProgress
+            summary: Report job progress (Internal)
+            description: >-
+                Internal endpoint for containers to report job progress updates.
+                Protected by Cloudflare Zero Trust service tokens.
+                Not intended for frontend use - frontend should poll /jobs/{jobId} instead.
+            security:
+                - BearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - job_id
+                                - status
+                            properties:
+                                job_id:
+                                    type: string
+                                    description: Job identifier
+                                    example: "job_abc123"
+                                status:
+                                    type: string
+                                    enum:
+                                        [
+                                            queued,
+                                            downloading,
+                                            preparing,
+                                            ready,
+                                            error,
+                                        ]
+                                    description: Current job status
+                                    example: "downloading"
+                                progress:
+                                    type: number
+                                    format: float
+                                    nullable: true
+                                    description: Download progress percentage (0-100)
+                                    example: 45.5
+                                error_message:
+                                    type: string
+                                    nullable: true
+                                    description: Error message if status is error
+                                    example: "Download failed: Connection timeout"
+            responses:
+                "200":
+                    description: Progress update accepted
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                        example: true
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"

@@ -43,4 +43,8 @@ export interface Env {
     // Movies on Demand - R2 API credentials (for container uploads)
     R2_ACCESS_KEY_ID: string;
     R2_SECRET_ACCESS_KEY: string;
+    // Optional: Override callback URL for local testing
+    CALLBACK_URL?: string;
+    // Optional: Environment indicator (development/production)
+    ENVIRONMENT?: string;
 }

@@ -1,7 +1,7 @@
 # Movies on Demand - NZBGet Container
 # Debian-based container with NZBGet and Node.js
 
-FROM node:20-slim
+FROM node:lts-bookworm-slim
 
 # Install NZBGet, and required tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
