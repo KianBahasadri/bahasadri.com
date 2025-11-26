@@ -36,7 +36,17 @@ components:
                 code:
                     type: string
                     description: Machine-readable error code.
-                    enum: [INVALID_INPUT, NOT_FOUND, INTERNAL_ERROR, TMDB_ERROR, NZBGEEK_ERROR, USENET_ERROR, STORAGE_ERROR, JOB_ERROR]
+                    enum:
+                        [
+                            INVALID_INPUT,
+                            NOT_FOUND,
+                            INTERNAL_ERROR,
+                            TMDB_ERROR,
+                            NZBGEEK_ERROR,
+                            USENET_ERROR,
+                            STORAGE_ERROR,
+                            JOB_ERROR,
+                        ]
                     example: INVALID_INPUT
 
         Movie:
@@ -186,7 +196,14 @@ components:
                                   type: string
                               status:
                                   type: string
-                                  enum: [queued, downloading, preparing, ready, error]
+                                  enum:
+                                      [
+                                          queued,
+                                          downloading,
+                                          preparing,
+                                          ready,
+                                          error,
+                                      ]
                               progress:
                                   type: number
                                   format: float
@@ -319,7 +336,8 @@ components:
                     example: 550
                 status:
                     type: string
-                    enum: [queued, downloading, preparing, ready, error, deleted]
+                    enum:
+                        [queued, downloading, preparing, ready, error, deleted]
                     description: Current job status
                     example: "downloading"
                 progress:
@@ -483,7 +501,7 @@ components:
                                 code: "NZBGEEK_ERROR"
 
         StorageError:
-            description: Storage operation error (500).
+            description: Storage operation error (502).
             content:
                 application/json:
                     schema:
