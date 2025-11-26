@@ -14,8 +14,15 @@ import { spawn } from "child_process";
 import { createServer } from "http";
 import { S3Client, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import { createReadStream, statSync, readdirSync, existsSync } from "fs";
-import { join, extname } from "path";
+import {
+    createReadStream,
+    statSync,
+    readdirSync,
+    existsSync,
+    writeFileSync,
+    mkdirSync,
+} from "fs";
+import { join, extname, dirname } from "path";
 
 // ============================================================================
 // Configuration from Environment (passed via Queue message)
@@ -132,45 +139,100 @@ class NZBGetClient {
     }
 
     async configureServer(serverConfig) {
-        // Set server configuration via JSON-RPC
-        // Matches format:
-        // Server1.Active=yes
-        // Server1.Name=name
-        // Server1.Level=0
-        // Server1.Host=host
-        // Server1.Port=563
-        // Server1.Encryption=yes
-        // Server1.Username=user
-        // Server1.Password=pass
-        // Server1.Connections=50
-        const settings = [
-            ["Server1.Active", "yes"],
-            ["Server1.Name", "usenet"],
-            ["Server1.Level", "0"],
-            ["Server1.Host", serverConfig.host],
-            ["Server1.Port", String(serverConfig.port)],
-            ["Server1.Encryption", serverConfig.encryption ? "yes" : "no"],
-            ["Server1.Username", serverConfig.username],
-            ["Server1.Password", serverConfig.password],
-            ["Server1.Connections", String(serverConfig.connections)],
+        // Set server configuration via JSON-RPC saveconfig method
+        // saveconfig expects an array of option objects with Name and Value properties
+        const options = [
+            { Name: "Server1.Active", Value: "yes" },
+            { Name: "Server1.Name", Value: "usenet" },
+            { Name: "Server1.Level", Value: "0" },
+            { Name: "Server1.Host", Value: serverConfig.host },
+            { Name: "Server1.Port", Value: String(serverConfig.port) },
+            {
+                Name: "Server1.Encryption",
+                Value: serverConfig.encryption ? "yes" : "no",
+            },
+            { Name: "Server1.Username", Value: serverConfig.username },
+            { Name: "Server1.Password", Value: serverConfig.password },
+            {
+                Name: "Server1.Connections",
+                Value: String(serverConfig.connections),
+            },
         ];
 
-        for (const [name, value] of settings) {
-            await this.call("config", [name, value]);
-        }
+        await this.call("saveconfig", [options]);
 
-        // Reload config
+        // Reload config to apply changes
         await this.call("reload");
     }
 
     async addNzb(url, title) {
-        // Download NZB from URL and add to queue
+        // Download NZB from URL first, then pass as base64 content
+        // This is more reliable than passing the URL directly
         // NZBGet append method signature:
-        // append(NZBFilename, URL, Category, Priority, AddToTop, AddPaused, DupeKey, DupeScore, DupeMode, PPParameters)
-        // For URL-based downloads, NZBFilename can be empty string
+        // append(NZBFilename, NZBContent, Category, Priority, AddToTop, AddPaused, DupeKey, DupeScore, DupeMode, PPParameters)
+        // NZBContent can be base64-encoded NZB content or URL
+        // We use base64 content for better reliability
+
+        console.log(`Downloading NZB from URL: ${url}`);
+        let nzbContent;
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    "User-Agent": "NZBGet-Container/1.0",
+                },
+            });
+            if (!response.ok) {
+                throw new Error(
+                    `Failed to download NZB: ${response.status} ${response.statusText}`
+                );
+            }
+            const xmlContent = await response.text();
+
+            // Validate that we got XML content
+            if (
+                !xmlContent.trim().startsWith("<?xml") &&
+                !xmlContent.trim().startsWith("<nzb")
+            ) {
+                throw new Error(
+                    "Downloaded content does not appear to be a valid NZB file"
+                );
+            }
+
+            // Convert to base64
+            nzbContent = Buffer.from(xmlContent, "utf-8").toString("base64");
+            console.log(
+                `NZB downloaded successfully, size: ${xmlContent.length} bytes (base64: ${nzbContent.length} chars)`
+            );
+        } catch (error) {
+            console.error(`Failed to download NZB from URL: ${error.message}`);
+            console.error(`Error details: ${error.stack || error}`);
+            // Fallback: try passing URL directly (NZBGet might handle it)
+            console.log("Falling back to URL-based download...");
+            try {
+                const result = await this.call("append", [
+                    "", // NZBFilename (empty for URL downloads)
+                    url, // URL to download NZB from
+                    "", // Category
+                    0, // Priority (0 = normal)
+                    false, // AddToTop
+                    false, // AddPaused
+                    "", // DupeKey
+                    0, // DupeScore
+                    "SCORE", // DupeMode
+                    "", // PPParameters (empty string, not array)
+                ]);
+                return result;
+            } catch (fallbackError) {
+                throw new Error(
+                    `Both base64 and URL methods failed. Base64 error: ${error.message}. URL error: ${fallbackError.message}`
+                );
+            }
+        }
+
+        // Use base64 content
         const result = await this.call("append", [
-            "", // NZBFilename (empty for URL downloads)
-            url, // URL to download NZB from
+            title || "download.nzb", // NZBFilename
+            nzbContent, // Base64-encoded NZB content
             "", // Category
             0, // Priority (0 = normal)
             false, // AddToTop
@@ -193,6 +255,40 @@ class NZBGetClient {
 
     async getGroups() {
         return await this.call("listgroups", [0]); // 0 = NumberOfLogEntries
+    }
+
+    async getLog(limit = 50) {
+        // log method: log(ID, Limit)
+        // ID: 0 for main log, or NZBID for download-specific log
+        // Limit: number of entries to return
+        try {
+            return await this.call("log", [0, limit]);
+        } catch (error) {
+            // If log method fails, return empty array
+            console.warn(`Failed to get NZBGet logs: ${error.message}`);
+            return [];
+        }
+    }
+
+    async testServer() {
+        // Test server connection
+        // testserver() - Tests the configured Server1
+        // Returns: { Success: bool, Message: string }
+        // Note: Some NZBGet versions may not support this method or may require different parameters
+        try {
+            // Try without parameters first (tests Server1 by default)
+            return await this.call("testserver", []);
+        } catch (error) {
+            // If that fails, try with server number 1
+            try {
+                return await this.call("testserver", [1]);
+            } catch (error2) {
+                return {
+                    Success: false,
+                    Message: error.message || error2.message,
+                };
+            }
+        }
     }
 }
 
@@ -241,7 +337,14 @@ class ProgressReporter {
                     progress ?? this.lastReportedProgress;
             }
         } catch (error) {
-            console.error(`Failed to report progress: ${error.message}`);
+            // Don't spam errors for callback failures - this is expected if the Worker isn't running
+            // Only log once per job to avoid cluttering logs
+            if (!this._callbackErrorLogged) {
+                console.warn(
+                    `Failed to report progress to callback URL (this is expected if Worker is not running): ${error.message}`
+                );
+                this._callbackErrorLogged = true;
+            }
         }
     }
 }
@@ -311,6 +414,95 @@ class R2Uploader {
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function runCommand(command, args, options = {}) {
+    return new Promise((resolve, reject) => {
+        const process = spawn(command, args, {
+            stdio: options.stdio || "pipe",
+            ...options,
+        });
+
+        let stdout = "";
+        let stderr = "";
+
+        if (process.stdout) {
+            process.stdout.on("data", (data) => {
+                stdout += data.toString();
+            });
+        }
+
+        if (process.stderr) {
+            process.stderr.on("data", (data) => {
+                stderr += data.toString();
+            });
+        }
+
+        process.on("close", (code) => {
+            if (code === 0) {
+                resolve({ stdout, stderr });
+            } else {
+                reject(
+                    new Error(
+                        `Command failed with code ${code}: ${stderr || stdout}`
+                    )
+                );
+            }
+        });
+
+        process.on("error", (error) => {
+            reject(error);
+        });
+    });
+}
+
+async function initializeNZBGetConfig(configPath, settings) {
+    // Ensure config directory exists
+    const configDir = dirname(configPath);
+    if (!existsSync(configDir)) {
+        mkdirSync(configDir, { recursive: true });
+    }
+
+    // If config file doesn't exist, create a minimal one
+    // NZBGet will expand it with defaults when it starts
+    if (!existsSync(configPath)) {
+        // Create minimal config file - NZBGet will fill in defaults
+        const minimalConfig = `# NZBGet Configuration File
+# This file was auto-generated
+# NZBGet will expand this with defaults on first run
+
+`;
+        writeFileSync(configPath, minimalConfig);
+        console.log("Created NZBGet config file");
+    }
+
+    // Write config file directly to avoid command-line parsing issues
+    // This is especially important for passwords with special characters
+    // that might get truncated when passed via -o flags
+    let configContent = `# NZBGet Configuration File
+# This file was auto-generated
+
+`;
+
+    // Write all settings to the config file
+    // NZBGet config format: Key=Value (no quotes needed unless value has spaces)
+    for (const [key, value] of Object.entries(settings)) {
+        // Escape special characters if needed
+        let escapedValue = String(value);
+        // If value contains spaces or special chars, wrap in quotes
+        if (
+            escapedValue.includes(" ") ||
+            escapedValue.includes("#") ||
+            escapedValue.includes("=")
+        ) {
+            // Escape quotes and wrap in quotes
+            escapedValue = `"${escapedValue.replace(/"/g, '\\"')}"`;
+        }
+        configContent += `${key}=${escapedValue}\n`;
+    }
+
+    writeFileSync(configPath, configContent);
+    console.log("NZBGet config file written with settings");
 }
 
 function getContentType(filePath) {
@@ -423,28 +615,36 @@ async function main() {
     );
 
     try {
-        // Step 1: Start NZBGet daemon
+        // Step 1: Initialize NZBGet config file
+        console.log("Initializing NZBGet configuration...");
+        const configPath = "/config/nzbget/nzbget.conf";
+        const nzbgetSettings = {
+            MainDir: "/downloads",
+            DestDir: config.nzbgetDownloadDir,
+            InterDir: config.nzbgetTempDir,
+            ControlPort: String(config.nzbgetPort),
+            ControlIP: "127.0.0.1",
+            ControlUsername: config.nzbgetUsername,
+            ControlPassword: config.nzbgetPassword,
+            // Log file configuration
+            LogFile: "/downloads/nzbget.log",
+            LogBufferSize: "1000",
+            DetailTarget: "both", // both = log file and stdout
+            InfoTarget: "both",
+            WarningTarget: "both",
+            ErrorTarget: "both",
+            DebugTarget: "both",
+        };
+
+        await initializeNZBGetConfig(configPath, nzbgetSettings);
+
+        // Step 2: Start NZBGet daemon
         console.log("Starting NZBGet daemon...");
         await reporter.report("downloading", 0);
 
-        const nzbgetProcess = spawn(
-            "/app/nzbget/nzbget",
-            ["-D", "-c", "/app/nzbget/share/nzbget/nzbget.conf"],
-            {
-                stdio: "inherit",
-                env: {
-                    ...process.env,
-                    // Override NZBGet config via environment
-                    NZBOP_MAINDIR: "/downloads",
-                    NZBOP_DESTDIR: config.nzbgetDownloadDir,
-                    NZBOP_INTERDIR: config.nzbgetTempDir,
-                    NZBOP_CONTROLPORT: String(config.nzbgetPort),
-                    NZBOP_CONTROLIP: "127.0.0.1",
-                    NZBOP_CONTROLUSERNAME: config.nzbgetUsername,
-                    NZBOP_CONTROLPASSWORD: config.nzbgetPassword,
-                },
-            }
-        );
+        const nzbgetProcess = spawn("nzbget", ["-D", "-c", configPath], {
+            stdio: "inherit",
+        });
 
         // Handle NZBGet process errors
         nzbgetProcess.on("error", (error) => {
@@ -471,7 +671,7 @@ async function main() {
         await nzbget.waitForReady();
         console.log("NZBGet is ready");
 
-        // Step 2: Configure Usenet server
+        // Step 3: Configure Usenet server
         console.log("Configuring Usenet server...");
         await nzbget.configureServer({
             host: config.usenetHost,
@@ -482,21 +682,109 @@ async function main() {
             connections: config.usenetConnections,
         });
 
-        // Step 3: Add NZB download
-        console.log(`Adding NZB: ${config.nzbUrl}`);
-        const nzbId = await nzbget.addNzb(config.nzbUrl, config.releaseTitle);
+        // Test server connection
+        // Wait a moment for config to be fully applied
+        await sleep(2000);
+        console.log("Testing Usenet server connection...");
+        const serverTest = await nzbget.testServer(1);
+        if (!serverTest.Success) {
+            // Log the error but don't fail - sometimes testserver has issues
+            // but the actual download will work
+            console.warn(
+                `Usenet server connection test failed: ${
+                    serverTest.Message || "Unknown error"
+                }. Continuing anyway - download will verify connectivity.`
+            );
+        } else {
+            console.log(
+                `Server connection test passed: ${serverTest.Message || "OK"}`
+            );
+        }
+
+        // Step 4: Add NZB download
+        // Decode HTML entities in URL (e.g., &amp; -> &)
+        const decodedUrl = config.nzbUrl
+            .replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'");
+        console.log(`Adding NZB: ${decodedUrl}`);
+        const nzbId = await nzbget.addNzb(decodedUrl, config.releaseTitle);
+
+        // Check if append failed (returns 0 on failure)
+        if (!nzbId || nzbId === 0) {
+            // Check logs for error details
+            const logs = await nzbget.getLog(10);
+            const errorLogs = logs
+                .filter((log) => log.Kind === "ERROR" || log.Kind === "WARNING")
+                .map((log) => log.Text)
+                .join("; ");
+            throw new Error(
+                `Failed to add NZB to queue. NZBGet returned ID: ${nzbId}. Errors: ${
+                    errorLogs || "None"
+                }`
+            );
+        }
+
         console.log(`NZB added with ID: ${nzbId}`);
 
-        // Step 4: Monitor download progress
+        // Verify the NZB is actually in the queue
+        await sleep(2000);
+        const groupsAfterAdd = await nzbget.getGroups();
+        const ourGroupAfterAdd = groupsAfterAdd.find(
+            (g) => g.NZBID === nzbId || g.NZBName.includes(config.releaseTitle)
+        );
+        if (!ourGroupAfterAdd) {
+            // Check history to see if it failed immediately
+            const history = await nzbget.getHistory();
+            const ourHistory = history.find(
+                (h) => h.NZBID === nzbId || h.Name.includes(config.releaseTitle)
+            );
+            if (ourHistory) {
+                throw new Error(
+                    `NZB was added but immediately moved to history with status: ${ourHistory.Status}`
+                );
+            }
+            // Check logs for why it disappeared
+            const logs = await nzbget.getLog(20);
+            const recentLogs = logs.slice(0, 10).map((log) => log.Text);
+            throw new Error(
+                `NZB was added (ID: ${nzbId}) but not found in queue. Recent logs: ${recentLogs.join(
+                    "; "
+                )}`
+            );
+        }
+        console.log(
+            `NZB verified in queue: ${ourGroupAfterAdd.NZBName} (Status: ${ourGroupAfterAdd.Status})`
+        );
+
+        // Step 5: Monitor download progress
         console.log("Monitoring download progress...");
         let downloadComplete = false;
         let lastStatus = "";
+        let iterationsWithoutGroup = 0;
+        let stalledIterations = 0;
+        let lastDownloadedBytes = 0;
 
         while (!downloadComplete) {
             await sleep(5000); // Check every 5 seconds
 
             const status = await nzbget.getStatus();
             const groups = await nzbget.getGroups();
+
+            // Check if download is paused globally
+            if (status.DownloadPaused) {
+                console.log("Download is paused. Attempting to resume...");
+                try {
+                    await nzbget.call("resumedownload");
+                    console.log("Download resumed");
+                } catch (error) {
+                    console.error(
+                        `Failed to resume download: ${error.message}`
+                    );
+                }
+            }
 
             // Find our download in the queue
             const ourGroup = groups.find(
@@ -505,18 +793,100 @@ async function main() {
             );
 
             if (ourGroup) {
-                // Calculate progress
-                const totalMB = ourGroup.FileSizeMB;
-                const remainingMB = ourGroup.RemainingSizeMB;
+                // Debug: log group properties on first iteration
+                if (lastStatus === "") {
+                    console.log(
+                        `Found group: NZBID=${ourGroup.NZBID}, Status=${ourGroup.Status}, FileSizeLo=${ourGroup.FileSizeLo}, FileSizeHi=${ourGroup.FileSizeHi}, RemainingSizeLo=${ourGroup.RemainingSizeLo}, RemainingSizeHi=${ourGroup.RemainingSizeHi}`
+                    );
+                }
+
+                // Calculate file sizes from 32-bit parts
+                // FileSizeLo/FileSizeHi and RemainingSizeLo/RemainingSizeHi are 32-bit parts
+                // Combine them: (Hi * 2^32) + Lo
+                const totalBytes =
+                    Number(ourGroup.FileSizeHi || 0) * 4294967296 +
+                        Number(ourGroup.FileSizeLo || 0) || 0;
+                const remainingBytes =
+                    Number(ourGroup.RemainingSizeHi || 0) * 4294967296 +
+                        Number(ourGroup.RemainingSizeLo || 0) || 0;
+
+                const totalMB = totalBytes / 1024 / 1024;
+                const remainingMB = remainingBytes / 1024 / 1024;
                 const downloadedMB = totalMB - remainingMB;
+
+                // Handle QUEUED state - NZB is being parsed, sizes not available yet
+                if (
+                    ourGroup.Status === "QUEUED" &&
+                    totalBytes === 0 &&
+                    remainingBytes === 0
+                ) {
+                    const statusText = `Parsing NZB file... (Status: ${ourGroup.Status})`;
+                    if (statusText !== lastStatus) {
+                        console.log(statusText);
+                        lastStatus = statusText;
+                    }
+                    // Report small progress to show activity
+                    await reporter.report("downloading", 1);
+                    continue; // Skip to next iteration
+                }
+
+                // If we have file sizes, calculate progress
                 const progress =
                     totalMB > 0 ? (downloadedMB / totalMB) * 100 : 0;
 
+                const downloadRateMBps =
+                    (status.DownloadRate || 0) / 1024 / 1024;
+
+                // Calculate downloaded bytes from status (more accurate than group)
+                const downloadedBytes =
+                    Number(status.DownloadedSizeHi || 0) * 4294967296 +
+                        Number(status.DownloadedSizeLo || 0) || 0;
+
+                // Detect stalled downloads (no progress for 2 minutes)
+                if (
+                    downloadRateMBps === 0 &&
+                    downloadedBytes === lastDownloadedBytes
+                ) {
+                    stalledIterations++;
+                    if (stalledIterations >= 24) {
+                        // 24 iterations * 5 seconds = 2 minutes
+                        console.warn(
+                            `Download appears stalled (0 KB/s for 2 minutes). Checking server status...`
+                        );
+                        // Check server status and logs
+                        const logs = await nzbget.getLog(30);
+                        const errorLogs = logs
+                            .filter((log) => log.Kind === "ERROR")
+                            .slice(0, 10)
+                            .map((log) => log.Text);
+                        if (errorLogs.length > 0) {
+                            console.error(
+                                `Server errors detected: ${errorLogs.join(
+                                    "; "
+                                )}`
+                            );
+                        }
+
+                        // Check if server is on standby
+                        if (status.ServerStandBy) {
+                            console.warn(
+                                "Server is on standby. This may indicate connection issues."
+                            );
+                        }
+
+                        // Reset counter to avoid spamming
+                        stalledIterations = 0;
+                    }
+                } else {
+                    stalledIterations = 0;
+                    lastDownloadedBytes = downloadedBytes;
+                }
+
                 const statusText = `Downloading: ${downloadedMB.toFixed(
                     0
-                )}/${totalMB.toFixed(0)} MB (${
-                    status.DownloadRate / 1024 / 1024
-                } MB/s)`;
+                )}/${totalMB.toFixed(0)} MB (${downloadRateMBps.toFixed(
+                    2
+                )} MB/s) [${ourGroup.Status}]`;
                 if (statusText !== lastStatus) {
                     console.log(statusText);
                     lastStatus = statusText;
@@ -524,20 +894,61 @@ async function main() {
 
                 await reporter.report("downloading", Math.min(progress, 99));
             } else {
+                iterationsWithoutGroup++;
                 // Group not found - might be queued or just added
-                // Log debug info on first few iterations
-                if (groups.length > 0) {
-                    console.log(
-                        `Group not found. Looking for NZBID: ${nzbId}, Release: ${
-                            config.releaseTitle
-                        }. Found ${groups.length} group(s): ${groups
-                            .map((g) => `NZBID=${g.NZBID}, Name=${g.NZBName}`)
-                            .join("; ")}`
-                    );
-                } else {
-                    console.log(
-                        `No groups found yet. Looking for NZBID: ${nzbId}, Release: ${config.releaseTitle}`
-                    );
+                // Log debug info periodically
+                if (iterationsWithoutGroup % 3 === 0) {
+                    // Every 15 seconds (3 iterations)
+                    if (groups.length > 0) {
+                        console.log(
+                            `Group not found. Looking for NZBID: ${nzbId}, Release: ${
+                                config.releaseTitle
+                            }. Found ${groups.length} group(s): ${groups
+                                .map(
+                                    (g) =>
+                                        `NZBID=${g.NZBID}, Name=${g.NZBName}, Status=${g.Status}`
+                                )
+                                .join("; ")}`
+                        );
+                    } else {
+                        console.log(
+                            `No groups found yet. Looking for NZBID: ${nzbId}, Release: ${config.releaseTitle}`
+                        );
+                    }
+
+                    // Check logs for errors
+                    const logs = await nzbget.getLog(20);
+                    const errorLogs = logs
+                        .filter((log) => log.Kind === "ERROR")
+                        .slice(0, 5)
+                        .map((log) => log.Text);
+                    if (errorLogs.length > 0) {
+                        console.log(
+                            `Recent NZBGet errors: ${errorLogs.join("; ")}`
+                        );
+                    }
+                }
+
+                // If we've been waiting too long (5 minutes), check if NZB failed
+                if (iterationsWithoutGroup > 60) {
+                    // 60 iterations * 5 seconds = 5 minutes
+                    const logs = await nzbget.getLog(50);
+                    const errorLogs = logs
+                        .filter(
+                            (log) =>
+                                log.Kind === "ERROR" &&
+                                (log.Text.includes("NZB") ||
+                                    log.Text.includes("download") ||
+                                    log.Text.includes("server"))
+                        )
+                        .map((log) => log.Text);
+                    if (errorLogs.length > 0) {
+                        throw new Error(
+                            `NZB download failed to start after 5 minutes. Errors: ${errorLogs.join(
+                                "; "
+                            )}`
+                        );
+                    }
                 }
 
                 // Report small progress to indicate we're waiting for the download to start
@@ -576,7 +987,7 @@ async function main() {
             }
         }
 
-        // Step 5: Find the downloaded video file
+        // Step 6: Find the downloaded video file
         console.log("Looking for downloaded video file...");
         await reporter.report("preparing", 0);
 
@@ -594,7 +1005,7 @@ async function main() {
             `File size: ${(fileSize / 1024 / 1024 / 1024).toFixed(2)} GB`
         );
 
-        // Step 6: Upload to R2
+        // Step 7: Upload to R2
         console.log("Uploading to R2...");
         const ext = extname(videoFile).toLowerCase() || ".mp4";
         const r2Key = `movies/${config.jobId}/movie${ext}`;
@@ -606,7 +1017,7 @@ async function main() {
 
         console.log(`Upload complete: ${r2Key}`);
 
-        // Step 7: Report success
+        // Step 8: Report success
         await reporter.report("ready", 100);
         console.log("Job completed successfully!");
 

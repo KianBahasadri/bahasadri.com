@@ -5,6 +5,7 @@ import type {
     Queue,
     DurableObjectNamespace,
 } from "@cloudflare/workers-types";
+import type { MovieDownloaderContainer } from "../movies-on-demand/container";
 
 export interface Env {
     SMS_MESSAGES: KVNamespace;
@@ -28,7 +29,7 @@ export interface Env {
     MOVIES_D1: D1Database;
     MOVIES_QUEUE: Queue;
     // Movies on Demand - Container bindings
-    MOVIE_DOWNLOADER: DurableObjectNamespace;
+    MOVIE_DOWNLOADER: DurableObjectNamespace<MovieDownloaderContainer>;
     // Movies on Demand - Container service token (for internal callbacks)
     CONTAINER_SERVICE_TOKEN_ID: string;
     CONTAINER_SERVICE_TOKEN_SECRET: string;

@@ -40,13 +40,23 @@ describe("file-hosting API Contract Tests", () => {
         expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 
-    it("downloadFile satisfies OpenAPI spec", async () => {
+    it("downloadPublicFile satisfies OpenAPI spec", async () => {
         
-        const res = await app.request("/api/file-hosting/download/550e8400-e29b-41d4-a716-446655440000", {
+        const res = await app.request("/api/file-hosting/public/550e8400-e29b-41d4-a716-446655440000", {
             method: "GET",
         });
         expect([200, 403, 404, 500]).toContain(res.status);
-        const formattedRes = await formatResponseForValidation(res, "/api/file-hosting/download/550e8400-e29b-41d4-a716-446655440000", "GET");
+        const formattedRes = await formatResponseForValidation(res, "/api/file-hosting/public/550e8400-e29b-41d4-a716-446655440000", "GET");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
+    });
+
+    it("downloadPrivateFile satisfies OpenAPI spec", async () => {
+        
+        const res = await app.request("/api/file-hosting/private/550e8400-e29b-41d4-a716-446655440000", {
+            method: "GET",
+        });
+        expect([200, 403, 404, 500]).toContain(res.status);
+        const formattedRes = await formatResponseForValidation(res, "/api/file-hosting/private/550e8400-e29b-41d4-a716-446655440000", "GET");
         expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
 

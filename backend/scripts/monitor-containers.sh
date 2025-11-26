@@ -13,7 +13,7 @@ echo ""
 show_containers() {
     echo "📦 Running Containers:"
     echo "---------------------"
-    docker ps --filter "name=movies" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "No containers running"
+    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "No containers running"
     echo ""
 }
 
@@ -42,12 +42,12 @@ monitor_all_containers() {
         show_containers
         
         # Show recent logs from all movie containers
-        echo "📋 Recent Logs (last 10 lines from each container):"
+        echo "📋 Recent Logs (last 100 lines from each container):"
         echo "---------------------------------------------------"
-        for container in $(docker ps --filter "name=movies" --format "{{.Names}}" 2>/dev/null); do
+        for container in $(docker ps --filter "name=MovieDownloaderContainer" --format "{{.Names}}" 2>/dev/null); do
             echo ""
             echo "📦 ${container}:"
-            docker logs --tail 10 "${container}" 2>/dev/null | sed 's/^/  /'
+            docker logs --tail 100 "${container}" 2>/dev/null | sed 's/^/  /'
         done
         
         echo ""

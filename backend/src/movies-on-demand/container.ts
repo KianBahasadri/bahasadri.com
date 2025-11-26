@@ -33,23 +33,13 @@ export class MovieDownloaderContainer extends Container<Env> {
     manualStart = true;
 
     /**
-     * Called when the Durable Object receives a fetch request.
-     * We use this to start the container with the job details.
+     * Start the container with job-specific environment variables.
+     * This is called from the queue handler via Durable Object RPC.
      */
-    override async fetch(request: Request): Promise<Response> {
-        // Parse the job details from the request body
-        const jobDetails = (await request.json()) as {
-            envVars: Record<string, string>;
-        };
-
-        // Start the container with the provided environment variables
-        await this.startContainer({
-            envVars: jobDetails.envVars,
-        });
-
-        return new Response(JSON.stringify({ success: true }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
+    async startWithEnvVars(envVars: Record<string, string>): Promise<void> {
+        // Use the public start() method from the Container class
+        await this.start({
+            envVars,
         });
     }
 }
@@ -77,7 +67,13 @@ export async function handleMovieQueue(
             const containerStub = env.MOVIE_DOWNLOADER.get(containerId);
 
             // Build callback URL for progress updates
-            const callbackUrl = `https://bahasadri.com/api/movies-on-demand/internal/progress`;
+            // Use host.docker.internal for local dev (container needs to reach host)
+            // For now, always use the Docker internal URL since we're testing locally
+            // TODO: In production, use: https://bahasadri.com/api/movies-on-demand/internal/progress
+            const callbackUrl = `http://host.docker.internal:8787/api/movies-on-demand/internal/progress`;
+
+            // Detect dev mode (local development)
+            const isDev = callbackUrl.includes("host.docker.internal") || callbackUrl.includes("localhost");
 
             // Build environment variables for the container
             const envVars: Record<string, string> = {
@@ -97,7 +93,10 @@ export async function handleMovieQueue(
                 USENET_PORT: env.USENET_PORT || "563",
                 USENET_USERNAME: env.USENET_USERNAME,
                 USENET_PASSWORD: env.USENET_PASSWORD,
-                USENET_CONNECTIONS: env.USENET_CONNECTIONS || "10",
+                // Use fewer connections in dev mode to reduce resource usage
+                USENET_CONNECTIONS: isDev
+                    ? "5"
+                    : env.USENET_CONNECTIONS || "10",
                 USENET_ENCRYPTION: env.USENET_ENCRYPTION || "true",
 
                 // R2 credentials for upload
@@ -107,20 +106,8 @@ export async function handleMovieQueue(
                 R2_BUCKET_NAME: "movies-on-demand",
             };
 
-            // Call the container's fetch method to start it with the job details
-            // The container class overrides fetch() to handle starting with env vars
-            const response = await containerStub.fetch(
-                "https://container.internal/start",
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ envVars }),
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(`Container start failed: ${response.status}`);
-            }
+            // Call the container's startWithEnvVars method via Durable Object RPC
+            await containerStub.startWithEnvVars(envVars);
 
             // Acknowledge the message - container will handle the rest
             message.ack();

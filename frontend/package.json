@@ -10,7 +10,7 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
-        "@cloudflare/realtimekit": "^1.0.0",
+        "@cloudflare/realtimekit": "^1.2.1",
         "@cloudflare/realtimekit-react": "^1.2.1",
         "@cloudflare/realtimekit-react-ui": "^1.0.7",
         "@tanstack/react-query": "^5.90.10",
@@ -37,6 +37,6 @@
         "typescript": "^5.4.0",
         "typescript-eslint": "^8.0.0",
         "vite": "^5.0.0",
-        "wrangler": "^4.50.0"
+        "wrangler": "^4.51.0"
     }
 }
