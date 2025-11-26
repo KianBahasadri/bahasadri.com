@@ -4,10 +4,12 @@ info:
     description: >-
         API contract document defining the interface between frontend and backend.
         This serves as the single source of truth for coupling.
-        Movies on demand utility using The Movie Database (TMDB) API. Allows users to
-        search for movies, browse popular and trending films, and view detailed
-        movie information.
+        Ephemeral movie streaming service using TMDB for discovery, NZBGeek for Usenet
+        release search, and Cloudflare for on-demand acquisition and streaming.
+        Movies are fetched from Usenet on-demand and automatically deleted after viewing.
     version: 1.0.0
+    contact:
+        name: API Support
 servers:
     - url: http://localhost:8787/api
       description: Development Server
@@ -34,7 +36,7 @@ components:
                 code:
                     type: string
                     description: Machine-readable error code.
-                    enum: [INVALID_INPUT, NOT_FOUND, INTERNAL_ERROR, TMDB_ERROR]
+                    enum: [INVALID_INPUT, NOT_FOUND, INTERNAL_ERROR, TMDB_ERROR, NZBGEEK_ERROR, USENET_ERROR, STORAGE_ERROR, JOB_ERROR]
                     example: INVALID_INPUT
 
         Movie:
@@ -170,6 +172,29 @@ components:
                                               type: string
                                               nullable: true
                                   description: List of crew members
+                      imdb_id:
+                          type: string
+                          nullable: true
+                          description: IMDb ID for the movie
+                          example: "tt0137523"
+                      job_status:
+                          type: object
+                          nullable: true
+                          description: Current job status if movie is being fetched or ready
+                          properties:
+                              job_id:
+                                  type: string
+                              status:
+                                  type: string
+                                  enum: [queued, downloading, preparing, ready, error]
+                              progress:
+                                  type: number
+                                  format: float
+                                  description: Download progress percentage (0-100)
+                                  example: 45.5
+                              error_message:
+                                  type: string
+                                  nullable: true
 
         MovieSearchResponse:
             type: object
@@ -215,6 +240,187 @@ components:
                 total_results:
                     type: integer
 
+        UsenetRelease:
+            type: object
+            required:
+                - id
+                - title
+                - size
+            properties:
+                id:
+                    type: string
+                    description: Release ID from NZBGeek
+                    example: "12345"
+                title:
+                    type: string
+                    description: Release title
+                    example: "Fight.Club.1999.1080p.BluRay.x264-GROUP"
+                size:
+                    type: integer
+                    description: File size in bytes
+                    example: 1572864000
+                quality:
+                    type: string
+                    description: Video quality
+                    example: "1080p"
+                resolution:
+                    type: string
+                    nullable: true
+                    description: Video resolution
+                    example: "1920x1080"
+                codec:
+                    type: string
+                    nullable: true
+                    description: Video codec
+                    example: "x264"
+                source:
+                    type: string
+                    nullable: true
+                    description: Source type
+                    example: "BluRay"
+                group:
+                    type: string
+                    nullable: true
+                    description: Release group
+                    example: "GROUP"
+                nzb_url:
+                    type: string
+                    description: URL to download NZB file
+                    example: "https://nzbgeek.info/api?t=get&id=12345&apikey=xxx"
+
+        ReleasesResponse:
+            type: object
+            required:
+                - releases
+            properties:
+                releases:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/UsenetRelease"
+                total:
+                    type: integer
+                    description: Total number of releases found
+                    example: 15
+
+        JobStatus:
+            type: object
+            required:
+                - job_id
+                - movie_id
+                - status
+            properties:
+                job_id:
+                    type: string
+                    description: Unique job identifier
+                    example: "job_abc123"
+                movie_id:
+                    type: integer
+                    description: TMDB movie ID
+                    example: 550
+                status:
+                    type: string
+                    enum: [queued, downloading, preparing, ready, error, deleted]
+                    description: Current job status
+                    example: "downloading"
+                progress:
+                    type: number
+                    format: float
+                    nullable: true
+                    description: Download progress percentage (0-100)
+                    example: 45.5
+                error_message:
+                    type: string
+                    nullable: true
+                    description: Error message if status is error
+                release_title:
+                    type: string
+                    nullable: true
+                    description: Selected release title
+                    example: "Fight.Club.1999.1080p.BluRay.x264-GROUP"
+                created_at:
+                    type: string
+                    format: date-time
+                    description: Job creation timestamp
+                    example: "2024-01-15T10:30:00Z"
+                updated_at:
+                    type: string
+                    format: date-time
+                    description: Last status update timestamp
+                    example: "2024-01-15T10:35:00Z"
+                ready_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: When movie became ready for streaming
+                expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: When movie will be automatically deleted
+
+        StreamResponse:
+            type: object
+            required:
+                - stream_url
+                - content_type
+            properties:
+                stream_url:
+                    type: string
+                    description: URL to stream the movie
+                    example: "https://r2.example.com/movies/job_abc123/movie.mp4"
+                content_type:
+                    type: string
+                    description: MIME type of the video
+                    example: "video/mp4"
+                file_size:
+                    type: integer
+                    nullable: true
+                    description: File size in bytes
+                    example: 1572864000
+
+        FetchMovieRequest:
+            type: object
+            required:
+                - mode
+            properties:
+                mode:
+                    type: string
+                    enum: [auto, manual]
+                    description: Selection mode - auto picks best release, manual requires release selection
+                    example: "auto"
+                release_id:
+                    type: string
+                    nullable: true
+                    description: Release ID to use (required if mode is manual)
+                    example: "12345"
+                quality_preference:
+                    type: string
+                    nullable: true
+                    description: Preferred quality for auto mode (720p, 1080p, 4K)
+                    example: "1080p"
+
+        FetchMovieResponse:
+            type: object
+            required:
+                - job_id
+                - status
+            properties:
+                job_id:
+                    type: string
+                    description: Job identifier for tracking
+                    example: "job_abc123"
+                status:
+                    type: string
+                    enum: [queued, downloading, preparing, ready]
+                    description: Initial job status
+                    example: "queued"
+                releases:
+                    type: array
+                    nullable: true
+                    items:
+                        $ref: "#/components/schemas/UsenetRelease"
+                    description: Available releases (only if mode is manual and releases need selection)
+
     responses:
         BadRequest:
             description: Invalid input provided (400).
@@ -227,13 +433,6 @@ components:
                             value:
                                 error: "Query parameter 'query' is required."
                                 code: "INVALID_INPUT"
-
-        Unauthorized:
-            description: Authentication required (401).
-            content:
-                application/json:
-                    schema:
-                        $ref: "#/components/schemas/ErrorResponse"
 
         NotFound:
             description: Resource not found (404).
@@ -271,9 +470,43 @@ components:
                                 error: "TMDB API request failed."
                                 code: "TMDB_ERROR"
 
+        NZBGeekError:
+            description: NZBGeek API error (502).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        nzbgeek_error:
+                            value:
+                                error: "NZBGeek API request failed."
+                                code: "NZBGEEK_ERROR"
+
+        StorageError:
+            description: Storage operation error (500).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        storage_error:
+                            value:
+                                error: "Failed to store movie file."
+                                code: "STORAGE_ERROR"
+
+tags:
+    - name: Movies
+      description: Movie discovery and information endpoints
+    - name: Jobs
+      description: Movie acquisition job management endpoints
+    - name: Streaming
+      description: Movie streaming endpoints
+
 paths:
     /movies-on-demand/search:
         get:
+            tags:
+                - Movies
             operationId: searchMovies
             summary: Search for movies
             description: Searches for movies by title using TMDB API.
@@ -311,6 +544,8 @@ paths:
 
     /movies-on-demand/popular:
         get:
+            tags:
+                - Movies
             operationId: getPopularMovies
             summary: Get popular movies
             description: Retrieves a list of currently popular movies from TMDB.
@@ -336,11 +571,13 @@ paths:
                 "502":
                     $ref: "#/components/responses/TMDBError"
 
-    /movies-on-demand/trending:
+    /movies-on-demand/top:
         get:
-            operationId: getTrendingMovies
-            summary: Get trending movies
-            description: Retrieves a list of currently trending movies from TMDB.
+            tags:
+                - Movies
+            operationId: getTopMovies
+            summary: Get top movies
+            description: Retrieves a list of top-rated movies of all time from TMDB.
             parameters:
                 - name: page
                   in: query
@@ -353,7 +590,7 @@ paths:
                       example: 1
             responses:
                 "200":
-                    description: List of trending movies
+                    description: List of top movies
                     content:
                         application/json:
                             schema:
@@ -373,9 +610,11 @@ paths:
                   type: integer
                   example: 550
         get:
+            tags:
+                - Movies
             operationId: getMovieDetails
             summary: Get movie details
-            description: Retrieves detailed information about a specific movie from TMDB.
+            description: Retrieves detailed information about a specific movie from TMDB, including current job status if the movie is being fetched or ready.
             responses:
                 "200":
                     description: Movie details
@@ -390,6 +629,160 @@ paths:
                 "502":
                     $ref: "#/components/responses/TMDBError"
 
+    /movies-on-demand/movies/{id}/releases:
+        parameters:
+            - name: id
+              in: path
+              required: true
+              description: TMDB movie ID
+              schema:
+                  type: integer
+                  example: 550
+        get:
+            tags:
+                - Movies
+            operationId: getMovieReleases
+            summary: Get available Usenet releases
+            description: Retrieves a list of available Usenet releases for a movie from NZBGeek.
+            responses:
+                "200":
+                    description: List of available releases
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ReleasesResponse"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+                "502":
+                    $ref: "#/components/responses/NZBGeekError"
+
+    /movies-on-demand/movies/{id}/fetch:
+        parameters:
+            - name: id
+              in: path
+              required: true
+              description: TMDB movie ID
+              schema:
+                  type: integer
+                  example: 550
+        post:
+            tags:
+                - Jobs
+            operationId: fetchMovie
+            summary: Fetch a movie from Usenet
+            description: Initiates on-demand acquisition of a movie from Usenet. Creates a job that downloads, prepares, and makes the movie available for streaming.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/FetchMovieRequest"
+            responses:
+                "202":
+                    description: Movie fetch job created
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/FetchMovieResponse"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+                "502":
+                    $ref: "#/components/responses/NZBGeekError"
+
+    /movies-on-demand/jobs/{jobId}:
+        parameters:
+            - name: jobId
+              in: path
+              required: true
+              description: Job identifier
+              schema:
+                  type: string
+                  example: "job_abc123"
+        get:
+            tags:
+                - Jobs
+            operationId: getJobStatus
+            summary: Get job status
+            description: Retrieves the current status of a movie acquisition job.
+            responses:
+                "200":
+                    description: Job status
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/JobStatus"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    /movies-on-demand/jobs:
+        get:
+            tags:
+                - Jobs
+            operationId: listJobs
+            summary: List active jobs
+            description: Retrieves a list of all active jobs (queued, downloading, preparing, ready).
+            parameters:
+                - name: status
+                  in: query
+                  required: false
+                  description: Filter by status
+                  schema:
+                      type: string
+                      enum: [queued, downloading, preparing, ready, error]
+            responses:
+                "200":
+                    description: List of jobs
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                required:
+                                    - jobs
+                                properties:
+                                    jobs:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/JobStatus"
+
+    /movies-on-demand/movies/{id}/stream:
+        parameters:
+            - name: id
+              in: path
+              required: true
+              description: TMDB movie ID or job ID
+              schema:
+                  type: string
+                  example: "550"
+        get:
+            tags:
+                - Streaming
+            operationId: getMovieStream
+            summary: Get movie stream URL
+            description: Retrieves the streaming URL for a movie that is ready. Returns a signed URL or direct stream URL from R2.
+            responses:
+                "200":
+                    description: Movie stream information
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/StreamResponse"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+                "502":
+                    $ref: "#/components/responses/StorageError"
+
     /movies-on-demand/movies/{id}/similar:
         parameters:
             - name: id
@@ -400,6 +793,8 @@ paths:
                   type: integer
                   example: 550
         get:
+            tags:
+                - Movies
             operationId: getSimilarMovies
             summary: Get similar movies
             description: Retrieves a list of movies similar to the specified movie.
@@ -426,4 +821,3 @@ paths:
                     $ref: "#/components/responses/InternalError"
                 "502":
                     $ref: "#/components/responses/TMDBError"
-
