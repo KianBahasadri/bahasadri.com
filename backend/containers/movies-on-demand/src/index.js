@@ -443,7 +443,7 @@ function sleep(ms) {
 
 function resolveCallbackUrl() {
     // CALLBACK_URL is always set by the worker (container.ts)
-    // The worker determines the URL based on ENVIRONMENT before passing it here
+    // The worker always sets it to bahasadri.com, even for local development
     return (
         process.env.CALLBACK_URL ||
         "https://bahasadri.com/api/movies-on-demand/internal/progress"

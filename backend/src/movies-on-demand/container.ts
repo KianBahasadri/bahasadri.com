@@ -67,16 +67,8 @@ export async function handleMovieQueue(
             const containerStub = env.MOVIE_DOWNLOADER.get(containerId);
 
             // Build callback URL for progress updates
-            // Priority:
-            // 1. Explicit CALLBACK_URL env var (for local testing)
-            // 2. Auto-detect local dev (ENVIRONMENT === "development")
-            // 3. Default to production URL
-            // For local Docker testing, containers must use host.docker.internal to reach host
-            const callbackUrl =
-                env.CALLBACK_URL ??
-                (env.ENVIRONMENT === "development"
-                    ? `http://host.docker.internal:8787/api/movies-on-demand/internal/progress`
-                    : `https://bahasadri.com/api/movies-on-demand/internal/progress`);
+            // Always use bahasadri.com, even when running locally
+            const callbackUrl = `https://bahasadri.com/api/movies-on-demand/internal/progress`;
 
             // Safe regex replacement for masking credentials
             // Match protocol, then non-colon chars, colon, non-at chars, at sign
@@ -87,9 +79,8 @@ export async function handleMovieQueue(
             console.error(`Using callback URL: ${maskedUrl}`);
 
             // Detect dev mode (local development) - for connection count adjustment
-            const isDev =
-                callbackUrl.includes("host.docker.internal") ||
-                callbackUrl.includes("localhost");
+            // Check ENVIRONMENT instead of callback URL since callback always uses production
+            const isDev = env.ENVIRONMENT === "development";
 
             // Build environment variables for the container
             const envVars: Record<string, string> = {

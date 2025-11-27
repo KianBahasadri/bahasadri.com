@@ -2,8 +2,7 @@
     "name": "backend",
     "private": true,
     "scripts": {
-        "dev": "wrangler dev --local --ip 0.0.0.0",
-        "preview": "wrangler dev",
+        "dev": "wrangler dev --ip 0.0.0.0",
         "deploy": "wrangler deploy",
         "lint": "eslint .",
         "typecheck": "tsc --noEmit",

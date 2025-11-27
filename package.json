@@ -11,7 +11,6 @@
         "frontend:typecheck": "pnpm --filter frontend typecheck",
         "frontend:deploy": "pnpm --filter frontend run deploy",
         "backend:dev": "pnpm --filter backend dev",
-        "backend:preview": "pnpm --filter backend preview",
         "backend:lint": "pnpm --filter backend lint",
         "backend:typecheck": "pnpm --filter backend typecheck",
         "backend:test": "pnpm --filter backend test",

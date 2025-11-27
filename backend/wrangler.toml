@@ -12,36 +12,30 @@ routes = [
 binding = "SMS_MESSAGES"
 id = "e1c31d9857df45d49f00c03daa8b9602"
 preview_id = "e1c31d9857df45d49f00c03daa8b9602"
-remote = true
 
 [[kv_namespaces]]
 binding = "HOME_CONVERSATIONS"
 id = "48489d2624e24f86a103d3328a38a045"
 preview_id = "48489d2624e24f86a103d3328a38a045"
-remote = true
 
 [[kv_namespaces]]
 binding = "WHATSAPP_MESSAGES"
 id = "f5a9bd46be46483590f283e49be3d1a4"
 preview_id = "f5a9bd46be46483590f283e49be3d1a4"
-remote = true
 
 [[r2_buckets]]
 binding = "file_hosting_prod"
 bucket_name = "file-hosting-prod"
-remote = true
 
 [[d1_databases]]
 binding = "FILE_HOSTING_DB"
 database_name = "file-hosting"
 database_id = "00822e66-3363-42df-b80a-526c0a1efc30"
-remote = true
 
 # Movies on Demand bindings
 [[r2_buckets]]
 binding = "MOVIES_R2"
 bucket_name = "movies-on-demand"
-remote = true
 
 [[d1_databases]]
 binding = "MOVIES_D1"
@@ -52,7 +46,6 @@ remote = true
 [[queues.producers]]
 binding = "MOVIES_QUEUE"
 queue = "movies-on-demand-jobs"
-remote = true
 
 [[queues.consumers]]
 queue = "movies-on-demand-jobs"

@@ -37,15 +37,10 @@ export MOVIE_ID="${MOVIE_ID:-12345}"
 export NZB_URL="${NZB_URL:-https://api.nzbgeek.info/api?t=get&id=2a84869886df2024c39b1f6b884ac5b6&apikey=${NZBGEEK_API_KEY}}"
 export RELEASE_TITLE="${RELEASE_TITLE:-The.Last.Samurai.2003.480p.DVDR-PANAM}"
 
-# Callback URL - override to use localhost since we're using host network
-# (This overrides any CALLBACK_URL from .env file)
-export CALLBACK_URL="http://localhost:8787/api/movies-on-demand/internal/progress"
-
 echo "Starting container with:"
 echo "  JOB_ID: $JOB_ID"
 echo "  MOVIE_ID: $MOVIE_ID"
 echo "  NZB_URL: $NZB_URL"
-echo "  CALLBACK_URL: $CALLBACK_URL"
 echo ""
 
 # Run the container with host network
@@ -55,7 +50,6 @@ docker run --rm \
     -e MOVIE_ID="$MOVIE_ID" \
     -e NZB_URL="$NZB_URL" \
     -e RELEASE_TITLE="$RELEASE_TITLE" \
-    -e CALLBACK_URL="$CALLBACK_URL" \
     -e CF_ACCESS_CLIENT_ID="${CONTAINER_SERVICE_TOKEN_ID}" \
     -e CF_ACCESS_CLIENT_SECRET="${CONTAINER_SERVICE_TOKEN_SECRET}" \
     -e USENET_HOST="${USENET_HOST}" \

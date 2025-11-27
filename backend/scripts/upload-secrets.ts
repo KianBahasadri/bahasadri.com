@@ -16,7 +16,6 @@ const ENV_FILE = path.resolve(path.join(PROJECT_ROOT, ".env"));
 // Environment variables that should NOT be uploaded to Cloudflare
 // These are local-only configuration variables
 const EXCLUDED_KEYS = new Set([
-    "CALLBACK_URL", // Local testing override, not needed in production
 ]);
 
 interface EnvEntry {
