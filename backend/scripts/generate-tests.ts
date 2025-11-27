@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 // Auto-generates contract tests from OpenAPI YAML files
 // Run: pnpm generate-tests
 

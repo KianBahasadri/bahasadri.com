@@ -317,10 +317,11 @@ export default function VideoRoom({
                     "[VideoRoom] handleJoinMeeting: Token received, initializing meeting..."
                 );
 
+                const tokenLength = tokenResponse.auth_token ? tokenResponse.auth_token.length : 0;
                 console.warn(
                     "[VideoRoom] handleJoinMeeting: Calling initMeeting with token...",
                     {
-                        tokenLength: tokenResponse.auth_token?.length || 0,
+                        tokenLength,
                         hasToken: !!tokenResponse.auth_token,
                     }
                 );
@@ -443,7 +444,8 @@ export default function VideoRoom({
                             roomJoined: initializedMeeting.self.roomJoined,
                         }
                     );
-                    if (!isMountedRef.current) {
+                    const stillMounted = isMountedRef.current;
+                    if (!stillMounted) {
                         console.warn(
                             "[VideoRoom] handleJoinMeeting: Component unmounted after joinRoom, cleaning up"
                         );

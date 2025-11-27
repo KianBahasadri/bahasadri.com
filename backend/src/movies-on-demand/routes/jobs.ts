@@ -183,7 +183,7 @@ app.post(
                      WHERE movie_id = ? AND status IN ('queued', 'downloading', 'preparing', 'ready') 
                      ORDER BY created_at DESC LIMIT 1`
                 )
-                    .bind(Number(movieId))
+                    .bind(movieId)
                     .first();
                 existingJob = existingJobResult as JobRow | undefined;
             } catch (error) {
@@ -278,7 +278,7 @@ app.post(
             // Get releases from NZBGeek
             let releases: UsenetRelease[];
             try {
-                releases = await searchReleases(c.env.NZBGEEK_API_KEY, String(imdbId));
+                releases = await searchReleases(c.env.NZBGEEK_API_KEY, imdbId);
             } catch (error) {
                 const errorMessage =
                     error instanceof Error ? error.message : String(error);
@@ -337,7 +337,7 @@ app.post(
                         400
                     );
                 }
-                selectedRelease = findReleaseById(releases, String(releaseId));
+                selectedRelease = findReleaseById(releases, releaseId);
                 if (!selectedRelease) {
                     console.error(
                         JSON.stringify({

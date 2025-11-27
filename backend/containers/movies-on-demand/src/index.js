@@ -1,16 +1,15 @@
-import { spawn } from "child_process";
-import { createServer } from "http";
+import { spawn } from "node:child_process";
+import { createServer } from "node:http";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import {
     createReadStream,
-    statSync,
     readdirSync,
     existsSync,
     mkdirSync,
     writeFileSync,
-} from "fs";
-import { join, extname } from "path";
+} from "node:fs";
+import { join, extname } from "node:path";
 
 const REQUIRED_ENV = [
     "JOB_ID",
@@ -43,10 +42,10 @@ const config = {
     cfId: process.env.CF_ACCESS_CLIENT_ID,
     cfSecret: process.env.CF_ACCESS_CLIENT_SECRET,
     usenetHost: process.env.USENET_HOST,
-    usenetPort: parseInt(process.env.USENET_PORT || "563", 10),
+    usenetPort: Number.parseInt(process.env.USENET_PORT || "563", 10),
     usenetUser: process.env.USENET_USERNAME,
     usenetPass: process.env.USENET_PASSWORD,
-    usenetConnections: parseInt(process.env.USENET_CONNECTIONS || "10", 10),
+    usenetConnections: Number.parseInt(process.env.USENET_CONNECTIONS || "10", 10),
     usenetEncryption: process.env.USENET_ENCRYPTION === "true",
     r2Account: process.env.R2_ACCOUNT_ID,
     r2Key: process.env.R2_ACCESS_KEY_ID,
@@ -74,21 +73,21 @@ class NZBGetClient {
         this.auth = Buffer.from(`${username}:${password}`).toString("base64");
     }
 
-    async call(method, params = []) {
-        const res = await fetch(this.base, {
+    async call(method, parameters = []) {
+        const response = await fetch(this.base, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Basic ${this.auth}`,
             },
-            body: JSON.stringify({ method, params, id: Date.now() }),
+            body: JSON.stringify({ method, params: parameters, id: Date.now() }),
         });
 
-        if (!res.ok) {
-            throw new Error(`NZBGet RPC failed: ${res.status}`);
+        if (!response.ok) {
+            throw new Error(`NZBGet RPC failed: ${response.status}`);
         }
 
-        const body = await res.json();
+        const body = await response.json();
         if (body.error) {
             throw new Error(body.error.message || "Unknown NZBGet error");
         }
@@ -97,13 +96,13 @@ class NZBGetClient {
     }
 
     async waitForReady(attempts = 30) {
-        for (let i = 0; i < attempts; i++) {
+        for (let index = 0; index < attempts; index++) {
             try {
                 await this.call("version");
                 return;
-            } catch (err) {
-                if (i === attempts - 1) {
-                    throw err;
+            } catch (error) {
+                if (index === attempts - 1) {
+                    throw error;
                 }
                 await sleep(1000);
             }
@@ -169,8 +168,8 @@ async function main() {
     }
 
     console.log("[movies-on-demand] uploading video to R2");
-    const ext = extname(videoFile) || ".mp4";
-    const r2Key = `movies/${config.jobId}/movie${ext}`;
+    const extension = extname(videoFile) || ".mp4";
+    const r2Key = `movies/${config.jobId}/movie${extension}`;
     await upload(videoFile, r2Key);
 
     console.log(
@@ -181,9 +180,9 @@ async function main() {
 }
 
 function writeNZBConfig(configPath) {
-    const dir = configPath.split("/").slice(0, -1).join("/");
-    if (!existsSync(dir)) {
-        mkdirSync(dir, { recursive: true });
+    const directory = configPath.split("/").slice(0, -1).join("/");
+    if (!existsSync(directory)) {
+        mkdirSync(directory, { recursive: true });
     }
 
     const content = `MainDir=/downloads
@@ -263,7 +262,7 @@ async function fetchNzbAsBase64(url) {
         throw new Error("Downloaded content is not an NZB");
     }
 
-    return Buffer.from(text, "utf-8").toString("base64");
+    return Buffer.from(text, "utf8").toString("base64");
 }
 
 async function waitForCompletion(nzbId) {
@@ -335,7 +334,7 @@ function extractProgress(group) {
 }
 
 function combineParts(lo, hi) {
-    return (Number(hi) || 0) * 4294967296 + (Number(lo) || 0);
+    return (Number(hi) || 0) * 4_294_967_296 + (Number(lo) || 0);
 }
 
 async function upload(filePath, key) {
@@ -365,13 +364,13 @@ function startHealthServer() {
     });
 }
 
-function findVideoFile(dir) {
-    if (!existsSync(dir)) {
+function findVideoFile(directory) {
+    if (!existsSync(directory)) {
         return null;
     }
 
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        const full = join(dir, entry.name);
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+        const full = join(directory, entry.name);
         if (entry.isDirectory()) {
             const nested = findVideoFile(full);
             if (nested) return nested;
@@ -384,21 +383,21 @@ function findVideoFile(dir) {
 }
 
 function contentType(filePath) {
-    const ext = extname(filePath).toLowerCase();
-    if (ext === ".mp4") return "video/mp4";
-    if (ext === ".mkv") return "video/x-matroska";
-    if (ext === ".avi") return "video/x-msvideo";
-    if (ext === ".mov") return "video/quicktime";
+    const extension = extname(filePath).toLowerCase();
+    if (extension === ".mp4") return "video/mp4";
+    if (extension === ".mkv") return "video/x-matroska";
+    if (extension === ".avi") return "video/x-msvideo";
+    if (extension === ".mov") return "video/quicktime";
     return "application/octet-stream";
 }
 
-function decodeHtml(str) {
-    return str
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'");
+function decodeHtml(string_) {
+    return string_
+        .replaceAll("&amp;", "&")
+        .replaceAll("&lt;", "<")
+        .replaceAll("&gt;", ">")
+        .replaceAll("&quot;", '"')
+        .replaceAll("&#39;", "'");
 }
 
 function notify(status, extra = {}) {
@@ -418,22 +417,22 @@ function notify(status, extra = {}) {
         },
         body: JSON.stringify({ job_id: config.jobId, status, ...extra }),
     })
-        .then(async (res) => {
-            if (!res.ok) {
-                const text = await res.text();
-                console.error(
-                    `[movies-on-demand] Callback failed with status ${res.status}: ${text}`
-                );
-            } else {
+        .then(async (response) => {
+            if (response.ok) {
                 console.log(
                     `[movies-on-demand] Callback succeeded for status ${status}`
                 );
+            } else {
+                const text = await response.text();
+                console.error(
+                    `[movies-on-demand] Callback failed with status ${response.status}: ${text}`
+                );
             }
         })
-        .catch((err) => {
+        .catch((error) => {
             console.error(
-                `[movies-on-demand] Failed to send callback: ${err.message}`,
-                err
+                `[movies-on-demand] Failed to send callback: ${error.message}`,
+                error
             );
         });
 }

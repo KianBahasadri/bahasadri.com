@@ -52,9 +52,11 @@ export default function AllMeetingsList(): React.JSX.Element {
                     <button
                         type="button"
                         className={styles["retryButton"]}
-                        onClick={() => {
-                            void refetch();
-                        }}
+                    onClick={() => {
+                        refetch().catch(() => {
+                            // Error handled by query
+                        });
+                    }}
                     >
                         Retry
                     </button>

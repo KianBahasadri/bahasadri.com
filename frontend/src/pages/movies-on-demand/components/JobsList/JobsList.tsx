@@ -4,8 +4,8 @@ import type { Movie, JobStatus } from "../../../../types/movies-on-demand";
 import styles from "./JobsList.module.css";
 
 interface JobsListProps {
-    items: { movie: Movie; job: JobStatus }[];
-    isLoading: boolean;
+    readonly items: { movie: Movie; job: JobStatus }[];
+    readonly isLoading: boolean;
 }
 
 export default function JobsList({

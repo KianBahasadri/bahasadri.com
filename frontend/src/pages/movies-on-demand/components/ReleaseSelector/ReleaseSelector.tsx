@@ -3,18 +3,18 @@ import type { UsenetRelease } from "../../../../types/movies-on-demand";
 import styles from "./ReleaseSelector.module.css";
 
 interface ReleaseSelectorProps {
-    releases: UsenetRelease[];
-    isLoading: boolean;
-    onSelect: (release: UsenetRelease) => void;
-    onCancel: () => void;
+    readonly releases: UsenetRelease[];
+    readonly isLoading: boolean;
+    readonly onSelect: (release: UsenetRelease) => void;
+    readonly onCancel: () => void;
 }
 
 function formatFileSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+    if (bytes < 1024) return `${String(bytes)} B`;
+    if (bytes < 1024 * 1024) return `${String((bytes / 1024).toFixed(2))} KB`;
     if (bytes < 1024 * 1024 * 1024)
-        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+        return `${String((bytes / (1024 * 1024)).toFixed(2))} MB`;
+    return `${String((bytes / (1024 * 1024 * 1024)).toFixed(2))} GB`;
 }
 
 export default function ReleaseSelector({
@@ -48,12 +48,27 @@ export default function ReleaseSelector({
     }
 
     return (
-        <div className={styles["modal"]} onClick={onCancel}>
+        <div
+            className={styles["modal"]}
+            onClick={onCancel}
+            onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                    onCancel();
+                }
+            }}
+            role="button"
+            tabIndex={0}
+        >
             <div
                 className={styles["content"]}
                 onClick={(e) => {
                     e.stopPropagation();
                 }}
+                onKeyDown={(e) => {
+                    e.stopPropagation();
+                }}
+                role="button"
+                tabIndex={0}
             >
                 <h2>Select Release</h2>
                 <div className={styles["releasesList"]}>
@@ -63,6 +78,12 @@ export default function ReleaseSelector({
                             className={styles["releaseItem"]}
                             onClick={() => {
                                 onSelect(release);
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    onSelect(release);
+                                }
                             }}
                             role="button"
                             tabIndex={0}

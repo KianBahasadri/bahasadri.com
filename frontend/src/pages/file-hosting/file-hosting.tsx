@@ -87,7 +87,7 @@ export default function FileHosting(): React.JSX.Element {
             <div className={styles["upload-section"]}>
                 <div
                     className={`${styles["upload-zone"]} ${
-                        isDragging ? String(styles["dragging"]) : ""
+                        isDragging ? (styles["dragging"] ?? "") : ""
                     }`}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
@@ -140,7 +140,7 @@ export default function FileHosting(): React.JSX.Element {
                 <h2>Uploaded Files</h2>
                 {isLoading ? (
                     <p>Loading...</p>
-                ) : (() => {
+                ) : ((): React.JSX.Element => {
                     if (fileList?.files.length === 0) {
                         return <p>No files uploaded yet</p>;
                     }

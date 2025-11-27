@@ -113,7 +113,7 @@ export async function generateAgentResponse(
         );
     }
 
-    const data = (await response.json()) as OpenRouterResponse;
+    const data = await response.json() as OpenRouterResponse;
 
     if (data.choices.length === 0) {
         throw new Error("Invalid response format from OpenRouter API");

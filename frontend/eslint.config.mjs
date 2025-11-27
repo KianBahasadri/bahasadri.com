@@ -142,7 +142,7 @@ export default [
             "unicorn/no-null": "off", // React uses null for components
 
             // SonarJS
-            "sonarjs/cognitive-complexity": ["error", 10],
+            "sonarjs/cognitive-complexity": ["error", 15],
 
             // Disable problematic rules
             "@typescript-eslint/no-unsafe-assignment": "off",

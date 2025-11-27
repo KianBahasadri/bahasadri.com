@@ -3,9 +3,9 @@ import type { JobStatus } from "../../../../types/movies-on-demand";
 import styles from "./JobStatusDisplay.module.css";
 
 interface JobStatusDisplayProps {
-    job: JobStatus | null;
-    isLoading: boolean;
-    onWatchClick?: () => void;
+    readonly job: JobStatus | null;
+    readonly isLoading: boolean;
+    readonly onWatchClick?: () => void;
 }
 
 function getStatusColor(status: JobStatus["status"]): string {
@@ -74,7 +74,7 @@ export default function JobStatusDisplay({
     }
 
     if (!job) {
-        return <></>;
+        return null;
     }
 
     const statusColor = getStatusColor(job.status);
@@ -107,7 +107,7 @@ export default function JobStatusDisplay({
                     </div>
                     <span className={styles["progressText"]}>
                         {job.progress !== null && job.progress !== undefined
-                            ? `${job.progress.toFixed(1)}%`
+                            ? `${String(job.progress.toFixed(1))}%`
                             : "0%"}
                     </span>
                 </div> : null}

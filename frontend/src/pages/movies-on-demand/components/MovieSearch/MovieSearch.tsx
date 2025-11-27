@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import styles from "./MovieSearch.module.css";
 
 interface MovieSearchProps {
-    onSearch: (query: string) => void;
-    placeholder?: string;
+    readonly onSearch: (query: string) => void;
+    readonly placeholder?: string;
 }
 
 export default function MovieSearch({
@@ -17,7 +17,7 @@ export default function MovieSearch({
             onSearch(query);
         }, 400);
 
-        return () => {
+        return (): void => {
             clearTimeout(timer);
         };
     }, [query, onSearch]);

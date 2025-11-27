@@ -130,7 +130,8 @@ async function main(): Promise<void> {
     const excludedCount = EXCLUDED_KEYS.size;
     process.stdout.write(`Found ${countString} environment variable(s) to upload`);
     if (excludedCount > 0) {
-        process.stdout.write(` (${excludedCount} excluded: ${Array.from(EXCLUDED_KEYS).join(", ")})\n\n`);
+        const excludedKeys = [...EXCLUDED_KEYS].join(", ");
+        process.stdout.write(` (${String(excludedCount)} excluded: ${excludedKeys})\n\n`);
     } else {
         process.stdout.write(`\n\n`);
     }

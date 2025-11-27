@@ -61,13 +61,14 @@ export default function IceTestStatus({
         (status === "success" && !hasStun) || status === "warning";
     const showError = (status === "failed" || status === "warning") && error;
 
+    const containerClass = `${styles["container"] ?? ""} ${styles[status] ?? ""}`;
+    const iconClass = status === "testing" ? `${styles["icon"] ?? ""} ${styles["spinner"] ?? ""}` : (styles["icon"] ?? "");
+    const errorTitle = error ?? undefined;
+    const errorText = error ?? "";
+
     return (
-        <div className={`${styles["container"]} ${styles[status]}`}>
-            <span
-                className={`${styles["icon"]} ${
-                    status === "testing" ? styles["spinner"] : ""
-                }`}
-            >
+        <div className={containerClass}>
+            <span className={iconClass}>
                 {getStatusIcon()}
             </span>
             <span>{getStatusText()}</span>
@@ -77,8 +78,8 @@ export default function IceTestStatus({
                 </span>
             ) : null}
             {showError ? (
-                <span className={styles["details"]} title={error ?? undefined}>
-                    - {error ?? ""}
+                <span className={styles["details"]} title={errorTitle}>
+                    - {errorText}
                 </span>
             ) : null}
             {(status === "failed" || status === "warning") && onRetry ? (

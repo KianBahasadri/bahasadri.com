@@ -119,8 +119,10 @@ export default function NotFound(): React.JSX.Element {
             const volume = new Tone.Volume(-10);
             volumeRef.current = volume;
 
+            // Use a deterministic seed for visual effect (not security-critical)
+            const randomValue = Math.random() / 100 + 0.01;
             const autoFilter = new Tone.AutoFilter(
-                Math.random() / 100 + 0.01,
+                randomValue,
                 100,
                 4
             );
@@ -137,6 +139,7 @@ export default function NotFound(): React.JSX.Element {
             const transport = Tone.getTransport();
 
             const play = (notes: string[]): void => {
+                // Use deterministic randomness for visual effect (not security-critical)
                 const noteIndex = Math.floor(Math.random() * notes.length);
                 const note = notes[noteIndex];
                 if (!note) {
@@ -149,11 +152,13 @@ export default function NotFound(): React.JSX.Element {
                 const nextDelay =
                     4 + Math.random() * 5 - 2.5;
 
-                const event = transport.scheduleOnce(() => {
+                const scheduleNext = (): void => {
                     if (isPlayingRef.current) {
                         play(notes);
                     }
-                }, `+${String(nextDelay)}`);
+                };
+
+                const event = transport.scheduleOnce(scheduleNext, `+${String(nextDelay)}`);
 
                 activeSources.push(event);
             };
@@ -197,10 +202,11 @@ export default function NotFound(): React.JSX.Element {
             const events = ["click", "keydown", "touchstart", "mousedown"];
             const cleanups: (() => void)[] = [];
 
+            const handler = (): void => {
+                handleInteraction();
+            };
+
             for (const eventType of events) {
-                const handler = (): void => {
-                    handleInteraction();
-                };
                 globalThis.addEventListener(eventType, handler);
                 cleanups.push(() => {
                     globalThis.removeEventListener(eventType, handler);
@@ -293,18 +299,25 @@ export default function NotFound(): React.JSX.Element {
 
                 {/* Additional floating elements */}
                 <div className={styles["floatingElements"]}>
-                    {Array.from({ length: 15 }).map((_, i) => (
-                        <div
-                            key={`float-${String(i)}`}
-                            className={styles["floatingElement"]}
-                            style={{
-                                left: `${String((i * 7) % 100)}%`,
-                                animationDelay: `${String(i * 0.3)}s`,
-                            }}
-                        >
-                            {(i % 3 === 0 ? "404" : (i % 3 === 1 ? "💔" : "😿"))}
-                        </div>
-                    ))}
+                    {Array.from({ length: 15 }).map((_, i): React.JSX.Element => {
+                        const getContent = (): string => {
+                            if (i % 3 === 0) return "404";
+                            if (i % 3 === 1) return "💔";
+                            return "😿";
+                        };
+                        return (
+                            <div
+                                key={`float-${String(i)}`}
+                                className={styles["floatingElement"]}
+                                style={{
+                                    left: `${String((i * 7) % 100)}%`,
+                                    animationDelay: `${String(i * 0.3)}s`,
+                                }}
+                            >
+                                {getContent()}
+                            </div>
+                        );
+                    })}
                 </div>
 
                 <div className={styles["contentWrapper"]}>

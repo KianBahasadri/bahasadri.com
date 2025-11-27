@@ -5,11 +5,11 @@ import type { WatchHistoryItem } from "../../../../types/movies-on-demand";
 import styles from "./WatchHistoryList.module.css";
 
 interface WatchHistoryListProps {
-    movies: WatchHistoryItem[];
-    isLoading: boolean;
-    onMovieClick: (movieId: number) => void;
-    onLoadMore?: () => void;
-    hasMore?: boolean;
+    readonly movies: WatchHistoryItem[];
+    readonly isLoading: boolean;
+    readonly onMovieClick: (movieId: number) => void;
+    readonly onLoadMore?: () => void;
+    readonly hasMore?: boolean;
 }
 
 function formatDate(dateString: string): string {
@@ -20,10 +20,10 @@ function formatDate(dateString: string): string {
 
     if (diffDays === 0) return "Today";
     if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-    return `${Math.floor(diffDays / 365)} years ago`;
+    if (diffDays < 7) return `${String(diffDays)} days ago`;
+    if (diffDays < 30) return `${String(Math.floor(diffDays / 7))} weeks ago`;
+    if (diffDays < 365) return `${String(Math.floor(diffDays / 30))} months ago`;
+    return `${String(Math.floor(diffDays / 365))} years ago`;
 }
 
 export default function WatchHistoryList({
@@ -35,9 +35,11 @@ export default function WatchHistoryList({
 }: WatchHistoryListProps): React.JSX.Element {
     const navigate = useNavigate();
 
-    const handleMovieClick = (movieId: number) => {
+    const handleMovieClick = (movieId: number): void => {
         onMovieClick(movieId);
-        navigate(`/movies-on-demand/movies/${movieId}`);
+        navigate(`/movies-on-demand/movies/${String(movieId)}`).catch(() => {
+            // Navigation errors are handled by React Router
+        });
     };
 
     if (isLoading && movies.length === 0) {
@@ -73,6 +75,12 @@ export default function WatchHistoryList({
                             className={styles["card"]}
                             onClick={() => {
                                 if (!isDeleted) {
+                                    handleMovieClick(movie.movie_id);
+                                }
+                            }}
+                            onKeyDown={(e) => {
+                                if (!isDeleted && (e.key === "Enter" || e.key === " ")) {
+                                    e.preventDefault();
                                     handleMovieClick(movie.movie_id);
                                 }
                             }}

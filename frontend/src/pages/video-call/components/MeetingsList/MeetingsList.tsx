@@ -66,7 +66,9 @@ export default function MeetingsList(): React.JSX.Element {
                         className={styles["retryButton"]}
                         onClick={() => {
                             console.warn("[MeetingsList] Retry button clicked");
-                            void refetch();
+                            refetch().catch(() => {
+                                // Error handled by query
+                            });
                         }}
                     >
                         Retry

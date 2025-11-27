@@ -1,11 +1,11 @@
 /**
  * Minimal test script to verify health check server works
  */
-import { createServer } from "http";
+import { createServer } from "node:http";
 
-const server = createServer((req, res) => {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok", test: true }));
+const server = createServer((request, response) => {
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ status: "ok", test: true }));
 });
 
 const port = 8080;

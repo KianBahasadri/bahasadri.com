@@ -7,7 +7,7 @@ export default function VideoCallList(): React.JSX.Element {
     return (
         <div className={styles["page"]}>
             <NetworkMesh />
-            <VideoRoom showMeetingList={true} />
+            <VideoRoom showMeetingList />
         </div>
     );
 }

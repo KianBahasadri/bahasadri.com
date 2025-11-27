@@ -14,13 +14,17 @@ export default function VideoCallRoom(): React.JSX.Element {
         console.warn(
             "[VideoCallRoom] handleLeave: Called, navigating to /video-call"
         );
-        void navigate("/video-call");
+        navigate("/video-call").catch(() => {
+            // Navigation errors are handled by React Router
+        });
     };
 
     if (!meetingId) {
         console.warn("[VideoCallRoom] No meetingId, navigating to /video-call");
-        void navigate("/video-call");
-        return <></>;
+        navigate("/video-call").catch(() => {
+            // Navigation errors are handled by React Router
+        });
+        return null;
     }
 
     console.warn(

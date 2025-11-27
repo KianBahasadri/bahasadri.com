@@ -47,7 +47,7 @@ app.get(
             }
 
             // Get IMDb ID from TMDB
-            const apiKey = String(c.env.TMDB_API_KEY);
+            const apiKey = c.env.TMDB_API_KEY;
             const imdbId = await getMovieImdbId(apiKey, movieId);
 
             if (!imdbId) {
@@ -59,8 +59,8 @@ app.get(
             }
 
             // Search NZBGeek for releases
-            const nzbgeekKey = String(c.env.NZBGEEK_API_KEY);
-            const imdbIdStr = String(imdbId ?? "");
+            const nzbgeekKey = c.env.NZBGEEK_API_KEY;
+            const imdbIdStr = imdbId ?? "";
             const releases = await searchReleases(nzbgeekKey, imdbIdStr);
 
             return c.json<ReleasesResponse>(

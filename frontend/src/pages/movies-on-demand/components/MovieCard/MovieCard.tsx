@@ -4,8 +4,8 @@ import type { Movie } from "../../../../types/movies-on-demand";
 import styles from "./MovieCard.module.css";
 
 interface MovieCardProps {
-    movie: Movie;
-    onClick?: () => void;
+    readonly movie: Movie;
+    readonly onClick?: () => void;
 }
 
 export default function MovieCard({
@@ -18,7 +18,18 @@ export default function MovieCard({
         : "N/A";
 
     return (
-        <div className={styles["card"]} onClick={onClick} role="button" tabIndex={0}>
+        <div
+            className={styles["card"]}
+            onClick={onClick}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onClick?.();
+                }
+            }}
+            role="button"
+            tabIndex={0}
+        >
             <div className={styles["posterContainer"]}>
                 <img
                     src={posterUrl}

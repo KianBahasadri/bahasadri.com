@@ -2,7 +2,7 @@
  * Shared error handling utilities for consistent error responses and logging
  */
 
-import type { Context, Handler } from "hono";
+import type { Context } from "hono";
 
 export interface ErrorResponse {
     error: string;
@@ -112,17 +112,14 @@ export function handleError(
         userMessage = "Division by zero";
     } else if (errorMessage.includes("RealtimeKit")) {
         code = "REALTIMEKIT_ERROR";
-        if (errorMessage.includes("does not support")) {
-            userMessage = errorMessage;
-        } else {
-            userMessage = "RealtimeKit API error";
-        }
+        userMessage = errorMessage.includes("does not support")
+            ? errorMessage
+            : "RealtimeKit API error";
     } else if (errorMessage === "NOT_FOUND") {
         code = "NOT_FOUND";
         status = 404;
         userMessage = "Meeting does not exist";
     } else if (errorMessage.startsWith("Twilio API error")) {
-        code = "INTERNAL_ERROR";
         status = 502;
         userMessage = context.defaultMessage ?? "External service error";
     }
@@ -156,9 +153,8 @@ export function withErrorHandling(
                 endpoint,
                 method,
             });
-            return new Response(JSON.stringify(response), {
+            return Response.json(response, {
                 status: status as HttpStatusCode,
-                headers: { "Content-Type": "application/json" },
             });
         }
     };

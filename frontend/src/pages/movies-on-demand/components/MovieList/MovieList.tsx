@@ -5,12 +5,12 @@ import type { Movie } from "../../../../types/movies-on-demand";
 import styles from "./MovieList.module.css";
 
 interface MovieListProps {
-    movies: Movie[];
-    isLoading: boolean;
-    currentPage: number;
-    totalPages: number;
-    onPageChange: (page: number) => void;
-    onMovieClick: (movieId: number) => void;
+    readonly movies: Movie[];
+    readonly isLoading: boolean;
+    readonly currentPage: number;
+    readonly totalPages: number;
+    readonly onPageChange: (page: number) => void;
+    readonly onMovieClick: (movieId: number) => void;
 }
 
 export default function MovieList({
@@ -23,9 +23,11 @@ export default function MovieList({
 }: MovieListProps): React.JSX.Element {
     const navigate = useNavigate();
 
-    const handleMovieClick = (movieId: number) => {
+    const handleMovieClick = (movieId: number): void => {
         onMovieClick(movieId);
-        navigate(`/movies-on-demand/movies/${movieId}`);
+        navigate(`/movies-on-demand/movies/${String(movieId)}`).catch(() => {
+            // Navigation errors are handled by React Router
+        });
     };
 
     if (isLoading) {
@@ -74,7 +76,7 @@ export default function MovieList({
                         Previous
                     </button>
                     <span className={styles["pageInfo"]}>
-                        Page {currentPage} of {totalPages}
+                        Page {String(currentPage)} of {String(totalPages)}
                     </span>
                     <button
                         className={styles["pageButton"]}

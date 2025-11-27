@@ -51,7 +51,7 @@ app.get(
             }
 
             const page = validatePage(pageParam);
-            const queryValue = String(query ?? "");
+            const queryValue = query ?? "";
             const results = await tmdbSearchMovies(
                 c.env.TMDB_API_KEY,
                 queryValue,
@@ -76,7 +76,7 @@ app.get(
             const pageParam = c.req.query("page");
             const page = validatePage(pageParam);
 
-            const apiKey = String(c.env.TMDB_API_KEY);
+            const apiKey = c.env.TMDB_API_KEY;
             const results = await tmdbGetPopular(apiKey, page);
             return c.json<MovieSearchResponse>(results, 200);
         },
@@ -151,7 +151,7 @@ app.get(
                 .first();
             const job = jobResult as JobRow | undefined;
 
-            let jobStatus: MovieDetails["job_status"] = undefined;
+            let jobStatus: MovieDetails["job_status"];
             if (job) {
                 jobStatus = {
                     job_id: job.job_id,

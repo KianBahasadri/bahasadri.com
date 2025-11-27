@@ -143,7 +143,7 @@ app.get(
                 .bind(...params)
                 .all();
 
-            const files = (result.results as FileRow[]) ?? [];
+            const files = (result.results as FileRow[]);
             const hasMore = files.length > limit;
             const filesToReturn = hasMore ? files.slice(0, limit) : files;
 
@@ -214,11 +214,11 @@ app.get(
             const uiAccess = c.req.query("uiAccess") === "true";
 
             // Query D1 for file metadata
-            const fileResult = (await env.FILE_HOSTING_DB.prepare(
+            const fileResult = await env.FILE_HOSTING_DB.prepare(
                 `SELECT * FROM files WHERE id = ? AND deleted = 0`
             )
                 .bind(fileId)
-                .first()) as FileRow | undefined;
+                .first() as FileRow | undefined;
 
             if (!fileResult) {
                 return c.json(

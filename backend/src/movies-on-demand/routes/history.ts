@@ -33,12 +33,10 @@ app.get(
             const offset = offsetValidation.offset;
 
             // Query watch history from D1
-            const limitNum = Number(limit);
-            const offsetNum = Number(offset);
             const result = await c.env.MOVIES_D1.prepare(
                 `SELECT * FROM watch_history ORDER BY last_watched_at DESC LIMIT ? OFFSET ?`
             )
-                .bind(limitNum, offsetNum)
+                .bind(limit, offset)
                 .all();
 
             // Get total count

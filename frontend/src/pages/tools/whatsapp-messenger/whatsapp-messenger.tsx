@@ -55,7 +55,7 @@ export default function WhatsAppMessenger(): React.JSX.Element {
                                 <li>Complete WhatsApp Business verification (can take days/weeks)</li>
                             </ol>
                             <p>
-                                <strong>For testing:</strong> You can use the WhatsApp Sandbox (<code>whatsapp:+14155238886</code>) which doesn't require Meta Business verification.
+                                <strong>For testing:</strong> You can use the WhatsApp Sandbox (<code>whatsapp:+14155238886</code>) which doesn&apos;t require Meta Business verification.
                             </p>
                             <p>
                                 <strong>Alternative:</strong> Use SMS Messenger instead - it works immediately and can message any phone number directly.
@@ -64,13 +64,21 @@ export default function WhatsAppMessenger(): React.JSX.Element {
                         <div className={styles["bannerActions"]}>
                             <button
                                 className={styles["bannerButton"]}
-                                onClick={async () => navigate("/")}
+                                onClick={() => {
+                                    navigate("/").catch(() => {
+                                        // Navigation errors are handled by React Router
+                                    });
+                                }}
                             >
                                 Go Back Home
                             </button>
                             <button
                                 className={styles["bannerButtonSecondary"]}
-                                onClick={async () => navigate("/sms-messenger")}
+                                onClick={() => {
+                                    navigate("/sms-messenger").catch(() => {
+                                        // Navigation errors are handled by React Router
+                                    });
+                                }}
                             >
                                 Try SMS Messenger
                             </button>

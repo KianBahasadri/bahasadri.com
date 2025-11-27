@@ -89,7 +89,7 @@ export interface TMDBMovieDetails extends TMDBMovie {
     }[];
     budget?: number;
     revenue?: number;
-    imdb_id?: string | undefined;
+    imdb_id?: string;
     credits?: {
         cast: {
             id: number;
@@ -157,7 +157,7 @@ export interface Movie {
 }
 
 export interface MovieDetails extends Movie {
-    runtime?: number | undefined;
+    runtime?: number;
     genres?: { id: number; name: string }[];
     production_companies?: {
         id: number;
@@ -166,7 +166,7 @@ export interface MovieDetails extends Movie {
     }[];
     budget?: number;
     revenue?: number;
-    imdb_id?: string | undefined;
+    imdb_id?: string;
     credits?: {
         cast: {
             id: number;
@@ -186,7 +186,7 @@ export interface MovieDetails extends Movie {
         status: JobStatus;
         progress: number | null;
         error_message: string | null;
-    } | undefined;
+    };
 }
 
 export interface MovieSearchResponse {

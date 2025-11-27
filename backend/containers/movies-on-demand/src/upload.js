@@ -1,9 +1,11 @@
-import { createReadStream, statSync } from "fs";
-import { basename, extname } from "path";
+import { createReadStream, statSync } from "node:fs";
+import { basename, extname } from "node:path";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 
-const [, , filePath, jobId] = process.argv;
+const args = process.argv.slice(2);
+const filePath = args[0];
+const jobId = args[1];
 
 if (!filePath || !jobId) {
     console.error("Usage: node upload.js <filePath> <jobId>");
@@ -21,7 +23,7 @@ const missing = Object.entries(config)
     .filter(([, value]) => !value)
     .map(([key]) => key.toUpperCase());
 
-if (missing.length) {
+if (missing.length > 0) {
     console.error(`Missing R2 env vars: ${missing.join(", ")}`);
     process.exit(1);
 }

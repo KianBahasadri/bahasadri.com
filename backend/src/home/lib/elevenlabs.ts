@@ -15,11 +15,11 @@ interface ElevenLabsTtsRequest {
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
     const bytes = new Uint8Array(buffer);
-    const chunkSize = 0x8000;
+    const chunkSize = 32_768;
     let binary = "";
     for (let i = 0; i < bytes.length; i += chunkSize) {
         const chunk = bytes.subarray(i, i + chunkSize);
-        binary += String.fromCharCode(...chunk);
+        binary += String.fromCodePoint(...chunk);
     }
     return btoa(binary);
 }
@@ -55,7 +55,7 @@ export async function synthesizeYandereAgentAudio(
     if (!response.ok) {
         const errorText = await response.text().catch(() => "Unknown error");
         throw new Error(
-            `ElevenLabs TTS error: ${response.status} ${response.statusText} - ${errorText}`
+            `ElevenLabs TTS error: ${String(response.status)} ${response.statusText} - ${errorText}`
         );
     }
 

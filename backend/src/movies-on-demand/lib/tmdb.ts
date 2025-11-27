@@ -166,7 +166,7 @@ export async function getMovieDetails(
     movieId: number
 ): Promise<Omit<MovieDetails, "job_status">> {
     const response = await tmdbFetch<TMDBMovieDetails>(
-        `/movie/${movieId}`,
+        `/movie/${String(movieId)}`,
         apiKey,
         { append_to_response: "credits" }
     );
@@ -179,7 +179,7 @@ export async function getMovieDetails(
 export async function getSimilarMovies(
     apiKey: string,
     movieId: number,
-    page: number = 1
+    page = 1
 ): Promise<MovieSearchResponse> {
     const response = await tmdbFetch<TMDBSearchResponse>(
         `/movie/${String(movieId)}/similar`,

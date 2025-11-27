@@ -13,7 +13,8 @@ import type { JobQueueMessage } from "./movies-on-demand/types";
 
 // Conditionally import container to avoid breaking tests
 // The container module requires Cloudflare Workers runtime which isn't available in tests
-let containerModule: typeof import("./movies-on-demand/container") | null = null;
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+let containerModule: typeof import("./movies-on-demand/container") | undefined;
 
 try {
     // Only import if not in test environment
@@ -22,7 +23,7 @@ try {
     }
 } catch {
     // Ignore import errors in test environments
-    containerModule = null;
+    containerModule = undefined;
 }
 
 // Export container class (mocked in tests)
@@ -30,10 +31,11 @@ export const MovieDownloaderContainer = containerModule?.MovieDownloaderContaine
     defaultPort = 8080;
     sleepAfter = "20m";
     manualStart = true;
-} as unknown as typeof import("./movies-on-demand/container").MovieDownloaderContainer);
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+} as unknown as import("./movies-on-demand/container").MovieDownloaderContainer);
 
 // Queue handler (mocked in tests)
-const handleMovieQueue = containerModule?.handleMovieQueue ?? (async () => {
+const handleMovieQueue = containerModule?.handleMovieQueue ?? (async (): Promise<void> => {
     // Mock implementation for tests
 });
 
@@ -79,26 +81,31 @@ app.get("/", (c) => c.json({ success: true, message: "bahasadri.com API" }));
 // Export default with fetch handler, queue consumer, and request method for testing
 // Note: MovieDownloaderContainer is already exported above as a const
 export default {
-    fetch: (request: Request, env?: Env, ctx?: ExecutionContext) => {
+    async fetch(request: Request, env?: Env, ctx?: ExecutionContext): Promise<Response> {
         // In test environment, use ENV from globalThis if not provided
         const testEnv = (typeof globalThis !== "undefined" && "ENV" in globalThis)
             ? (globalThis as { ENV: Env }).ENV
             : env;
-        return app.fetch(request, testEnv, ctx);
+        return await app.fetch(request, testEnv, ctx);
     },
-    request: (input: RequestInfo | URL, init?: RequestInit) => {
+    async request(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
         // In test environment, inject ENV from globalThis
         // Hono's request method doesn't directly accept env, so we use fetch instead
         if (typeof globalThis !== "undefined" && "ENV" in globalThis) {
             const env = (globalThis as { ENV: Env }).ENV;
             // Convert string paths to full URLs for Request constructor
-            const url = typeof input === "string" 
-                ? (input.startsWith("http") ? input : `http://localhost${input}`)
-                : input;
+            let url: string | URL;
+            if (typeof input === "string") {
+                url = input.startsWith("http") ? input : `http://localhost${input}`;
+            } else if (input instanceof URL) {
+                url = input;
+            } else {
+                url = input.url;
+            }
             const request = input instanceof Request ? input : new Request(url, init);
-            return app.fetch(request, env);
+            return await app.fetch(request, env);
         }
-        return app.request(input, init);
+        return await app.request(input, init);
     },
     async queue(batch: MessageBatch<JobQueueMessage>, env: Env): Promise<void> {
         await handleMovieQueue(batch, env);

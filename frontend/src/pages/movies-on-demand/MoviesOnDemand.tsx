@@ -66,13 +66,13 @@ export default function MoviesOnDemand(): React.JSX.Element {
         queryKey: queryKeys.available(),
         queryFn: async (): Promise<{ movie: Movie; job: JobStatus }[]> => {
             const jobsResponse = await listActiveJobs();
-            const allJobs = jobsResponse.jobs.sort((a, b) => {
+            const sortedJobs = [...jobsResponse.jobs].toSorted((a, b) => {
                 const dateA = new Date(a.created_at).getTime();
                 const dateB = new Date(b.created_at).getTime();
                 return dateB - dateA;
             });
 
-            const moviePromises = allJobs.map(
+            const moviePromises = sortedJobs.map(
                 async (job) => {
                     const movie = await getMovieDetails(job.movie_id);
                     return { movie, job };
@@ -105,11 +105,8 @@ export default function MoviesOnDemand(): React.JSX.Element {
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
-    const handleMovieClick = () => {
-        // Navigation handled by MovieList component
-    };
 
-    const handleHistoryLoadMore = () => {
+    const handleHistoryLoadMore = (): void => {
         setHistoryOffset((prev) => prev + historyLimit);
     };
 
@@ -178,7 +175,7 @@ export default function MoviesOnDemand(): React.JSX.Element {
             <div className={styles["tabs"]}>
                 <button
                     className={`${styles["tab"]} ${
-                        activeView === "popular" ? styles["active"] : ""
+                        activeView === "popular" ? (styles["active"] ?? "") : ""
                     }`}
                     onClick={() => {
                         handleViewChange("popular");
@@ -188,7 +185,7 @@ export default function MoviesOnDemand(): React.JSX.Element {
                 </button>
                 <button
                     className={`${styles["tab"]} ${
-                        activeView === "top" ? styles["active"] : ""
+                        activeView === "top" ? (styles["active"] ?? "") : ""
                     }`}
                     onClick={() => {
                         handleViewChange("top");
@@ -198,7 +195,7 @@ export default function MoviesOnDemand(): React.JSX.Element {
                 </button>
                 <button
                     className={`${styles["tab"]} ${
-                        activeView === "history" ? styles["active"] : ""
+                        activeView === "history" ? (styles["active"] ?? "") : ""
                     }`}
                     onClick={() => {
                         handleViewChange("history");
@@ -208,7 +205,7 @@ export default function MoviesOnDemand(): React.JSX.Element {
                 </button>
                 <button
                     className={`${styles["tab"]} ${
-                        activeView === "available" ? styles["active"] : ""
+                        activeView === "available" ? (styles["active"] ?? "") : ""
                     }`}
                     onClick={() => {
                         handleViewChange("available");
@@ -217,29 +214,44 @@ export default function MoviesOnDemand(): React.JSX.Element {
                     Available/Downloading
                 </button>
             </div>
-            {activeView === "history" ? (
-                <WatchHistoryList
-                    movies={historyData?.movies ?? []}
-                    isLoading={isHistoryLoading}
-                    onMovieClick={handleMovieClick}
-                    {...(hasMoreHistory && { onLoadMore: handleHistoryLoadMore })}
-                    hasMore={hasMoreHistory ?? false}
-                />
-            ) : (activeView === "available" ? (
-                <JobsList
-                    items={availableData ?? []}
-                    isLoading={isAvailableLoading}
-                />
-            ) : (
-                <MovieList
-                    movies={getCurrentMovies()}
-                    isLoading={getCurrentIsLoading()}
-                    currentPage={currentPage}
-                    totalPages={getCurrentTotalPages()}
-                    onPageChange={handlePageChange}
-                    onMovieClick={handleMovieClick}
-                />
-            ))}
+            {(() => {
+                const renderView = (): React.JSX.Element => {
+                    if (activeView === "history") {
+                        return (
+                            <WatchHistoryList
+                                movies={historyData?.movies ?? []}
+                                isLoading={isHistoryLoading}
+                                onMovieClick={() => {
+                                    // Navigation handled by WatchHistoryList component
+                                }}
+                                {...(hasMoreHistory && { onLoadMore: handleHistoryLoadMore })}
+                                hasMore={hasMoreHistory ?? false}
+                            />
+                        );
+                    }
+                    if (activeView === "available") {
+                        return (
+                            <JobsList
+                                items={availableData ?? []}
+                                isLoading={isAvailableLoading}
+                            />
+                        );
+                    }
+                    return (
+                        <MovieList
+                            movies={getCurrentMovies()}
+                            isLoading={getCurrentIsLoading()}
+                            currentPage={currentPage}
+                            totalPages={getCurrentTotalPages()}
+                            onPageChange={handlePageChange}
+                            onMovieClick={() => {
+                                // Navigation handled by MovieList component
+                            }}
+                        />
+                    );
+                };
+                return renderView();
+            })()}
         </div>
     );
 }

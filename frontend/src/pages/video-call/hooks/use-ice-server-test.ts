@@ -241,7 +241,8 @@ export function useIceServerTest(): IceTestResult & { retest: () => void } {
             );
 
             // Firefox is stricter about TURN - warn if no STUN on Firefox
-            if (hasHostCandidates || hasStun) {
+            const hasViableCandidates = hasHostCandidates || hasStun;
+            if (hasViableCandidates) {
                 // On Firefox without STUN, this may still fail in the actual call
                 const firefoxWarning = isFirefox && !hasStun;
                 console.warn(

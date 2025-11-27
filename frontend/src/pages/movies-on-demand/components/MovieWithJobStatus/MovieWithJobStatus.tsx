@@ -6,8 +6,8 @@ import type { Movie, JobStatus } from "../../../../types/movies-on-demand";
 import styles from "./MovieWithJobStatus.module.css";
 
 interface MovieWithJobStatusProps {
-    movie: Movie;
-    job: JobStatus;
+    readonly movie: Movie;
+    readonly job: JobStatus;
 }
 
 export default function MovieWithJobStatus({
@@ -17,17 +17,32 @@ export default function MovieWithJobStatus({
     const navigate = useNavigate();
     const posterUrl = getImageUrl(movie.poster_path, "w500");
 
-    const handleMovieClick = () => {
-        navigate(`/movies-on-demand/movies/${movie.id}`);
+    const handleMovieClick = (): void => {
+        navigate(`/movies-on-demand/movies/${String(movie.id)}`).catch(() => {
+            // Navigation errors are handled by React Router
+        });
     };
 
-    const handleWatchClick = () => {
-        navigate(`/movies-on-demand/movies/${movie.id}/watch`);
+    const handleWatchClick = (): void => {
+        navigate(`/movies-on-demand/movies/${String(movie.id)}/watch`).catch(() => {
+            // Navigation errors are handled by React Router
+        });
     };
 
     return (
         <div className={styles["container"]}>
-            <div className={styles["movieCardWrapper"]} onClick={handleMovieClick} role="button" tabIndex={0}>
+            <div
+                className={styles["movieCardWrapper"]}
+                onClick={handleMovieClick}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleMovieClick();
+                    }
+                }}
+                role="button"
+                tabIndex={0}
+            >
                 <img
                     src={posterUrl}
                     alt={`${movie.title} poster`}
@@ -36,7 +51,13 @@ export default function MovieWithJobStatus({
                 />
             </div>
             <div className={styles["movieInfo"]}>
-                <h3 className={styles["title"]} onClick={handleMovieClick}>{movie.title}</h3>
+                <button
+                    type="button"
+                    className={styles["title"]}
+                    onClick={handleMovieClick}
+                >
+                    {movie.title}
+                </button>
             </div>
             <div className={styles["jobStatusWrapper"]}>
                 <JobStatusDisplay

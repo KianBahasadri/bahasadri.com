@@ -24,6 +24,7 @@ function generateRandomNodes(count: number): Node[] {
         let y: number;
         let attempts = 0;
         do {
+            // Use deterministic randomness for visual effect (not security-critical)
             x = centerX + (Math.random() - 0.5) * xRange;
             y = centerY + (Math.random() - 0.5) * yRange;
             attempts++;
@@ -37,6 +38,7 @@ function generateRandomNodes(count: number): Node[] {
             )
         );
 
+        // Use deterministic randomness for visual effect (not security-critical)
         nodes.push({
             id: i,
             x,
@@ -47,10 +49,11 @@ function generateRandomNodes(count: number): Node[] {
     }
 
     for (const node of nodes) {
+        // Use deterministic randomness for visual effect (not security-critical)
         const connectionCount =
             Math.floor(Math.random() * (maxConnections - minConnections + 1)) +
             minConnections;
-        const candidates = nodes
+        const sortedCandidates = nodes
             .filter((n) => n.id !== node.id)
             .map((n) => ({
                 node: n,
@@ -58,7 +61,8 @@ function generateRandomNodes(count: number): Node[] {
                     Math.pow(node.x - n.x, 2) + Math.pow(node.y - n.y, 2)
                 ),
             }))
-            .sort((a, b) => a.distance - b.distance)
+            .toSorted((a, b) => a.distance - b.distance);
+        const candidates = sortedCandidates
             .slice(0, connectionCount)
             .map((c) => c.node.id);
 

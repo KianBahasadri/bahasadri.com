@@ -12,7 +12,7 @@ import { getImageUrl } from "../../lib/tmdb";
 import MovieCard from "./components/MovieCard/MovieCard";
 import ReleaseSelector from "./components/ReleaseSelector/ReleaseSelector";
 import JobStatusDisplay from "./components/JobStatusDisplay/JobStatusDisplay";
-import type { UsenetRelease, FetchMovieRequest } from "../../types/movies-on-demand";
+import type { UsenetRelease, FetchMovieRequest, JobStatus } from "../../types/movies-on-demand";
 import styles from "./MovieDetails.module.css";
 
 const queryKeys = {
@@ -22,6 +22,14 @@ const queryKeys = {
         ["movies-on-demand", "similar", id, page] as const,
     jobStatus: (jobId: string) => ["movies-on-demand", "job", jobId] as const,
 };
+
+function getRefetchInterval(query: { state: { data?: JobStatus | undefined } }): number | false {
+    const data = query.state.data;
+    if (data?.status === "ready" || data?.status === "error") {
+        return false;
+    }
+    return 2000;
+}
 
 export default function MovieDetails(): React.JSX.Element {
     const { id } = useParams<{ id: string }>();
@@ -60,13 +68,7 @@ export default function MovieDetails(): React.JSX.Element {
         queryKey: queryKeys.jobStatus(jobId ?? ""),
         queryFn: async () => await getJobStatus(jobId ?? ""),
         enabled: !!jobId,
-        refetchInterval: (query) => {
-            const data = query.state.data;
-            if (data?.status === "ready" || data?.status === "error") {
-                return false;
-            }
-            return 2000;
-        },
+        refetchInterval: getRefetchInterval,
     });
 
     const fetchMovieMutation = useMutation({
@@ -106,11 +108,15 @@ export default function MovieDetails(): React.JSX.Element {
     };
 
     const handleWatchClick = (): void => {
-        void navigate(`/movies-on-demand/movies/${String(movieId)}/watch`);
+        navigate(`/movies-on-demand/movies/${String(movieId)}/watch`).catch(() => {
+            // Navigation errors are handled by React Router
+        });
     };
 
     const handleSimilarMovieClick = (similarMovieId: number): void => {
-        void navigate(`/movies-on-demand/movies/${String(similarMovieId)}`);
+        navigate(`/movies-on-demand/movies/${String(similarMovieId)}`).catch(() => {
+            // Navigation errors are handled by React Router
+        });
     };
 
     if (isDetailsLoading || !movieDetails) {
@@ -127,7 +133,9 @@ export default function MovieDetails(): React.JSX.Element {
     const isReady = currentJob?.status === "ready";
 
     const handleBackClick = (): void => {
-        void navigate("/movies-on-demand");
+        navigate("/movies-on-demand").catch(() => {
+            // Navigation errors are handled by React Router
+        });
     };
 
     return (

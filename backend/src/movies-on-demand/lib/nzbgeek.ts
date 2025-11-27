@@ -179,27 +179,34 @@ function getQualityScore(
 
     // Source preference (BluRay > WEB-DL > others > CAM/HDTS)
     switch (release.source) {
-        case "BluRay":
+        case "BluRay": {
             score += 30;
             break;
-        case "WEB-DL":
+        }
+        case "WEB-DL": {
             score += 25;
             break;
-        case "WEBRip":
+        }
+        case "WEBRip": {
             score += 20;
             break;
-        case "HDTV":
+        }
+        case "HDTV": {
             score += 15;
             break;
-        case "DVD":
+        }
+        case "DVD": {
             score += 10;
             break;
+        }
         case "CAM":
-        case "HDTS":
+        case "HDTS": {
             score -= 50; // Heavily penalize cam/telesync
             break;
-        default:
+        }
+        default: {
             break;
+        }
     }
 
     // Codec preference (x265 for smaller size, x264 for compatibility)
@@ -234,7 +241,7 @@ export async function searchReleases(
         ? imdbId.replace("tt", "")
         : imdbId;
 
-    const url = `${NZBGEEK_BASE_URL}?t=movie&imdbid=${String(cleanImdbId)}&apikey=${String(apiKey)}`;
+    const url = `${NZBGEEK_BASE_URL}?t=movie&imdbid=${cleanImdbId}&apikey=${apiKey}`;
 
     const response = await fetch(url, {
         headers: {
@@ -244,7 +251,7 @@ export async function searchReleases(
     });
 
     if (!response.ok) {
-        throw new Error(`NZBGEEK_ERROR: ${response.status}`);
+        throw new Error(`NZBGEEK_ERROR: ${String(response.status)}`);
     }
 
     const xml = await response.text();
@@ -275,7 +282,7 @@ export function selectBestRelease(
     if (releases.length === 0) return undefined;
 
     // Sort by quality score for given preference
-    const sorted = [...releases].sort(
+    const sorted = releases.toSorted(
         (a, b) =>
             getQualityScore(b, preference) - getQualityScore(a, preference)
     );

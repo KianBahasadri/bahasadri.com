@@ -117,4 +117,50 @@ export default [
             "security/detect-non-literal-fs-filename": "off",
         },
     },
+    {
+        // Test files have different requirements
+        files: ["src/__tests__/**/*.ts"],
+        rules: {
+            "unicorn/no-useless-undefined": "off",
+            "sonarjs/no-hardcoded-passwords": "off",
+            "security/detect-non-literal-fs-filename": "off",
+        },
+    },
+    {
+        // Container JavaScript files run in Node.js environment
+        files: ["containers/**/*.js"],
+        languageOptions: {
+            globals: {
+                process: "readonly",
+                console: "readonly",
+                Buffer: "readonly",
+                fetch: "readonly",
+                setTimeout: "readonly",
+            },
+            ecmaVersion: "latest",
+            sourceType: "module",
+        },
+        rules: {
+            "no-console": "off",
+            "unicorn/no-process-exit": "off",
+            "unicorn/prefer-node-protocol": "error",
+            "unicorn/import-style": "off",
+            "unicorn/prevent-abbreviations": "off",
+            "unicorn/catch-error-name": "off",
+            "unicorn/prefer-number-properties": "error",
+            "unicorn/text-encoding-identifier-case": "error",
+            "unicorn/no-null": "off",
+            "unicorn/numeric-separators-style": "error",
+            "unicorn/prefer-top-level-await": "off",
+            "unicorn/prefer-string-replace-all": "error",
+            "unicorn/no-array-sort": "off",
+            "sonarjs/no-os-command-from-path": "off",
+            "sonarjs/cognitive-complexity": ["error", 20],
+            "security/detect-non-literal-fs-filename": "off",
+            "security/detect-object-injection": "off",
+            "promise/always-return": "off",
+            "promise/no-nesting": "off",
+            "import/no-unresolved": "off",
+        },
+    },
 ];

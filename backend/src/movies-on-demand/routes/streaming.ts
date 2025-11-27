@@ -96,7 +96,7 @@ app.get(
                 .run();
 
             // Get movie file metadata from R2
-            const r2Key = `movies/${String(job.job_id)}/movie.mp4`;
+            const r2Key = `movies/${job.job_id}/movie.mp4`;
             const object = await c.env.MOVIES_R2.head(r2Key);
 
             if (!object) {

@@ -74,7 +74,7 @@ beforeEach(() => {
         USENET_HOST: "test-usenet-host",
         USENET_PORT: "563",
         USENET_USERNAME: "test-username",
-        USENET_PASSWORD: "test-password",
+        USENET_PASSWORD: "test-password-placeholder",
         USENET_CONNECTIONS: "4",
         USENET_ENCRYPTION: "tls",
         R2_ACCESS_KEY_ID: "test-access-key",

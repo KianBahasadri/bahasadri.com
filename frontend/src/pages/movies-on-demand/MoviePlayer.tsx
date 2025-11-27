@@ -95,7 +95,9 @@ export default function MoviePlayer(): React.JSX.Element {
         if (!video) return;
 
         if (video.paused) {
-            void video.play();
+            video.play().catch(() => {
+                // Ignore play errors
+            });
         } else {
             video.pause();
         }
@@ -124,9 +126,13 @@ export default function MoviePlayer(): React.JSX.Element {
         if (!video) return;
 
         if (document.fullscreenElement) {
-            void document.exitFullscreen();
+            document.exitFullscreen().catch(() => {
+                // Ignore fullscreen errors
+            });
         } else {
-            void video.requestFullscreen();
+            video.requestFullscreen().catch(() => {
+                // Ignore fullscreen errors
+            });
         }
     };
 
@@ -163,7 +169,9 @@ export default function MoviePlayer(): React.JSX.Element {
                 <button
                     className={styles["backButton"]}
                     onClick={() => {
-                        void navigate(`/movies-on-demand/movies/${String(movieId)}`);
+                        navigate(`/movies-on-demand/movies/${String(movieId)}`).catch(() => {
+                            // Navigation errors are handled by React Router
+                        });
                     }}
                 >
                     Back to Movie Details
@@ -195,7 +203,9 @@ export default function MoviePlayer(): React.JSX.Element {
                         <button
                             className={styles["backButton"]}
                             onClick={() => {
-                                void navigate(`/movies-on-demand/movies/${String(movieId)}`);
+                                navigate(`/movies-on-demand/movies/${String(movieId)}`).catch(() => {
+                                    // Navigation errors are handled by React Router
+                                });
                             }}
                         >
                             ← Back

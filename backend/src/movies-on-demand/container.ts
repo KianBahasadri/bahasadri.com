@@ -59,7 +59,7 @@ export async function handleMovieQueue(
     for (const message of batch.messages) {
         const job = message.body;
 
-        console.error(`Processing job: ${String(job.job_id)} for movie: ${String(job.movie_id)}`);
+        console.error(`Processing job: ${job.job_id} for movie: ${String(job.movie_id)}`);
 
         try {
             // Get a unique container instance for this job using the job_id as identifier
@@ -79,9 +79,10 @@ export async function handleMovieQueue(
                     : `https://bahasadri.com/api/movies-on-demand/internal/progress`);
 
             // Safe regex replacement for masking credentials
+            // Match protocol, then non-colon chars, colon, non-at chars, at sign
             const maskedUrl = callbackUrl.replace(
-                /\/\/[^:]+:[^@]+@/u,
-                "//***:***@"
+                /(https?:\/\/)[^:]+:[^@]+@/u,
+                "$1***:***@"
             );
             console.error(`Using callback URL: ${maskedUrl}`);
 

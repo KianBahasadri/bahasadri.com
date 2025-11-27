@@ -81,7 +81,7 @@ async function createRealtimeKitMeeting(
         );
     }
 
-    const data = (await response.json()) as RealtimeKitMeetingResponse;
+    const data = await response.json() as RealtimeKitMeetingResponse;
 
     if (!data.success || !data.data) {
         throw new Error(
@@ -392,7 +392,7 @@ async function deleteRealtimeKitMeeting(
         );
     }
 
-    const data = (await response.json()) as RealtimeKitMeetingResponse;
+    const data = await response.json() as RealtimeKitMeetingResponse;
 
     if (!data.success || !data.data) {
         throw new Error(
