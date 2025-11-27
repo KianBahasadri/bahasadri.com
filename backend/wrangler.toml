@@ -52,6 +52,7 @@ remote = true
 [[queues.producers]]
 binding = "MOVIES_QUEUE"
 queue = "movies-on-demand-jobs"
+remote = true
 
 [[queues.consumers]]
 queue = "movies-on-demand-jobs"
