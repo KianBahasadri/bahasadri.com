@@ -24,6 +24,7 @@ app.post(
     withErrorHandling(
         async (c) => {
             // Log incoming request for debugging
+            const ip = c.req.header("CF-Connecting-IP") ?? "unknown";
             console.error(
                 JSON.stringify({
                     timestamp: new Date().toISOString(),
@@ -31,7 +32,7 @@ app.post(
                     method: "POST",
                     level: "info",
                     message: "Received callback request",
-                    ip: c.req.header("CF-Connecting-IP") || "unknown",
+                    ip,
                 })
             );
 
@@ -83,11 +84,12 @@ app.post(
             }
 
             // Verify job exists
-            const existingJob = (await c.env.MOVIES_D1.prepare(
+            const existingJobRaw = await c.env.MOVIES_D1.prepare(
                 `SELECT job_id, status FROM jobs WHERE job_id = ?`
             )
                 .bind(body.job_id)
-                .first()) as JobRow | undefined;
+                .first();
+            const existingJob = existingJobRaw as JobRow | undefined;
 
             if (!existingJob) {
                 return c.json<ErrorResponse>(
@@ -113,7 +115,7 @@ app.post(
                     .bind(
                         body.status,
                         body.progress ?? 100,
-                        body.error_message ?? null,
+                        body.error_message ?? undefined,
                         now,
                         expiresAt,
                         now,
@@ -128,7 +130,7 @@ app.post(
                 )
                     .bind(
                         body.status,
-                        body.progress ?? null,
+                        body.progress ?? undefined,
                         body.error_message ?? "Unknown error",
                         now,
                         body.job_id
@@ -141,11 +143,11 @@ app.post(
                      SET status = ?, progress = ?, updated_at = ?
                      WHERE job_id = ?`
                 )
-                    .bind(body.status, body.progress ?? null, now, body.job_id)
+                    .bind(body.status, body.progress ?? undefined, now, body.job_id)
                     .run();
             }
 
-            return c.json({ success: true }, 200);
+            return c.json<{ success: boolean }>({ success: true }, 200);
         },
         "/api/movies-on-demand/internal/progress",
         "POST"

@@ -79,7 +79,16 @@ app.post(
                 );
             }
 
-            const movieId = idValidation.id!;
+            const movieId = idValidation.id;
+            if (!movieId) {
+                return c.json<ErrorResponse>(
+                    {
+                        error: "Invalid movie ID",
+                        code: "INVALID_INPUT",
+                    },
+                    400
+                );
+            }
 
             // Parse request body with error handling
             let body: FetchMovieRequest;
@@ -169,13 +178,14 @@ app.post(
             // Check for existing active job for this movie
             let existingJob: JobRow | undefined;
             try {
-                existingJob = (await c.env.MOVIES_D1.prepare(
+                const existingJobResult = await c.env.MOVIES_D1.prepare(
                     `SELECT job_id, status FROM jobs 
                      WHERE movie_id = ? AND status IN ('queued', 'downloading', 'preparing', 'ready') 
                      ORDER BY created_at DESC LIMIT 1`
                 )
-                    .bind(movieId)
-                    .first()) as JobRow | undefined;
+                    .bind(Number(movieId))
+                    .first();
+                existingJob = existingJobResult as JobRow | undefined;
             } catch (error) {
                 const errorMessage =
                     error instanceof Error ? error.message : String(error);
@@ -219,7 +229,7 @@ app.post(
             }
 
             // Get IMDb ID for release search
-            let imdbId: string | null;
+            let imdbId: string | undefined;
             try {
                 imdbId = await getMovieImdbId(c.env.TMDB_API_KEY, movieId);
             } catch (error) {
@@ -268,7 +278,7 @@ app.post(
             // Get releases from NZBGeek
             let releases: UsenetRelease[];
             try {
-                releases = await searchReleases(c.env.NZBGEEK_API_KEY, imdbId);
+                releases = await searchReleases(c.env.NZBGEEK_API_KEY, String(imdbId));
             } catch (error) {
                 const errorMessage =
                     error instanceof Error ? error.message : String(error);
@@ -315,7 +325,7 @@ app.post(
             }
 
             // Select release based on mode
-            let selectedRelease: UsenetRelease | null;
+            let selectedRelease: UsenetRelease | undefined;
             if (body.mode === "manual") {
                 const releaseId = body.release_id;
                 if (!releaseId) {
@@ -327,7 +337,7 @@ app.post(
                         400
                     );
                 }
-                selectedRelease = findReleaseById(releases, releaseId);
+                selectedRelease = findReleaseById(releases, String(releaseId));
                 if (!selectedRelease) {
                     console.error(
                         JSON.stringify({
@@ -403,6 +413,16 @@ app.post(
             // Generate job ID
             const jobId = generateJobId();
             const now = new Date().toISOString();
+
+            if (!selectedRelease) {
+                return c.json<ErrorResponse>(
+                    {
+                        error: "No release selected",
+                        code: "INTERNAL_ERROR",
+                    },
+                    500
+                );
+            }
 
             // Create job record in D1
             try {
@@ -579,11 +599,12 @@ app.get(
             }
 
             // Query D1 for job details
-            const job = (await c.env.MOVIES_D1.prepare(
+            const jobResult = await c.env.MOVIES_D1.prepare(
                 `SELECT * FROM jobs WHERE job_id = ?`
             )
                 .bind(jobId)
-                .first()) as JobRow | undefined;
+                .first();
+            const job = jobResult as JobRow | undefined;
 
             if (!job) {
                 return c.json<ErrorResponse>(
@@ -647,14 +668,16 @@ app.get(
                 )
                     .bind(statusParam)
                     .all();
-                jobs = (result.results ?? []) as JobRow[];
+                const results = result.results ?? [];
+                jobs = results as JobRow[];
             } else {
                 // Get all active jobs (exclude deleted)
                 const result = await c.env.MOVIES_D1.prepare(
                     `SELECT * FROM jobs WHERE status IN ('queued', 'downloading', 'preparing', 'ready', 'error') 
                      ORDER BY updated_at DESC LIMIT 50`
                 ).all();
-                jobs = (result.results ?? []) as JobRow[];
+                const results = result.results ?? [];
+                jobs = results as JobRow[];
             }
 
             const response: JobsListResponse = {

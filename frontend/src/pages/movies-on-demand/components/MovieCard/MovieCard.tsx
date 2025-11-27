@@ -32,11 +32,9 @@ export default function MovieCard({
             </div>
             <div className={styles["info"]}>
                 <h3 className={styles["title"]}>{movie.title}</h3>
-                {movie.release_date && (
-                    <p className={styles["releaseDate"]}>
+                {movie.release_date ? <p className={styles["releaseDate"]}>
                         {new Date(movie.release_date).getFullYear()}
-                    </p>
-                )}
+                    </p> : null}
             </div>
         </div>
     );

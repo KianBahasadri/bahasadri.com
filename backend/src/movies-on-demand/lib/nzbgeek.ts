@@ -20,8 +20,8 @@ function parseReleaseTitle(title: string): ParsedReleaseMetadata {
     const parts = title.toUpperCase();
 
     // Quality detection
-    let quality: string | null = null;
-    let resolution: string | null = null;
+    let quality: string | undefined = undefined;
+    let resolution: string | undefined = undefined;
     if (
         parts.includes("2160P") ||
         parts.includes("4K") ||
@@ -41,7 +41,7 @@ function parseReleaseTitle(title: string): ParsedReleaseMetadata {
     }
 
     // Codec detection
-    let codec: string | null = null;
+    let codec: string | undefined = undefined;
     if (
         parts.includes("X265") ||
         parts.includes("HEVC") ||
@@ -59,7 +59,7 @@ function parseReleaseTitle(title: string): ParsedReleaseMetadata {
     }
 
     // Source detection
-    let source: string | null = null;
+    let source: string | undefined = undefined;
     if (
         parts.includes("BLURAY") ||
         parts.includes("BLU-RAY") ||
@@ -81,8 +81,9 @@ function parseReleaseTitle(title: string): ParsedReleaseMetadata {
     }
 
     // Group extraction (usually last part after hyphen)
-    let group: string | null = null;
-    const groupMatch = title.match(/-([A-Za-z0-9]+)$/);
+    let group: string | undefined = undefined;
+    const groupRegex = /-([A-Za-z0-9]+)$/;
+    const groupMatch = groupRegex.exec(title);
     if (groupMatch) {
         group = groupMatch[1];
     }
@@ -105,32 +106,34 @@ function parseNZBGeekXML(xml: string): NZBGeekRelease[] {
         const itemXml = match[1];
 
         // Extract title
-        const titleMatch = itemXml.match(/<title>([^<]*)<\/title>/i);
+        const titleRegex = /<title>([^<]*)<\/title>/i;
+        const titleMatch = titleRegex.exec(itemXml);
         const title = titleMatch ? titleMatch[1] : "";
 
         // Extract guid (release ID)
-        const guidMatch = itemXml.match(/<guid[^>]*>([^<]*)<\/guid>/i);
+        const guidRegex = /<guid[^>]*>([^<]*)<\/guid>/i;
+        const guidMatch = guidRegex.exec(itemXml);
         const id = guidMatch ? guidMatch[1] : "";
 
         // Extract size from enclosure or size tag
         let size = 0;
-        const enclosureMatch = itemXml.match(
-            /<enclosure[^>]*length="(\d+)"[^>]*>/i
-        );
+        const enclosureRegex = /<enclosure[^>]*length="(\d+)"[^>]*>/i;
+        const enclosureMatch = enclosureRegex.exec(itemXml);
         if (enclosureMatch) {
-            size = parseInt(enclosureMatch[1], 10);
+            size = Number.parseInt(enclosureMatch[1], 10);
         } else {
-            const sizeMatch = itemXml.match(/<size>(\d+)<\/size>/i);
+            const sizeRegex = /<size>(\d+)<\/size>/i;
+            const sizeMatch = sizeRegex.exec(itemXml);
             if (sizeMatch) {
-                size = parseInt(sizeMatch[1], 10);
+                size = Number.parseInt(sizeMatch[1], 10);
             }
         }
 
         // Extract NZB URL from link or enclosure
-        const linkMatch = itemXml.match(/<link>([^<]*)<\/link>/i);
-        const enclosureUrlMatch = itemXml.match(
-            /<enclosure[^>]*url="([^"]*)"[^>]*>/i
-        );
+        const linkRegex = /<link>([^<]*)<\/link>/i;
+        const linkMatch = linkRegex.exec(itemXml);
+        const enclosureUrlRegex = /<enclosure[^>]*url="([^"]*)"[^>]*>/i;
+        const enclosureUrlMatch = enclosureUrlRegex.exec(itemXml);
         const nzb_url = enclosureUrlMatch?.[1] ?? linkMatch?.[1] ?? "";
 
         if (id && title) {
@@ -152,29 +155,51 @@ function getQualityScore(
     let score = 0;
 
     // Quality matching
-    if (release.quality === preference) {
-        score += 100;
-    } else if (release.quality === "1080p") {
-        score += 80;
-    } else if (release.quality === "720p") {
-        score += 60;
-    } else if (release.quality === "4K") {
-        score += 50; // 4K can be too large, slightly lower default score
+    switch (release.quality) {
+        case preference: {
+            score += 100;
+            break;
+        }
+        case "1080p": {
+            score += 80;
+            break;
+        }
+        case "720p": {
+            score += 60;
+            break;
+        }
+        case "4K": {
+            score += 50; // 4K can be too large, slightly lower default score
+            break;
+        }
+        default: {
+            break;
+        }
     }
 
     // Source preference (BluRay > WEB-DL > others > CAM/HDTS)
-    if (release.source === "BluRay") {
-        score += 30;
-    } else if (release.source === "WEB-DL") {
-        score += 25;
-    } else if (release.source === "WEBRip") {
-        score += 20;
-    } else if (release.source === "HDTV") {
-        score += 15;
-    } else if (release.source === "DVD") {
-        score += 10;
-    } else if (release.source === "CAM" || release.source === "HDTS") {
-        score -= 50; // Heavily penalize cam/telesync
+    switch (release.source) {
+        case "BluRay":
+            score += 30;
+            break;
+        case "WEB-DL":
+            score += 25;
+            break;
+        case "WEBRip":
+            score += 20;
+            break;
+        case "HDTV":
+            score += 15;
+            break;
+        case "DVD":
+            score += 10;
+            break;
+        case "CAM":
+        case "HDTS":
+            score -= 50; // Heavily penalize cam/telesync
+            break;
+        default:
+            break;
     }
 
     // Codec preference (x265 for smaller size, x264 for compatibility)
@@ -209,7 +234,7 @@ export async function searchReleases(
         ? imdbId.replace("tt", "")
         : imdbId;
 
-    const url = `${NZBGEEK_BASE_URL}?t=movie&imdbid=${cleanImdbId}&apikey=${apiKey}`;
+    const url = `${NZBGEEK_BASE_URL}?t=movie&imdbid=${String(cleanImdbId)}&apikey=${String(apiKey)}`;
 
     const response = await fetch(url, {
         headers: {
@@ -232,12 +257,12 @@ export async function searchReleases(
     }));
 
     // Sort by quality preference (default 1080p)
-    releases.sort(
+    const sortedReleases = releases.toSorted(
         (a, b) => getQualityScore(b, "1080p") - getQualityScore(a, "1080p")
     );
 
     // Limit to ~20 results
-    return releases.slice(0, 20);
+    return sortedReleases.slice(0, 20);
 }
 
 /**
@@ -246,8 +271,8 @@ export async function searchReleases(
 export function selectBestRelease(
     releases: UsenetRelease[],
     preference: QualityPreference = "1080p"
-): UsenetRelease | null {
-    if (releases.length === 0) return null;
+): UsenetRelease | undefined {
+    if (releases.length === 0) return undefined;
 
     // Sort by quality score for given preference
     const sorted = [...releases].sort(
@@ -264,6 +289,6 @@ export function selectBestRelease(
 export function findReleaseById(
     releases: UsenetRelease[],
     releaseId: string
-): UsenetRelease | null {
-    return releases.find((r) => r.id === releaseId) ?? null;
+): UsenetRelease | undefined {
+    return releases.find((r) => r.id === releaseId);
 }

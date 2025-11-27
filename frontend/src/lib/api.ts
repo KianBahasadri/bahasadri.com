@@ -52,6 +52,7 @@ import type {
     StreamResponse,
     WatchHistoryResponse,
 } from "../types/movies-on-demand";
+import type { UploadResponse, FileListResponse } from "../types/file-hosting";
 
 const API_BASE_URL =
     import.meta.env.MODE === "production"
@@ -230,36 +231,47 @@ export const pollWhatsAppMessagesSince = async (
     since: number
 ): Promise<WhatsAppMessagesSinceResponse> => {
     const response = await fetch(
-        `${API_BASE_URL}/whatsapp-messenger/messages-since?since=${String(since)}`
+        `${API_BASE_URL}/whatsapp-messenger/messages-since?since=${String(
+            since
+        )}`
     );
     if (!response.ok) throw new Error("Failed to poll messages");
     return response.json() as Promise<WhatsAppMessagesSinceResponse>;
 };
 
-export const fetchWhatsAppThreads = async (): Promise<WhatsAppThreadListResponse> => {
-    const response = await fetch(`${API_BASE_URL}/whatsapp-messenger/threads`);
-    if (!response.ok) throw new Error("Failed to fetch threads");
-    return response.json() as Promise<WhatsAppThreadListResponse>;
-};
+export const fetchWhatsAppThreads =
+    async (): Promise<WhatsAppThreadListResponse> => {
+        const response = await fetch(
+            `${API_BASE_URL}/whatsapp-messenger/threads`
+        );
+        if (!response.ok) throw new Error("Failed to fetch threads");
+        return response.json() as Promise<WhatsAppThreadListResponse>;
+    };
 
-export const fetchWhatsAppContacts = async (): Promise<WhatsAppContactListResponse> => {
-    const response = await fetch(`${API_BASE_URL}/whatsapp-messenger/contacts`);
-    if (!response.ok) throw new Error("Failed to fetch contacts");
-    return response.json() as Promise<WhatsAppContactListResponse>;
-};
+export const fetchWhatsAppContacts =
+    async (): Promise<WhatsAppContactListResponse> => {
+        const response = await fetch(
+            `${API_BASE_URL}/whatsapp-messenger/contacts`
+        );
+        if (!response.ok) throw new Error("Failed to fetch contacts");
+        return response.json() as Promise<WhatsAppContactListResponse>;
+    };
 
 export const createWhatsAppContact = async (
     phoneNumber: string,
     displayName: string
 ): Promise<WhatsAppContactMutationResult> => {
-    const response = await fetch(`${API_BASE_URL}/whatsapp-messenger/contacts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            phoneNumber,
-            displayName,
-        } satisfies WhatsAppContactCreatePayload),
-    });
+    const response = await fetch(
+        `${API_BASE_URL}/whatsapp-messenger/contacts`,
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                phoneNumber,
+                displayName,
+            } satisfies WhatsAppContactCreatePayload),
+        }
+    );
 
     if (!response.ok) {
         const error = (await response.json()) as { error?: string };
@@ -384,12 +396,6 @@ export const generateToken = async (
     customParticipantId?: string,
     presetName?: string
 ): Promise<GenerateTokenResponse> => {
-    console.log("[api] generateToken: Called with:", {
-        meetingId,
-        name,
-        customParticipantId,
-        presetName,
-    });
     const body: GenerateTokenRequest = {
         meeting_id: meetingId,
     };
@@ -402,26 +408,13 @@ export const generateToken = async (
     if (presetName) {
         body.preset_name = presetName;
     }
-    console.log("[api] generateToken: Request body:", body);
-    console.log(
-        "[api] generateToken: Fetching from:",
-        `${API_BASE_URL}/video-call/token`
-    );
     const response = await fetch(`${API_BASE_URL}/video-call/token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
     });
 
-    console.log(
-        "[api] generateToken: Response status:",
-        response.status,
-        response.statusText
-    );
     if (!response.ok) {
-        console.error(
-            "[api] generateToken: Response not OK, calling handleApiError"
-        );
         await handleApiError(
             response,
             "generateToken",
@@ -430,29 +423,13 @@ export const generateToken = async (
     }
 
     const json = (await response.json()) as GenerateTokenResponse;
-    console.log("[api] generateToken: Response JSON received:", {
-        hasAuthToken: !!json.auth_token,
-        tokenLength: json.auth_token?.length,
-    });
     return json;
 };
 
 export const listSessions = async (): Promise<ListSessionsResponse> => {
-    console.log(
-        "[api] listSessions: Fetching from:",
-        `${API_BASE_URL}/video-call/sessions`
-    );
     const response = await fetch(`${API_BASE_URL}/video-call/sessions`);
 
-    console.log(
-        "[api] listSessions: Response status:",
-        response.status,
-        response.statusText
-    );
     if (!response.ok) {
-        console.error(
-            "[api] listSessions: Response not OK, calling handleApiError"
-        );
         await handleApiError(
             response,
             "listSessions",
@@ -461,10 +438,6 @@ export const listSessions = async (): Promise<ListSessionsResponse> => {
     }
 
     const json = (await response.json()) as ListSessionsResponse;
-    console.log("[api] listSessions: Response JSON received:", {
-        sessionCount: json.sessions?.length ?? 0,
-        sessions: json.sessions,
-    });
     return json;
 };
 
@@ -519,12 +492,12 @@ export const deleteMeeting = async (
 
 export const searchMovies = async (
     query: string,
-    page: number = 1
+    page = 1
 ): Promise<MovieSearchResponse> => {
     const response = await fetch(
         `${API_BASE_URL}/movies-on-demand/search?query=${encodeURIComponent(
             query
-        )}&page=${page}`,
+        )}&page=${String(page)}`,
         {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -543,10 +516,10 @@ export const searchMovies = async (
 };
 
 export const getPopularMovies = async (
-    page: number = 1
+    page = 1
 ): Promise<MovieSearchResponse> => {
     const response = await fetch(
-        `${API_BASE_URL}/movies-on-demand/popular?page=${page}`,
+        `${API_BASE_URL}/movies-on-demand/popular?page=${String(page)}`,
         {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -564,11 +537,9 @@ export const getPopularMovies = async (
     return response.json() as Promise<MovieSearchResponse>;
 };
 
-export const getTopMovies = async (
-    page: number = 1
-): Promise<MovieSearchResponse> => {
+export const getTopMovies = async (page = 1): Promise<MovieSearchResponse> => {
     const response = await fetch(
-        `${API_BASE_URL}/movies-on-demand/top?page=${page}`,
+        `${API_BASE_URL}/movies-on-demand/top?page=${String(page)}`,
         {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -588,7 +559,7 @@ export const getTopMovies = async (
 
 export const getMovieDetails = async (id: number): Promise<MovieDetails> => {
     const response = await fetch(
-        `${API_BASE_URL}/movies-on-demand/movies/${id}`,
+        `${API_BASE_URL}/movies-on-demand/movies/${String(id)}`,
         {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -610,7 +581,7 @@ export const getMovieReleases = async (
     id: number
 ): Promise<ReleasesResponse> => {
     const response = await fetch(
-        `${API_BASE_URL}/movies-on-demand/movies/${id}/releases`,
+        `${API_BASE_URL}/movies-on-demand/movies/${String(id)}/releases`,
         {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -630,10 +601,12 @@ export const getMovieReleases = async (
 
 export const getSimilarMovies = async (
     id: number,
-    page: number = 1
+    page = 1
 ): Promise<SimilarMoviesResponse> => {
     const response = await fetch(
-        `${API_BASE_URL}/movies-on-demand/movies/${id}/similar?page=${page}`,
+        `${API_BASE_URL}/movies-on-demand/movies/${String(
+            id
+        )}/similar?page=${String(page)}`,
         {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -656,7 +629,7 @@ export const fetchMovie = async (
     request: FetchMovieRequest
 ): Promise<FetchMovieResponse> => {
     const response = await fetch(
-        `${API_BASE_URL}/movies-on-demand/movies/${id}/fetch`,
+        `${API_BASE_URL}/movies-on-demand/movies/${String(id)}/fetch`,
         {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -665,11 +638,7 @@ export const fetchMovie = async (
     );
 
     if (!response.ok) {
-        await handleApiError(
-            response,
-            "fetchMovie",
-            "Failed to fetch movie"
-        );
+        await handleApiError(response, "fetchMovie", "Failed to fetch movie");
     }
 
     return response.json() as Promise<FetchMovieResponse>;
@@ -702,11 +671,7 @@ export const listActiveJobs = async (): Promise<{ jobs: JobStatus[] }> => {
     });
 
     if (!response.ok) {
-        await handleApiError(
-            response,
-            "listActiveJobs",
-            "Failed to list jobs"
-        );
+        await handleApiError(response, "listActiveJobs", "Failed to list jobs");
     }
 
     return response.json() as Promise<{ jobs: JobStatus[] }>;
@@ -716,7 +681,7 @@ export const getMovieStream = async (
     movieId: number
 ): Promise<StreamResponse> => {
     const response = await fetch(
-        `${API_BASE_URL}/movies-on-demand/movies/${movieId}/stream`,
+        `${API_BASE_URL}/movies-on-demand/movies/${String(movieId)}/stream`,
         {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -735,11 +700,13 @@ export const getMovieStream = async (
 };
 
 export const getWatchHistory = async (
-    limit: number = 20,
-    offset: number = 0
+    limit = 20,
+    offset = 0
 ): Promise<WatchHistoryResponse> => {
     const response = await fetch(
-        `${API_BASE_URL}/movies-on-demand/history?limit=${limit}&offset=${offset}`,
+        `${API_BASE_URL}/movies-on-demand/history?limit=${String(
+            limit
+        )}&offset=${String(offset)}`,
         {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -755,4 +722,57 @@ export const getWatchHistory = async (
     }
 
     return response.json() as Promise<WatchHistoryResponse>;
+};
+
+export const uploadFile = async (
+    file: File,
+    isPublic = true
+): Promise<UploadResponse> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("isPublic", String(isPublic));
+
+    const response = await fetch(`${API_BASE_URL}/file-hosting/upload`, {
+        method: "POST",
+        body: formData,
+    });
+
+    if (!response.ok) {
+        await handleApiError(response, "uploadFile", "Failed to upload file");
+    }
+
+    return response.json() as Promise<UploadResponse>;
+};
+
+export const fetchFileList = async (
+    cursor?: string,
+    limit?: number
+): Promise<FileListResponse> => {
+    const params = new URLSearchParams();
+    if (cursor) {
+        params.append("cursor", cursor);
+    }
+    if (limit !== undefined) {
+        params.append("limit", String(limit));
+    }
+
+    const queryString = params.toString();
+    const url = queryString
+        ? `${API_BASE_URL}/file-hosting/files?${queryString}`
+        : `${API_BASE_URL}/file-hosting/files`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+        await handleApiError(
+            response,
+            "fetchFileList",
+            "Failed to fetch file list"
+        );
+    }
+
+    return response.json() as Promise<FileListResponse>;
 };

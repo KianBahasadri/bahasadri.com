@@ -1,5 +1,5 @@
 import React from "react";
-import type { IceTestStatus as IceTestStatusType } from "../../hooks/useIceServerTest";
+import type { IceTestStatus as IceTestStatusType } from "../../hooks/use-ice-server-test";
 import styles from "./IceTestStatus.module.css";
 
 interface IceTestStatusProps {
@@ -20,31 +20,40 @@ export default function IceTestStatus({
     const getStatusIcon = (): string => {
         switch (status) {
             case "pending":
-            case "testing":
+            case "testing": {
                 return "⏳";
-            case "success":
+            }
+            case "success": {
                 return "✅";
-            case "warning":
+            }
+            case "warning": {
                 return "⚠️";
-            case "failed":
+            }
+            case "failed": {
                 return "❌";
+            }
         }
     };
 
     const getStatusText = (): string => {
         switch (status) {
-            case "pending":
+            case "pending": {
                 return "Checking network...";
-            case "testing":
+            }
+            case "testing": {
                 return "Testing connectivity...";
-            case "success":
+            }
+            case "success": {
                 return hasStun ? "Network OK" : "Local network only";
-            case "warning":
+            }
+            case "warning": {
                 return isFirefox
                     ? "Firefox may have issues"
                     : "Limited connectivity";
-            case "failed":
+            }
+            case "failed": {
                 return "Network issue detected";
+            }
         }
     };
 
@@ -68,8 +77,8 @@ export default function IceTestStatus({
                 </span>
             ) : null}
             {showError ? (
-                <span className={styles["details"]} title={error}>
-                    - {error}
+                <span className={styles["details"]} title={error ?? undefined}>
+                    - {error ?? ""}
                 </span>
             ) : null}
             {(status === "failed" || status === "warning") && onRetry ? (

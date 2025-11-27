@@ -127,4 +127,19 @@ describe("movies-on-demand API Contract Tests", () => {
         const formattedRes = await formatResponseForValidation(res, "/api/movies-on-demand/movies/550/similar", "GET");
         expect(formattedRes).toSatisfyApiSpec(openapiSpec);
     });
+
+    it("reportJobProgress satisfies OpenAPI spec", async () => {
+        
+        const res = await app.request("/api/movies-on-demand/internal/progress", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+        "job_id": "",
+        "status": ""
+}),
+        });
+        expect([200, 400, 404, 500]).toContain(res.status);
+        const formattedRes = await formatResponseForValidation(res, "/api/movies-on-demand/internal/progress", "POST");
+        expect(formattedRes).toSatisfyApiSpec(openapiSpec);
+    });
 });

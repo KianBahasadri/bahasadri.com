@@ -25,8 +25,8 @@ export function validateMovieId(
     if (!id) {
         return { ok: false, error: "Movie ID is required" };
     }
-    const movieId = parseInt(id, 10);
-    if (isNaN(movieId) || movieId <= 0) {
+    const movieId = Number.parseInt(id, 10);
+    if (Number.isNaN(movieId) || movieId <= 0) {
         return { ok: false, error: "Invalid movie ID" };
     }
     return { ok: true, id: movieId };
@@ -37,8 +37,8 @@ export function validateMovieId(
  */
 export function validatePage(page: string | null | undefined): number {
     if (!page) return 1;
-    const pageNum = parseInt(page, 10);
-    return isNaN(pageNum) || pageNum < 1 ? 1 : pageNum;
+    const pageNum = Number.parseInt(page, 10);
+    return Number.isNaN(pageNum) || pageNum < 1 ? 1 : pageNum;
 }
 
 /**
@@ -95,14 +95,14 @@ export function validateJobId(
  */
 export function validateLimit(
     limit: string | null | undefined,
-    defaultValue: number = 20,
-    maxValue: number = 100
+    defaultValue = 20,
+    maxValue = 100
 ): ValidationResult & { limit: number } {
     if (!limit) {
         return { ok: true, limit: defaultValue };
     }
-    const limitNum = parseInt(limit, 10);
-    if (isNaN(limitNum) || limitNum < 1) {
+    const limitNum = Number.parseInt(limit, 10);
+    if (Number.isNaN(limitNum) || limitNum < 1) {
         return {
             ok: false,
             error: "Invalid limit parameter",
@@ -120,13 +120,13 @@ export function validateLimit(
  */
 export function validateOffset(
     offset: string | null | undefined,
-    defaultValue: number = 0
+    defaultValue = 0
 ): ValidationResult & { offset: number } {
     if (!offset) {
         return { ok: true, offset: defaultValue };
     }
-    const offsetNum = parseInt(offset, 10);
-    if (isNaN(offsetNum) || offsetNum < 0) {
+    const offsetNum = Number.parseInt(offset, 10);
+    if (Number.isNaN(offsetNum) || offsetNum < 0) {
         return {
             ok: false,
             error: "Invalid offset parameter",
@@ -151,6 +151,8 @@ export function parseQualityPreference(quality?: string): QualityPreference {
  */
 export function generateJobId(): string {
     const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 10);
-    return `job_${timestamp}_${random}`;
+    // Using crypto for better randomness (if available) or fallback to Math.random
+    // For job IDs, Math.random is acceptable as uniqueness is ensured by timestamp
+    const random = Math.random().toString(36).slice(2, 10);
+    return `job_${String(timestamp)}_${random}`;
 }

@@ -80,29 +80,29 @@ export interface TMDBMovie {
 }
 
 export interface TMDBMovieDetails extends TMDBMovie {
-    runtime?: number | null;
-    genres?: Array<{ id: number; name: string }>;
-    production_companies?: Array<{
+    runtime?: number;
+    genres?: { id: number; name: string }[];
+    production_companies?: {
         id: number;
         name: string;
         logo_path: string | null;
-    }>;
+    }[];
     budget?: number;
     revenue?: number;
-    imdb_id?: string | null;
+    imdb_id?: string | undefined;
     credits?: {
-        cast: Array<{
+        cast: {
             id: number;
             name: string;
             character: string;
             profile_path: string | null;
-        }>;
-        crew: Array<{
+        }[];
+        crew: {
             id: number;
             name: string;
             job: string;
             profile_path: string | null;
-        }>;
+        }[];
     };
 }
 
@@ -125,11 +125,11 @@ export interface NZBGeekRelease {
 }
 
 export interface ParsedReleaseMetadata {
-    quality: string | null;
-    resolution: string | null;
-    codec: string | null;
-    source: string | null;
-    group: string | null;
+    quality: string | undefined;
+    resolution: string | undefined;
+    codec: string | undefined;
+    source: string | undefined;
+    group: string | undefined;
 }
 
 export interface UsenetRelease extends NZBGeekRelease, ParsedReleaseMetadata {}
@@ -157,36 +157,36 @@ export interface Movie {
 }
 
 export interface MovieDetails extends Movie {
-    runtime?: number | null;
-    genres?: Array<{ id: number; name: string }>;
-    production_companies?: Array<{
+    runtime?: number | undefined;
+    genres?: { id: number; name: string }[];
+    production_companies?: {
         id: number;
         name: string;
         logo_path: string | null;
-    }>;
+    }[];
     budget?: number;
     revenue?: number;
-    imdb_id?: string | null;
+    imdb_id?: string | undefined;
     credits?: {
-        cast: Array<{
+        cast: {
             id: number;
             name: string;
             character: string;
             profile_path: string | null;
-        }>;
-        crew: Array<{
+        }[];
+        crew: {
             id: number;
             name: string;
             job: string;
             profile_path: string | null;
-        }>;
+        }[];
     };
     job_status?: {
         job_id: string;
         status: JobStatus;
         progress: number | null;
         error_message: string | null;
-    } | null;
+    } | undefined;
 }
 
 export interface MovieSearchResponse {

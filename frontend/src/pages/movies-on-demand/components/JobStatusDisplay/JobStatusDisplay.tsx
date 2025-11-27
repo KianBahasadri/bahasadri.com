@@ -10,39 +10,53 @@ interface JobStatusDisplayProps {
 
 function getStatusColor(status: JobStatus["status"]): string {
     switch (status) {
-        case "queued":
+        case "queued": {
             return "var(--syringe-metal)";
-        case "downloading":
+        }
+        case "downloading": {
             return "var(--terminal-cyan)";
-        case "preparing":
+        }
+        case "preparing": {
             return "var(--warning-yellow)";
-        case "ready":
+        }
+        case "ready": {
             return "var(--terminal-green)";
-        case "error":
+        }
+        case "error": {
             return "var(--error-red)";
-        case "deleted":
+        }
+        case "deleted": {
             return "var(--syringe-metal)";
-        default:
+        }
+        default: {
             return "var(--syringe-metal)";
+        }
     }
 }
 
 function getStatusLabel(status: JobStatus["status"]): string {
     switch (status) {
-        case "queued":
+        case "queued": {
             return "Queued";
-        case "downloading":
+        }
+        case "downloading": {
             return "Downloading";
-        case "preparing":
+        }
+        case "preparing": {
             return "Preparing";
-        case "ready":
+        }
+        case "ready": {
             return "Ready";
-        case "error":
+        }
+        case "error": {
             return "Error";
-        case "deleted":
+        }
+        case "deleted": {
             return "Deleted";
-        default:
+        }
+        default: {
             return "Unknown";
+        }
     }
 }
 
@@ -77,14 +91,11 @@ export default function JobStatusDisplay({
                 >
                     {statusLabel}
                 </span>
-                {job.release_title && (
-                    <span className={styles["releaseTitle"]}>
+                {job.release_title ? <span className={styles["releaseTitle"]}>
                         {job.release_title}
-                    </span>
-                )}
+                    </span> : null}
             </div>
-            {showProgress && (
-                <div className={styles["progressContainer"]}>
+            {showProgress ? <div className={styles["progressContainer"]}>
                     <div className={styles["progressBar"]}>
                         <div
                             className={styles["progressFill"]}
@@ -99,21 +110,16 @@ export default function JobStatusDisplay({
                             ? `${job.progress.toFixed(1)}%`
                             : "0%"}
                     </span>
-                </div>
-            )}
-            {job.status === "error" && job.error_message && (
-                <div className={styles["errorMessage"]}>
+                </div> : null}
+            {job.status === "error" && job.error_message ? <div className={styles["errorMessage"]}>
                     <strong>Error:</strong> {job.error_message}
-                </div>
-            )}
-            {job.status === "ready" && onWatchClick && (
-                <button
+                </div> : null}
+            {job.status === "ready" && onWatchClick ? <button
                     className={styles["watchButton"]}
                     onClick={onWatchClick}
                 >
                     Watch
-                </button>
-            )}
+                </button> : null}
         </div>
     );
 }

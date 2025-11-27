@@ -5,11 +5,11 @@ import styles from "./NotFound.module.css";
 
 export default function NotFound(): React.JSX.Element {
     const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
-    const [trail, setTrail] = useState<Array<{ x: number; y: number; id: number }>>([]);
+    const [trail, setTrail] = useState<{ x: number; y: number; id: number }[]>([]);
     const trailIdRef = useRef(0);
     const containerRef = useRef<HTMLDivElement>(null);
     const hasInteractedRef = useRef(false);
-    const interactionListenersRef = useRef<Array<() => void>>([]);
+    const interactionListenersRef = useRef<(() => void)[]>([]);
     const isPlayingRef = useRef(false);
     const synthRef = useRef<Tone.PolySynth | null>(null);
     const reverbRef = useRef<Tone.Reverb | null>(null);
@@ -34,10 +34,10 @@ export default function NotFound(): React.JSX.Element {
             });
         };
 
-        window.addEventListener("mousemove", handleMouseMove);
+        globalThis.addEventListener("mousemove", handleMouseMove);
 
-        return () => {
-            window.removeEventListener("mousemove", handleMouseMove);
+        return (): void => {
+            globalThis.removeEventListener("mousemove", handleMouseMove);
         };
     }, []);
 
@@ -74,7 +74,8 @@ export default function NotFound(): React.JSX.Element {
                 compressorRef.current = null;
             }
 
-            Tone.Transport.cancel();
+            const transport = Tone.getTransport();
+            transport.cancel();
             isPlayingRef.current = false;
         };
 
@@ -132,23 +133,27 @@ export default function NotFound(): React.JSX.Element {
             autoFilter.connect(reverb);
             reverb.toDestination();
 
-            const activeSources: Array<Tone.ToneEvent> = [];
+            const activeSources: number[] = [];
+            const transport = Tone.getTransport();
 
             const play = (notes: string[]): void => {
-                const note =
-                    notes[Math.floor(Math.random() * notes.length)];
+                const noteIndex = Math.floor(Math.random() * notes.length);
+                const note = notes[noteIndex];
+                if (!note) {
+                    return;
+                }
                 const delay = 1 + Math.random() * 5;
 
-                synth.triggerAttackRelease(note, "8n", `+${delay}`);
+                synth.triggerAttackRelease(note, "8n", `+${String(delay)}`);
 
                 const nextDelay =
                     4 + Math.random() * 5 - 2.5;
 
-                const event = Tone.Transport.scheduleOnce(() => {
+                const event = transport.scheduleOnce(() => {
                     if (isPlayingRef.current) {
                         play(notes);
                     }
-                }, `+${nextDelay}`);
+                }, `+${String(nextDelay)}`);
 
                 activeSources.push(event);
             };
@@ -162,19 +167,19 @@ export default function NotFound(): React.JSX.Element {
             schedule();
 
             cleanupRef.current = (): void => {
-                activeSources.forEach((event) => {
-                    Tone.Transport.clear(event);
-                });
+                for (const event of activeSources) {
+                    transport.clear(event);
+                }
                 synth.releaseAll();
             };
 
-            Tone.Transport.start();
+            transport.start();
             isPlayingRef.current = true;
             hasInteractedRef.current = true;
 
-            interactionListenersRef.current.forEach((cleanup) => {
+            for (const cleanup of interactionListenersRef.current) {
                 cleanup();
-            });
+            }
             interactionListenersRef.current = [];
         };
 
@@ -190,17 +195,17 @@ export default function NotFound(): React.JSX.Element {
             }
 
             const events = ["click", "keydown", "touchstart", "mousedown"];
-            const cleanups: Array<() => void> = [];
+            const cleanups: (() => void)[] = [];
 
-            events.forEach((eventType) => {
+            for (const eventType of events) {
                 const handler = (): void => {
                     handleInteraction();
                 };
-                window.addEventListener(eventType, handler);
+                globalThis.addEventListener(eventType, handler);
                 cleanups.push(() => {
-                    window.removeEventListener(eventType, handler);
+                    globalThis.removeEventListener(eventType, handler);
                 });
-            });
+            }
 
             interactionListenersRef.current = cleanups;
         };
@@ -210,18 +215,18 @@ export default function NotFound(): React.JSX.Element {
 
             try {
                 await playMusic();
-            } catch (error) {
+            } catch {
                 // If autoplay fails, listeners are already set up
             }
         };
 
         void tryPlayMusic();
 
-        return () => {
+        return (): void => {
             stopMusic();
-            interactionListenersRef.current.forEach((cleanup) => {
+            for (const cleanup of interactionListenersRef.current) {
                 cleanup();
-            });
+            }
             interactionListenersRef.current = [];
         };
     }, []);
@@ -234,10 +239,10 @@ export default function NotFound(): React.JSX.Element {
                     key={point.id}
                     className={styles["cursorTrail"]}
                     style={{
-                        left: `${point.x}px`,
-                        top: `${point.y}px`,
+                        left: `${String(point.x)}px`,
+                        top: `${String(point.y)}px`,
                         opacity: (index + 1) / trail.length * 0.6,
-                        transform: `scale(${(index + 1) / trail.length})`,
+                        transform: `scale(${String((index + 1) / trail.length)})`,
                     }}
                 />
             ))}
@@ -246,8 +251,8 @@ export default function NotFound(): React.JSX.Element {
             <div
                 className={styles["cursorFollower"]}
                 style={{
-                    left: `${cursorPosition.x}px`,
-                    top: `${cursorPosition.y}px`,
+                    left: `${String(cursorPosition.x)}px`,
+                    top: `${String(cursorPosition.y)}px`,
                 }}
             />
 
@@ -293,11 +298,11 @@ export default function NotFound(): React.JSX.Element {
                             key={`float-${String(i)}`}
                             className={styles["floatingElement"]}
                             style={{
-                                left: `${(i * 7) % 100}%`,
-                                animationDelay: `${i * 0.3}s`,
+                                left: `${String((i * 7) % 100)}%`,
+                                animationDelay: `${String(i * 0.3)}s`,
                             }}
                         >
-                            {i % 3 === 0 ? "404" : i % 3 === 1 ? "💔" : "😿"}
+                            {(i % 3 === 0 ? "404" : (i % 3 === 1 ? "💔" : "😿"))}
                         </div>
                     ))}
                 </div>
@@ -321,7 +326,7 @@ export default function NotFound(): React.JSX.Element {
                     {/* Message Section */}
                     <section className={styles["messageSection"]}>
                         <p className={styles["message"]}>
-                            Oopsie~! This page doesn't exist... 🥺
+                            Oopsie~! This page doesn&apos;t exist... 🥺
                         </p>
                         <p className={styles["subMessage"]}>
                             Did you get lost in the void? Let me help you find your way back! ✨

@@ -27,7 +27,7 @@ export default function MovieDetails(): React.JSX.Element {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const movieId = id ? parseInt(id, 10) : 0;
+    const movieId = id ? Number.parseInt(id, 10) : 0;
 
     const [fetchMode, setFetchMode] = useState<"auto" | "manual">("auto");
     const [selectedRelease, setSelectedRelease] = useState<UsenetRelease | null>(null);
@@ -70,26 +70,25 @@ export default function MovieDetails(): React.JSX.Element {
     });
 
     const fetchMovieMutation = useMutation({
-        mutationFn: (request: FetchMovieRequest) =>
-            fetchMovie(movieId, request),
+        mutationFn: async (request: FetchMovieRequest) => {
+            return await fetchMovie(movieId, request);
+        },
         onSuccess: (data) => {
-            queryClient.invalidateQueries({
+            void queryClient.invalidateQueries({
                 queryKey: queryKeys.details(movieId),
             });
             if (data.job_id) {
-                queryClient.invalidateQueries({
+                void queryClient.invalidateQueries({
                     queryKey: queryKeys.jobStatus(data.job_id),
                 });
             }
         },
     });
 
-    const handleFetchClick = () => {
-        if (fetchMode === "manual") {
-            if (!selectedRelease) {
-                setShowReleaseSelector(true);
-                return;
-            }
+    const handleFetchClick = (): void => {
+        if (fetchMode === "manual" && !selectedRelease) {
+            setShowReleaseSelector(true);
+            return;
         }
 
         const request: FetchMovieRequest = {
@@ -101,17 +100,17 @@ export default function MovieDetails(): React.JSX.Element {
         fetchMovieMutation.mutate(request);
     };
 
-    const handleReleaseSelect = (release: UsenetRelease) => {
+    const handleReleaseSelect = (release: UsenetRelease): void => {
         setSelectedRelease(release);
         setShowReleaseSelector(false);
     };
 
-    const handleWatchClick = () => {
-        navigate(`/movies-on-demand/movies/${movieId}/watch`);
+    const handleWatchClick = (): void => {
+        void navigate(`/movies-on-demand/movies/${String(movieId)}/watch`);
     };
 
-    const handleSimilarMovieClick = (similarMovieId: number) => {
-        navigate(`/movies-on-demand/movies/${similarMovieId}`);
+    const handleSimilarMovieClick = (similarMovieId: number): void => {
+        void navigate(`/movies-on-demand/movies/${String(similarMovieId)}`);
     };
 
     if (isDetailsLoading || !movieDetails) {
@@ -127,13 +126,13 @@ export default function MovieDetails(): React.JSX.Element {
     const currentJob = jobStatus;
     const isReady = currentJob?.status === "ready";
 
-    const handleBackClick = () => {
-        navigate("/movies-on-demand");
+    const handleBackClick = (): void => {
+        void navigate("/movies-on-demand");
     };
 
     return (
         <div className={styles["container"]}>
-            {showReleaseSelector && (
+            {showReleaseSelector ? (
                 <ReleaseSelector
                     releases={releasesData?.releases ?? []}
                     isLoading={isReleasesLoading}
@@ -142,7 +141,7 @@ export default function MovieDetails(): React.JSX.Element {
                         setShowReleaseSelector(false);
                     }}
                 />
-            )}
+            ) : null}
             <div
                 className={styles["hero"]}
                 style={{
@@ -165,23 +164,23 @@ export default function MovieDetails(): React.JSX.Element {
                     <div className={styles["heroInfo"]}>
                         <h1 className={styles["title"]}>{movieDetails.title}</h1>
                         <div className={styles["meta"]}>
-                            {movieDetails.release_date && (
+                            {movieDetails.release_date ? (
                                 <span>
                                     {new Date(
                                         movieDetails.release_date
                                     ).getFullYear()}
                                 </span>
-                            )}
-                            {movieDetails.runtime && (
-                                <span>{movieDetails.runtime} min</span>
-                            )}
-                            {movieDetails.vote_average && (
+                            ) : null}
+                            {movieDetails.runtime ? (
+                                <span>{String(movieDetails.runtime)} min</span>
+                            ) : null}
+                            {movieDetails.vote_average ? (
                                 <span>
                                     ⭐ {movieDetails.vote_average.toFixed(1)}
                                 </span>
-                            )}
+                            ) : null}
                         </div>
-                        {movieDetails.genres && movieDetails.genres.length > 0 && (
+                        {movieDetails.genres && movieDetails.genres.length > 0 ? (
                             <div className={styles["genres"]}>
                                 {movieDetails.genres.map((genre) => (
                                     <span key={genre.id} className={styles["genre"]}>
@@ -189,12 +188,12 @@ export default function MovieDetails(): React.JSX.Element {
                                     </span>
                                 ))}
                             </div>
-                        )}
-                        {movieDetails.overview && (
+                        ) : null}
+                        {movieDetails.overview ? (
                             <p className={styles["overview"]}>
                                 {movieDetails.overview}
                             </p>
-                        )}
+                        ) : null}
                     </div>
                 </div>
             </div>
@@ -246,11 +245,11 @@ export default function MovieDetails(): React.JSX.Element {
                                 <option value="4K">4K</option>
                             </select>
                         )}
-                        {fetchMode === "manual" && selectedRelease && (
+                        {fetchMode === "manual" && selectedRelease ? (
                             <div className={styles["selectedRelease"]}>
                                 Selected: {selectedRelease.title}
                             </div>
-                        )}
+                        ) : null}
                         {fetchMode === "manual" && !selectedRelease && (
                             <button
                                 className={styles["selectReleaseButton"]}
@@ -273,16 +272,16 @@ export default function MovieDetails(): React.JSX.Element {
                             </button>
                         )}
                     </div>
-                    {(currentJob || jobId) && (
+                    {(currentJob || jobId) ? (
                         <JobStatusDisplay
                             job={currentJob ?? null}
                             isLoading={isJobStatusLoading}
-                            {...(isReady && { onWatchClick: handleWatchClick })}
+                            {...(isReady ? { onWatchClick: handleWatchClick } : {})}
                         />
-                    )}
+                    ) : null}
                 </section>
 
-                {movieDetails.credits && movieDetails.credits.cast.length > 0 && (
+                {movieDetails.credits && movieDetails.credits.cast.length > 0 ? (
                     <section className={styles["section"]}>
                         <h2 className={styles["sectionTitle"]}>Cast</h2>
                         <div className={styles["castGrid"]}>
@@ -311,9 +310,9 @@ export default function MovieDetails(): React.JSX.Element {
                             })}
                         </div>
                     </section>
-                )}
+                ) : null}
 
-                {similarData && similarData.results.length > 0 && (
+                {similarData && similarData.results.length > 0 ? (
                     <section className={styles["section"]}>
                         <h2 className={styles["sectionTitle"]}>Similar Movies</h2>
                         <div className={styles["similarGrid"]}>
@@ -328,7 +327,7 @@ export default function MovieDetails(): React.JSX.Element {
                             ))}
                         </div>
                     </section>
-                )}
+                ) : null}
             </div>
         </div>
     );

@@ -40,10 +40,10 @@ async function tmdbFetch<T>(
         if (response.status === 404) {
             throw new Error("NOT_FOUND");
         }
-        throw new Error(`TMDB_ERROR: ${response.status}`);
+        throw new Error(`TMDB_ERROR: ${String(response.status)}`);
     }
 
-    return response.json() as Promise<T>;
+    return response.json() as T;
 }
 
 /**
@@ -98,7 +98,7 @@ function transformSearchResponse(
     response: TMDBSearchResponse
 ): MovieSearchResponse {
     return {
-        results: response.results.map(transformMovie),
+        results: response.results.map((movie) => transformMovie(movie)),
         total_results: response.total_results,
         page: response.page,
         total_pages: response.total_pages,
@@ -111,14 +111,14 @@ function transformSearchResponse(
 export async function searchMovies(
     apiKey: string,
     query: string,
-    page: number = 1
+    page = 1
 ): Promise<MovieSearchResponse> {
     const response = await tmdbFetch<TMDBSearchResponse>(
         "/search/movie",
         apiKey,
         {
             query: encodeURIComponent(query),
-            page: page.toString(),
+            page: String(page),
         }
     );
     return transformSearchResponse(response);
@@ -129,13 +129,13 @@ export async function searchMovies(
  */
 export async function getPopularMovies(
     apiKey: string,
-    page: number = 1
+    page = 1
 ): Promise<MovieSearchResponse> {
     const response = await tmdbFetch<TMDBSearchResponse>(
         "/movie/popular",
         apiKey,
         {
-            page: page.toString(),
+            page: String(page),
         }
     );
     return transformSearchResponse(response);
@@ -146,13 +146,13 @@ export async function getPopularMovies(
  */
 export async function getTopRatedMovies(
     apiKey: string,
-    page: number = 1
+    page = 1
 ): Promise<MovieSearchResponse> {
     const response = await tmdbFetch<TMDBSearchResponse>(
         "/movie/top_rated",
         apiKey,
         {
-            page: page.toString(),
+            page: String(page),
         }
     );
     return transformSearchResponse(response);
@@ -182,9 +182,9 @@ export async function getSimilarMovies(
     page: number = 1
 ): Promise<MovieSearchResponse> {
     const response = await tmdbFetch<TMDBSearchResponse>(
-        `/movie/${movieId}/similar`,
+        `/movie/${String(movieId)}/similar`,
         apiKey,
-        { page: page.toString() }
+        { page: String(page) }
     );
     return transformSearchResponse(response);
 }
@@ -195,10 +195,10 @@ export async function getSimilarMovies(
 export async function getMovieImdbId(
     apiKey: string,
     movieId: number
-): Promise<string | null> {
+): Promise<string | undefined> {
     const details = await tmdbFetch<TMDBMovieDetails>(
-        `/movie/${movieId}`,
+        `/movie/${String(movieId)}`,
         apiKey
     );
-    return details.imdb_id ?? null;
+    return details.imdb_id;
 }

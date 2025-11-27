@@ -48,7 +48,7 @@ export async function sendWhatsApp(
         throw new Error(errorMessage);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { sid: string; status: string };
     return {
         sid: data.sid,
         status: data.status,

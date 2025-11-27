@@ -20,34 +20,34 @@ function formatDate(dateString: string): string {
 }
 
 export default function MeetingsList(): React.JSX.Element {
-    console.log("[MeetingsList] Component rendering");
+    console.warn("[MeetingsList] Component rendering");
     const navigate = useNavigate();
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ["video-call", "sessions"],
         queryFn: async () => {
-            console.log("[MeetingsList] listSessions: Fetching sessions...");
+            console.warn("[MeetingsList] listSessions: Fetching sessions...");
             try {
                 const result = await listSessions();
-                console.log(
+                console.warn(
                     "[MeetingsList] listSessions: Success, sessions:",
                     result
                 );
                 return result;
-            } catch (err) {
-                console.error("[MeetingsList] listSessions: Error:", err);
-                throw err;
+            } catch (error_) {
+                console.error("[MeetingsList] listSessions: Error:", error_);
+                throw error_;
             }
         },
         refetchInterval: 5000,
     });
-    console.log("[MeetingsList] Query state:", {
+    console.warn("[MeetingsList] Query state:", {
         isLoading,
         hasError: !!error,
         hasData: !!data,
     });
 
     if (isLoading) {
-        console.log("[MeetingsList] Render: Loading state");
+        console.warn("[MeetingsList] Render: Loading state");
         return (
             <div className={styles["container"]}>
                 <div className={styles["loading"]}>Loading meetings... ⏳</div>
@@ -65,7 +65,7 @@ export default function MeetingsList(): React.JSX.Element {
                         type="button"
                         className={styles["retryButton"]}
                         onClick={() => {
-                            console.log("[MeetingsList] Retry button clicked");
+                            console.warn("[MeetingsList] Retry button clicked");
                             void refetch();
                         }}
                     >
@@ -77,7 +77,7 @@ export default function MeetingsList(): React.JSX.Element {
     }
 
     const sessions: Session[] = data?.sessions ?? [];
-    console.log(
+    console.warn(
         "[MeetingsList] Render: Rendering sessions list, count:",
         sessions.length
     );
@@ -96,14 +96,14 @@ export default function MeetingsList(): React.JSX.Element {
                         <span className={styles["meetingDate"]}>
                             {formatDate(session.created_at)}
                         </span>
-                        {session.live_participants !== undefined ? (
+                        {session.live_participants === undefined ? null : (
                             <span className={styles["participantCount"]}>
                                 {session.live_participants} active
                                 {session.live_participants === 1
                                     ? " participant"
                                     : " participants"}
                             </span>
-                        ) : null}
+                        )}
                     </div>
                 </div>
                 <div className={styles["joinButtons"]}>
@@ -112,7 +112,7 @@ export default function MeetingsList(): React.JSX.Element {
                         className={styles["joinButton"]}
                         onClick={(e) => {
                             e.stopPropagation();
-                            console.log(
+                            console.warn(
                                 "[MeetingsList] Join clicked:",
                                 session.meeting_id
                             );
@@ -126,7 +126,7 @@ export default function MeetingsList(): React.JSX.Element {
         );
     };
 
-    console.log("[MeetingsList] Render: Rendering sessions list");
+    console.warn("[MeetingsList] Render: Rendering sessions list");
     return (
         <div className={styles["container"]}>
             <div className={styles["section"]}>

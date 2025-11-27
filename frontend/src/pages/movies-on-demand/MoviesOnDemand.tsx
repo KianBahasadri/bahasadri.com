@@ -64,7 +64,7 @@ export default function MoviesOnDemand(): React.JSX.Element {
 
     const { data: availableData, isLoading: isAvailableLoading } = useQuery({
         queryKey: queryKeys.available(),
-        queryFn: async (): Promise<Array<{ movie: Movie; job: JobStatus }>> => {
+        queryFn: async (): Promise<{ movie: Movie; job: JobStatus }[]> => {
             const jobsResponse = await listActiveJobs();
             const allJobs = jobsResponse.jobs.sort((a, b) => {
                 const dateA = new Date(a.created_at).getTime();
@@ -115,42 +115,55 @@ export default function MoviesOnDemand(): React.JSX.Element {
 
     const getCurrentMovies = (): Movie[] => {
         switch (activeView) {
-            case "search":
+            case "search": {
                 return searchData?.results ?? [];
-            case "popular":
+            }
+            case "popular": {
                 return popularData?.results ?? [];
-            case "top":
+            }
+            case "top": {
                 return topData?.results ?? [];
-            default:
+            }
+            default: {
                 return [];
+            }
         }
     };
 
     const getCurrentTotalPages = (): number => {
         switch (activeView) {
-            case "search":
+            case "search": {
                 return searchData?.total_pages ?? 0;
-            case "popular":
+            }
+            case "popular": {
                 return popularData?.total_pages ?? 0;
-            case "top":
+            }
+            case "top": {
                 return topData?.total_pages ?? 0;
-            default:
+            }
+            default: {
                 return 0;
+            }
         }
     };
 
     const getCurrentIsLoading = (): boolean => {
         switch (activeView) {
-            case "search":
+            case "search": {
                 return isSearchLoading;
-            case "popular":
+            }
+            case "popular": {
                 return isPopularLoading;
-            case "top":
+            }
+            case "top": {
                 return isTopLoading;
-            case "available":
+            }
+            case "available": {
                 return isAvailableLoading;
-            default:
+            }
+            default: {
                 return false;
+            }
         }
     };
 
@@ -212,7 +225,7 @@ export default function MoviesOnDemand(): React.JSX.Element {
                     {...(hasMoreHistory && { onLoadMore: handleHistoryLoadMore })}
                     hasMore={hasMoreHistory ?? false}
                 />
-            ) : activeView === "available" ? (
+            ) : (activeView === "available" ? (
                 <JobsList
                     items={availableData ?? []}
                     isLoading={isAvailableLoading}
@@ -226,7 +239,7 @@ export default function MoviesOnDemand(): React.JSX.Element {
                     onPageChange={handlePageChange}
                     onMovieClick={handleMovieClick}
                 />
-            )}
+            ))}
         </div>
     );
 }

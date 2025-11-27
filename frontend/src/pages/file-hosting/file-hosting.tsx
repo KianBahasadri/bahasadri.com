@@ -4,6 +4,23 @@ import { uploadFile, fetchFileList } from "../../lib/api";
 import type { FileMetadata } from "../../types/file-hosting";
 import styles from "./file-hosting.module.css";
 
+const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${String(bytes)} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleString();
+};
+
+const handleDownload = (file: FileMetadata): void => {
+    const url = file.isPublic
+        ? file.originalUrl
+        : `${file.originalUrl}?uiAccess=true`;
+    window.open(url, "_blank");
+};
+
 export default function FileHosting(): React.JSX.Element {
     const [isDragging, setIsDragging] = useState(false);
     const [isPublic, setIsPublic] = useState(true);
@@ -12,13 +29,17 @@ export default function FileHosting(): React.JSX.Element {
 
     const { data: fileList, isLoading } = useQuery({
         queryKey: ["file-hosting", "files"],
-        queryFn: () => fetchFileList(),
+        queryFn: async () => {
+            return await fetchFileList();
+        },
     });
 
     const uploadMutation = useMutation({
-        mutationFn: (file: File) => uploadFile(file, isPublic),
+        mutationFn: async (file: File) => {
+            return await uploadFile(file, isPublic);
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["file-hosting"] });
+            void queryClient.invalidateQueries({ queryKey: ["file-hosting"] });
         },
     });
 
@@ -52,21 +73,11 @@ export default function FileHosting(): React.JSX.Element {
         fileInputRef.current?.click();
     };
 
-    const formatFileSize = (bytes: number): string => {
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    };
-
-    const formatDate = (dateString: string): string => {
-        return new Date(dateString).toLocaleString();
-    };
-
-    const handleDownload = (file: FileMetadata): void => {
-        const url = file.isPublic
-            ? file.originalUrl
-            : `${file.originalUrl}?uiAccess=true`;
-        window.open(url, "_blank");
+    const handleKeyDown = (e: React.KeyboardEvent): void => {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleClickUpload();
+        }
     };
 
     return (
@@ -76,12 +87,15 @@ export default function FileHosting(): React.JSX.Element {
             <div className={styles["upload-section"]}>
                 <div
                     className={`${styles["upload-zone"]} ${
-                        isDragging ? styles["dragging"] : ""
+                        isDragging ? String(styles["dragging"]) : ""
                     }`}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                     onClick={handleClickUpload}
+                    onKeyDown={handleKeyDown}
+                    role="button"
+                    tabIndex={0}
                 >
                     <input
                         ref={fileInputRef}
@@ -101,56 +115,66 @@ export default function FileHosting(): React.JSX.Element {
                         <input
                             type="checkbox"
                             checked={isPublic}
-                            onChange={(e) => setIsPublic(e.target.checked)}
+                            onChange={(e) => {
+                                setIsPublic(e.target.checked);
+                            }}
                         />
                         <span>Public (anyone with link can access)</span>
                     </label>
                 </div>
 
-                {uploadMutation.isError && (
+                {uploadMutation.isError ? (
                     <p className={styles["error"]}>
                         {uploadMutation.error instanceof Error
                             ? uploadMutation.error.message
                             : "Upload failed"}
                     </p>
-                )}
+                ) : null}
 
-                {uploadMutation.isSuccess && (
+                {uploadMutation.isSuccess ? (
                     <p className={styles["success"]}>Upload successful!</p>
-                )}
+                ) : null}
             </div>
 
             <div className={styles["file-list-section"]}>
                 <h2>Uploaded Files</h2>
                 {isLoading ? (
                     <p>Loading...</p>
-                ) : fileList?.files.length === 0 ? (
-                    <p>No files uploaded yet</p>
-                ) : (
-                    <div className={styles["file-list"]}>
-                        {fileList?.files.map((file) => (
-                            <div key={file.id} className={styles["file-item"]}>
-                                <div className={styles["file-info"]}>
-                                    <h3>{file.name}</h3>
-                                    <p>
-                                        {formatFileSize(file.originalSize)} •{" "}
-                                        {formatDate(file.uploadTime)}
-                                    </p>
-                                    <p>
-                                        {file.isPublic ? "🔓 Public" : "🔒 Private"} •{" "}
-                                        {file.accessCount} downloads
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => handleDownload(file)}
-                                    className={styles["download-button"]}
-                                >
-                                    Download
-                                </button>
+                ) : (() => {
+                    if (fileList?.files.length === 0) {
+                        return <p>No files uploaded yet</p>;
+                    }
+                    if (fileList?.files.length !== undefined && fileList.files.length > 0) {
+                        return (
+                            <div className={styles["file-list"]}>
+                                {fileList.files.map((file: FileMetadata) => (
+                                    <div key={file.id} className={styles["file-item"]}>
+                                        <div className={styles["file-info"]}>
+                                            <h3>{file.name}</h3>
+                                            <p>
+                                                {formatFileSize(file.originalSize)} •{" "}
+                                                {formatDate(file.uploadTime)}
+                                            </p>
+                                            <p>
+                                                {file.isPublic ? "🔓 Public" : "🔒 Private"} •{" "}
+                                                {String(file.accessCount)} downloads
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                handleDownload(file);
+                                            }}
+                                            className={styles["download-button"]}
+                                        >
+                                            Download
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                )}
+                        );
+                    }
+                    return null;
+                })()}
             </div>
         </div>
     );

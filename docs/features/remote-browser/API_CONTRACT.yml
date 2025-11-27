@@ -5,11 +5,17 @@ info:
     API contract for remote browser container management and control.
     This API allows users to create, control, and manage isolated browser containers.
   version: 1.0.0
+  contact:
+    name: API Support
 servers:
   - url: http://localhost:8787/api
     description: Development Server
   - url: https://bahasadri.com/api
     description: Production Server
+
+tags:
+  - name: Remote Browser
+    description: Remote browser container management and control
 
 components:
   securitySchemes:
@@ -109,7 +115,7 @@ components:
           default: false
         sessionTimeout:
           type: integer
-          description: Session timeout in seconds (default: 3600).
+          description: "Session timeout in seconds (default: 3600)."
           minimum: 300
           maximum: 28800
           default: 3600
@@ -260,6 +266,8 @@ paths:
       operationId: listSessions
       summary: List all browser sessions
       description: Retrieve a list of all browser sessions (active and terminated).
+      tags:
+        - Remote Browser
       security:
         - BearerAuth: []
       parameters:
@@ -306,6 +314,8 @@ paths:
       operationId: createSession
       summary: Create a new browser session
       description: Spins up a new isolated browser container and creates a session.
+      tags:
+        - Remote Browser
       security:
         - BearerAuth: []
       requestBody:
@@ -353,6 +363,8 @@ paths:
       operationId: getSession
       summary: Get session details
       description: Retrieve details about a specific browser session.
+      tags:
+        - Remote Browser
       security:
         - BearerAuth: []
       responses:
@@ -373,6 +385,8 @@ paths:
       operationId: terminateSession
       summary: Terminate a browser session
       description: Terminates the browser session and destroys the container.
+      tags:
+        - Remote Browser
       security:
         - BearerAuth: []
       responses:
@@ -410,6 +424,8 @@ paths:
       operationId: pauseSession
       summary: Pause a browser session
       description: Pauses the browser session (container remains running but browser is paused).
+      tags:
+        - Remote Browser
       security:
         - BearerAuth: []
       responses:
@@ -446,6 +462,8 @@ paths:
       operationId: resumeSession
       summary: Resume a paused browser session
       description: Resumes a paused browser session.
+      tags:
+        - Remote Browser
       security:
         - BearerAuth: []
       responses:
@@ -482,6 +500,8 @@ paths:
       operationId: captureScreenshot
       summary: Capture a screenshot
       description: Captures a screenshot of the current browser state.
+      tags:
+        - Remote Browser
       security:
         - BearerAuth: []
       responses:
@@ -518,6 +538,8 @@ paths:
       operationId: controlBrowser
       summary: Send browser control command
       description: Sends a control command to the browser (navigate, click, type, etc.).
+      tags:
+        - Remote Browser
       security:
         - BearerAuth: []
       requestBody:

@@ -35,10 +35,20 @@ app.get(
                 );
             }
 
-            const movieId = idValidation.id!;
+            const movieId = idValidation.id;
+            if (!movieId) {
+                return c.json<ErrorResponse>(
+                    {
+                        error: "Invalid movie ID",
+                        code: "INVALID_INPUT",
+                    },
+                    400
+                );
+            }
 
             // Get IMDb ID from TMDB
-            const imdbId = await getMovieImdbId(c.env.TMDB_API_KEY, movieId);
+            const apiKey = String(c.env.TMDB_API_KEY);
+            const imdbId = await getMovieImdbId(apiKey, movieId);
 
             if (!imdbId) {
                 // No IMDb ID, return empty releases list
@@ -49,10 +59,9 @@ app.get(
             }
 
             // Search NZBGeek for releases
-            const releases = await searchReleases(
-                c.env.NZBGEEK_API_KEY,
-                imdbId
-            );
+            const nzbgeekKey = String(c.env.NZBGEEK_API_KEY);
+            const imdbIdStr = String(imdbId ?? "");
+            const releases = await searchReleases(nzbgeekKey, imdbIdStr);
 
             return c.json<ReleasesResponse>(
                 { releases, total: releases.length },

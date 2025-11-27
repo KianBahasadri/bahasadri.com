@@ -46,7 +46,7 @@ function generateRandomNodes(count: number): Node[] {
         });
     }
 
-    nodes.forEach((node) => {
+    for (const node of nodes) {
         const connectionCount =
             Math.floor(Math.random() * (maxConnections - minConnections + 1)) +
             minConnections;
@@ -63,7 +63,7 @@ function generateRandomNodes(count: number): Node[] {
             .map((c) => c.node.id);
 
         node.connections = candidates;
-    });
+    }
 
     return nodes;
 }

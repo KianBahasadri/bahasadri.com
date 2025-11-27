@@ -12,7 +12,7 @@ export default function MoviePlayer(): React.JSX.Element {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const videoRef = useRef<HTMLVideoElement>(null);
-    const movieId = id ? parseInt(id, 10) : 0;
+    const movieId = id ? Number.parseInt(id, 10) : 0;
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
@@ -32,27 +32,27 @@ export default function MoviePlayer(): React.JSX.Element {
         const video = videoRef.current;
         if (!video) return;
 
-        const handleTimeUpdate = () => {
+        const handleTimeUpdate = (): void => {
             setCurrentTime(video.currentTime);
         };
 
-        const handleDurationChange = () => {
+        const handleDurationChange = (): void => {
             setDuration(video.duration);
         };
 
-        const handlePlay = () => {
+        const handlePlay = (): void => {
             setIsPlaying(true);
         };
 
-        const handlePause = () => {
+        const handlePause = (): void => {
             setIsPlaying(false);
         };
 
-        const handleVolumeChange = () => {
+        const handleVolumeChange = (): void => {
             setVolume(video.volume);
         };
 
-        const handleFullscreenChange = () => {
+        const handleFullscreenChange = (): void => {
             setIsFullscreen(!!document.fullscreenElement);
         };
 
@@ -63,7 +63,7 @@ export default function MoviePlayer(): React.JSX.Element {
         video.addEventListener("volumechange", handleVolumeChange);
         document.addEventListener("fullscreenchange", handleFullscreenChange);
 
-        return () => {
+        return (): void => {
             video.removeEventListener("timeupdate", handleTimeUpdate);
             video.removeEventListener("durationchange", handleDurationChange);
             video.removeEventListener("play", handlePlay);
@@ -83,67 +83,67 @@ export default function MoviePlayer(): React.JSX.Element {
             }, 3000);
         }
 
-        return () => {
+        return (): void => {
             if (controlsTimeoutRef.current) {
                 clearTimeout(controlsTimeoutRef.current);
             }
         };
     }, [showControls]);
 
-    const handlePlayPause = () => {
+    const handlePlayPause = (): void => {
         const video = videoRef.current;
         if (!video) return;
 
         if (video.paused) {
-            video.play();
+            void video.play();
         } else {
             video.pause();
         }
     };
 
-    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>): void => {
         const video = videoRef.current;
         if (!video) return;
 
-        const newTime = parseFloat(e.target.value);
+        const newTime = Number.parseFloat(e.target.value);
         video.currentTime = newTime;
         setCurrentTime(newTime);
     };
 
-    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
         const video = videoRef.current;
         if (!video) return;
 
-        const newVolume = parseFloat(e.target.value);
+        const newVolume = Number.parseFloat(e.target.value);
         video.volume = newVolume;
         setVolume(newVolume);
     };
 
-    const handleFullscreen = () => {
+    const handleFullscreen = (): void => {
         const video = videoRef.current;
         if (!video) return;
 
-        if (!document.fullscreenElement) {
-            video.requestFullscreen();
+        if (document.fullscreenElement) {
+            void document.exitFullscreen();
         } else {
-            document.exitFullscreen();
+            void video.requestFullscreen();
         }
     };
 
-    const handleMouseMove = () => {
+    const handleMouseMove = (): void => {
         setShowControls(true);
     };
 
     const formatTime = (seconds: number): string => {
-        if (isNaN(seconds)) return "0:00";
+        if (Number.isNaN(seconds)) return "0:00";
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
         const secs = Math.floor(seconds % 60);
 
         if (hours > 0) {
-            return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+            return `${String(hours)}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
         }
-        return `${minutes}:${secs.toString().padStart(2, "0")}`;
+        return `${String(minutes)}:${secs.toString().padStart(2, "0")}`;
     };
 
     if (isLoading) {
@@ -163,7 +163,7 @@ export default function MoviePlayer(): React.JSX.Element {
                 <button
                     className={styles["backButton"]}
                     onClick={() => {
-                        navigate(`/movies-on-demand/movies/${movieId}`);
+                        void navigate(`/movies-on-demand/movies/${String(movieId)}`);
                     }}
                 >
                     Back to Movie Details
@@ -186,14 +186,16 @@ export default function MoviePlayer(): React.JSX.Element {
                 className={styles["video"]}
                 preload="metadata"
                 onClick={handlePlayPause}
-            />
-            {showControls && (
+            >
+                <track kind="captions" />
+            </video>
+            {showControls ? (
                 <div className={styles["controls"]}>
                     <div className={styles["controlsTop"]}>
                         <button
                             className={styles["backButton"]}
                             onClick={() => {
-                                navigate(`/movies-on-demand/movies/${movieId}`);
+                                void navigate(`/movies-on-demand/movies/${String(movieId)}`);
                             }}
                         >
                             ← Back
@@ -244,7 +246,7 @@ export default function MoviePlayer(): React.JSX.Element {
                         </button>
                     </div>
                 </div>
-            )}
+            ) : null}
         </div>
     );
 }

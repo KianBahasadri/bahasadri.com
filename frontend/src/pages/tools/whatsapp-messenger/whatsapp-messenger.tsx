@@ -39,7 +39,7 @@ export default function WhatsAppMessenger(): React.JSX.Element {
                             <h3 className={styles["bannerTitle"]}>⚠️ WhatsApp Setup Required</h3>
                             <button
                                 className={styles["bannerClose"]}
-                                onClick={() => setBannerDismissed(true)}
+                                onClick={() => { setBannerDismissed(true); }}
                                 aria-label="Close banner"
                             >
                                 ×
@@ -64,13 +64,13 @@ export default function WhatsAppMessenger(): React.JSX.Element {
                         <div className={styles["bannerActions"]}>
                             <button
                                 className={styles["bannerButton"]}
-                                onClick={() => navigate("/")}
+                                onClick={async () => navigate("/")}
                             >
                                 Go Back Home
                             </button>
                             <button
                                 className={styles["bannerButtonSecondary"]}
-                                onClick={() => navigate("/sms-messenger")}
+                                onClick={async () => navigate("/sms-messenger")}
                             >
                                 Try SMS Messenger
                             </button>

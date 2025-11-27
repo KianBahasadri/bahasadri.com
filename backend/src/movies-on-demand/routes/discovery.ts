@@ -51,9 +51,10 @@ app.get(
             }
 
             const page = validatePage(pageParam);
+            const queryValue = String(query ?? "");
             const results = await tmdbSearchMovies(
                 c.env.TMDB_API_KEY,
-                query!,
+                queryValue,
                 page
             );
 
@@ -75,7 +76,8 @@ app.get(
             const pageParam = c.req.query("page");
             const page = validatePage(pageParam);
 
-            const results = await tmdbGetPopular(c.env.TMDB_API_KEY, page);
+            const apiKey = String(c.env.TMDB_API_KEY);
+            const results = await tmdbGetPopular(apiKey, page);
             return c.json<MovieSearchResponse>(results, 200);
         },
         "/api/movies-on-demand/popular",
@@ -124,7 +126,16 @@ app.get(
                 );
             }
 
-            const movieId = idValidation.id!;
+            const movieId = idValidation.id;
+            if (!movieId) {
+                return c.json<ErrorResponse>(
+                    {
+                        error: "Invalid movie ID",
+                        code: "INVALID_INPUT",
+                    },
+                    400
+                );
+            }
 
             // Get movie details from TMDB
             const movieDetails = await tmdbGetMovieDetails(
@@ -133,13 +144,14 @@ app.get(
             );
 
             // Check for active job in D1
-            const job = (await c.env.MOVIES_D1.prepare(
+            const jobResult = await c.env.MOVIES_D1.prepare(
                 `SELECT * FROM jobs WHERE movie_id = ? ORDER BY created_at DESC LIMIT 1`
             )
                 .bind(movieId)
-                .first()) as JobRow | undefined;
+                .first();
+            const job = jobResult as JobRow | undefined;
 
-            let jobStatus: MovieDetails["job_status"] = null;
+            let jobStatus: MovieDetails["job_status"] = undefined;
             if (job) {
                 jobStatus = {
                     job_id: job.job_id,
@@ -184,7 +196,16 @@ app.get(
                 );
             }
 
-            const movieId = idValidation.id!;
+            const movieId = idValidation.id;
+            if (!movieId) {
+                return c.json<ErrorResponse>(
+                    {
+                        error: "Invalid movie ID",
+                        code: "INVALID_INPUT",
+                    },
+                    400
+                );
+            }
             const page = validatePage(pageParam);
 
             const results = await tmdbGetSimilar(

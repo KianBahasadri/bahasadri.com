@@ -59,7 +59,7 @@ export async function handleMovieQueue(
     for (const message of batch.messages) {
         const job = message.body;
 
-        console.log(`Processing job: ${job.job_id} for movie: ${job.movie_id}`);
+        console.error(`Processing job: ${String(job.job_id)} for movie: ${String(job.movie_id)}`);
 
         try {
             // Get a unique container instance for this job using the job_id as identifier
@@ -73,17 +73,17 @@ export async function handleMovieQueue(
             // 3. Default to production URL
             // For local Docker testing, containers must use host.docker.internal to reach host
             const callbackUrl =
-                env.CALLBACK_URL ||
+                env.CALLBACK_URL ??
                 (env.ENVIRONMENT === "development"
                     ? `http://host.docker.internal:8787/api/movies-on-demand/internal/progress`
                     : `https://bahasadri.com/api/movies-on-demand/internal/progress`);
 
-            console.log(
-                `Using callback URL: ${callbackUrl.replace(
-                    /\/\/[^:]+:[^@]+@/,
-                    "//***:***@"
-                )}`
+            // Safe regex replacement for masking credentials
+            const maskedUrl = callbackUrl.replace(
+                /\/\/[^:]+:[^@]+@/u,
+                "//***:***@"
             );
+            console.error(`Using callback URL: ${maskedUrl}`);
 
             // Detect dev mode (local development) - for connection count adjustment
             const isDev =
@@ -136,7 +136,7 @@ export async function handleMovieQueue(
             // Acknowledge the message - container will handle the rest
             message.ack();
 
-            console.log(
+            console.error(
                 `Container started for job: ${job.job_id}, status updated to downloading`
             );
         } catch (error) {

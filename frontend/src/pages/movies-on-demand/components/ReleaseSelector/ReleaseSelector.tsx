@@ -71,31 +71,23 @@ export default function ReleaseSelector({
                                 <h3 className={styles["releaseTitle"]}>
                                     {release.title}
                                 </h3>
-                                {release.quality && (
-                                    <span className={styles["qualityBadge"]}>
+                                {release.quality ? <span className={styles["qualityBadge"]}>
                                         {release.quality}
-                                    </span>
-                                )}
+                                    </span> : null}
                             </div>
                             <div className={styles["releaseDetails"]}>
                                 <span className={styles["size"]}>
                                     {formatFileSize(release.size)}
                                 </span>
-                                {release.codec && (
-                                    <span className={styles["codec"]}>
+                                {release.codec ? <span className={styles["codec"]}>
                                         {release.codec}
-                                    </span>
-                                )}
-                                {release.source && (
-                                    <span className={styles["source"]}>
+                                    </span> : null}
+                                {release.source ? <span className={styles["source"]}>
                                         {release.source}
-                                    </span>
-                                )}
-                                {release.group && (
-                                    <span className={styles["group"]}>
+                                    </span> : null}
+                                {release.group ? <span className={styles["group"]}>
                                         {release.group}
-                                    </span>
-                                )}
+                                    </span> : null}
                             </div>
                         </div>
                     ))}

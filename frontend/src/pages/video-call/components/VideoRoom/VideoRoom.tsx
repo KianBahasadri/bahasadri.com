@@ -32,7 +32,7 @@ import { generateToken } from "../../../../lib/api";
 import MeetingsList from "../MeetingsList/MeetingsList";
 import AllMeetingsList from "../AllMeetingsList/AllMeetingsList";
 import IceTestStatus from "../IceTestStatus/IceTestStatus";
-import { useIceServerTest } from "../../hooks/useIceServerTest";
+import { useIceServerTest } from "../../hooks/use-ice-server-test";
 import styles from "./VideoRoom.module.css";
 
 interface VideoRoomProps {
@@ -43,20 +43,20 @@ interface VideoRoomProps {
 }
 
 function InMeetingRoom(): React.JSX.Element {
-    console.log("[VideoRoom] InMeetingRoom: Component rendering");
+    console.warn("[VideoRoom] InMeetingRoom: Component rendering");
     const { meeting } = useRealtimeKitMeeting();
-    console.log("[VideoRoom] InMeetingRoom: Meeting object:", meeting);
+    console.warn("[VideoRoom] InMeetingRoom: Meeting object:", meeting);
     const activeParticipants = useRealtimeKitSelector((m) =>
         m.participants.active.toArray()
     );
-    console.log(
+    console.warn(
         "[VideoRoom] InMeetingRoom: Active participants:",
         activeParticipants
     );
     const pinnedParticipants = useRealtimeKitSelector((m) =>
         m.participants.pinned.toArray()
     );
-    console.log(
+    console.warn(
         "[VideoRoom] InMeetingRoom: Pinned participants:",
         pinnedParticipants
     );
@@ -70,7 +70,7 @@ function InMeetingRoom(): React.JSX.Element {
             ),
             self,
         ];
-        console.log(
+        console.warn(
             "[VideoRoom] InMeetingRoom: Computed participants:",
             result
         );
@@ -120,7 +120,7 @@ interface MeetingContentProps {
 }
 
 function MeetingContent({ onLeave }: MeetingContentProps): React.JSX.Element {
-    console.log("[VideoRoom] MeetingContent: Component rendering");
+    console.warn("[VideoRoom] MeetingContent: Component rendering");
     const { meeting } = useRealtimeKitMeeting();
     const roomState = useRealtimeKitSelector((m) => m.self.roomState);
     const roomJoined = useRealtimeKitSelector((m) => m.self.roomJoined);
@@ -131,7 +131,7 @@ function MeetingContent({ onLeave }: MeetingContentProps): React.JSX.Element {
 
     // Track roomState changes
     useEffect(() => {
-        console.log(
+        console.warn(
             "[VideoRoom] MeetingContent: roomState changed:",
             roomState,
             "roomJoined:",
@@ -141,13 +141,13 @@ function MeetingContent({ onLeave }: MeetingContentProps): React.JSX.Element {
         );
 
         if (roomState === "init") {
-            console.log(
+            console.warn(
                 "[VideoRoom] MeetingContent: Room state is 'init' - setup screen visible, waiting for join button click"
             );
         }
 
         if (roomState === "joined" && roomJoined) {
-            console.log(
+            console.warn(
                 "[VideoRoom] MeetingContent: Successfully joined room!",
                 {
                     roomState,
@@ -162,7 +162,7 @@ function MeetingContent({ onLeave }: MeetingContentProps): React.JSX.Element {
     // Navigate away when leaving the meeting
     useEffect(() => {
         if ((roomState === "ended" || roomState === "left") && onLeave) {
-            console.log(
+            console.warn(
                 "[VideoRoom] MeetingContent: Room ended/left, calling onLeave callback"
             );
             onLeave();
@@ -172,7 +172,7 @@ function MeetingContent({ onLeave }: MeetingContentProps): React.JSX.Element {
     // Track participant name changes
     useEffect(() => {
         if (participantName) {
-            console.log(
+            console.warn(
                 "[VideoRoom] MeetingContent: Participant name set/changed:",
                 participantName,
                 "canEditDisplayName:",
@@ -181,7 +181,7 @@ function MeetingContent({ onLeave }: MeetingContentProps): React.JSX.Element {
         }
     }, [participantName, canEditDisplayName]);
 
-    console.log("[VideoRoom] MeetingContent: Current state:", {
+    console.warn("[VideoRoom] MeetingContent: Current state:", {
         roomState,
         roomJoined,
         participantName,
@@ -190,16 +190,16 @@ function MeetingContent({ onLeave }: MeetingContentProps): React.JSX.Element {
     });
 
     if (roomState === "ended" || roomState === "left") {
-        console.log("[VideoRoom] MeetingContent: Showing ended screen");
+        console.warn("[VideoRoom] MeetingContent: Showing ended screen");
         return <RtkEndedScreen meeting={meeting} />;
     }
 
     if (roomState === "joined" && roomJoined) {
-        console.log("[VideoRoom] MeetingContent: Showing in-meeting room");
+        console.warn("[VideoRoom] MeetingContent: Showing in-meeting room");
         return <InMeetingRoom />;
     }
 
-    console.log(
+    console.warn(
         "[VideoRoom] MeetingContent: Showing setup screen (waiting for join button click)"
     );
     return (
@@ -215,7 +215,7 @@ export default function VideoRoom({
     showMeetingList = false,
     onLeave,
 }: VideoRoomProps): React.JSX.Element {
-    console.log("[VideoRoom] Component rendering with props:", {
+    console.warn("[VideoRoom] Component rendering with props:", {
         participantName,
         meetingId,
         showMeetingList,
@@ -230,7 +230,7 @@ export default function VideoRoom({
     const isMountedRef = useRef(true);
     const isJoiningRef = useRef(false);
 
-    console.log("[VideoRoom] Current state:", {
+    console.warn("[VideoRoom] Current state:", {
         roomState,
         error,
         hasMeeting: !!meeting,
@@ -238,11 +238,11 @@ export default function VideoRoom({
     });
 
     const [, initMeeting] = useRealtimeKitClient();
-    console.log("[VideoRoom] initMeeting function available:", !!initMeeting);
+    console.warn("[VideoRoom] initMeeting function available:", !!initMeeting);
 
     // Test ICE server connectivity on page load
     const iceTest = useIceServerTest();
-    console.log("[VideoRoom] ICE test result:", iceTest);
+    console.warn("[VideoRoom] ICE test result:", iceTest);
 
     const generateTokenMutation = useMutation({
         mutationFn: async (params: {
@@ -250,7 +250,7 @@ export default function VideoRoom({
             name?: string;
             presetName?: string;
         }) => {
-            console.log(
+            console.warn(
                 "[VideoRoom] generateTokenMutation: Starting with params:",
                 params
             );
@@ -261,7 +261,7 @@ export default function VideoRoom({
                     undefined,
                     params.presetName
                 );
-                console.log(
+                console.warn(
                     "[VideoRoom] generateTokenMutation: Success, token received:",
                     {
                         hasToken: !!result.auth_token,
@@ -283,7 +283,7 @@ export default function VideoRoom({
 
     const handleJoinMeeting = useCallback(
         async (targetMeetingId: string, presetName?: string) => {
-            console.log("[VideoRoom] handleJoinMeeting: Called with:", {
+            console.warn("[VideoRoom] handleJoinMeeting: Called with:", {
                 targetMeetingId,
                 presetName,
                 participantName,
@@ -291,7 +291,7 @@ export default function VideoRoom({
 
             // Prevent concurrent calls
             if (isJoiningRef.current) {
-                console.log(
+                console.warn(
                     "[VideoRoom] handleJoinMeeting: Already joining, skipping duplicate call"
                 );
                 return;
@@ -299,13 +299,13 @@ export default function VideoRoom({
 
             isJoiningRef.current = true;
             try {
-                console.log(
+                console.warn(
                     "[VideoRoom] handleJoinMeeting: Setting state to connecting"
                 );
                 setRoomState("connecting");
                 setError(null);
 
-                console.log(
+                console.warn(
                     "[VideoRoom] handleJoinMeeting: Requesting token..."
                 );
                 const tokenResponse = await generateTokenMutation.mutateAsync({
@@ -313,11 +313,11 @@ export default function VideoRoom({
                     ...(participantName ? { name: participantName } : {}),
                     ...(presetName ? { presetName } : {}),
                 });
-                console.log(
+                console.warn(
                     "[VideoRoom] handleJoinMeeting: Token received, initializing meeting..."
                 );
 
-                console.log(
+                console.warn(
                     "[VideoRoom] handleJoinMeeting: Calling initMeeting with token...",
                     {
                         tokenLength: tokenResponse.auth_token?.length || 0,
@@ -338,7 +338,7 @@ export default function VideoRoom({
                     },
                 });
                 const initDuration = Date.now() - initStartTime;
-                console.log(
+                console.warn(
                     "[VideoRoom] handleJoinMeeting: Meeting initialized:",
                     {
                         hasMeeting: !!initializedMeeting,
@@ -352,11 +352,11 @@ export default function VideoRoom({
                 );
 
                 if (initializedMeeting) {
-                    console.log(
+                    console.warn(
                         "[VideoRoom] handleJoinMeeting: Setting meeting state and joining room..."
                     );
                     if (!isMountedRef.current) {
-                        console.log(
+                        console.warn(
                             "[VideoRoom] handleJoinMeeting: Component unmounted, cleaning up meeting"
                         );
                         void initializedMeeting.leave();
@@ -365,7 +365,7 @@ export default function VideoRoom({
                     }
 
                     // Set default name to "admin-kun" if none was provided and user has permission
-                    console.log(
+                    console.warn(
                         "[VideoRoom] handleJoinMeeting: Checking participant name...",
                         {
                             currentName: initializedMeeting.self.name,
@@ -381,12 +381,12 @@ export default function VideoRoom({
                         !initializedMeeting.self.name
                     ) {
                         const nameToSet = participantName ?? "admin-kun";
-                        console.log(
+                        console.warn(
                             "[VideoRoom] handleJoinMeeting: Setting participant name (no name currently set):",
                             nameToSet
                         );
                         initializedMeeting.self.setName(nameToSet);
-                        console.log(
+                        console.warn(
                             "[VideoRoom] handleJoinMeeting: Name set, new name:",
                             initializedMeeting.self.name
                         );
@@ -396,7 +396,7 @@ export default function VideoRoom({
                             .canEditDisplayName &&
                         initializedMeeting.self.name !== participantName
                     ) {
-                        console.log(
+                        console.warn(
                             "[VideoRoom] handleJoinMeeting: Updating participant name from prop:",
                             {
                                 oldName: initializedMeeting.self.name,
@@ -404,12 +404,12 @@ export default function VideoRoom({
                             }
                         );
                         initializedMeeting.self.setName(participantName);
-                        console.log(
+                        console.warn(
                             "[VideoRoom] handleJoinMeeting: Name updated, current name:",
                             initializedMeeting.self.name
                         );
                     } else {
-                        console.log(
+                        console.warn(
                             "[VideoRoom] handleJoinMeeting: No name change needed",
                             {
                                 currentName: initializedMeeting.self.name,
@@ -419,7 +419,7 @@ export default function VideoRoom({
                     }
 
                     setMeeting(initializedMeeting);
-                    console.log(
+                    console.warn(
                         "[VideoRoom] handleJoinMeeting: Meeting set in state, about to call joinRoom()...",
                         {
                             currentName: initializedMeeting.self.name,
@@ -429,13 +429,13 @@ export default function VideoRoom({
                             roomState: initializedMeeting.self.roomState,
                         }
                     );
-                    console.log(
+                    console.warn(
                         "[VideoRoom] handleJoinMeeting: Calling joinRoom()..."
                     );
                     const joinStartTime = Date.now();
                     await initializedMeeting.joinRoom();
                     const joinDuration = Date.now() - joinStartTime;
-                    console.log(
+                    console.warn(
                         "[VideoRoom] handleJoinMeeting: joinRoom() completed",
                         {
                             duration: `${String(joinDuration)}ms`,
@@ -444,21 +444,21 @@ export default function VideoRoom({
                         }
                     );
                     if (!isMountedRef.current) {
-                        console.log(
+                        console.warn(
                             "[VideoRoom] handleJoinMeeting: Component unmounted after joinRoom, cleaning up"
                         );
                         void initializedMeeting.leave();
                         isJoiningRef.current = false;
                         return;
                     }
-                    console.log(
+                    console.warn(
                         "[VideoRoom] handleJoinMeeting: Setting state to connected"
                     );
                     setError(null);
                     setRoomState("connected");
                     isJoiningRef.current = false;
                 } else {
-                    console.log(
+                    console.warn(
                         "[VideoRoom] handleJoinMeeting: No meeting returned from initMeeting"
                     );
                     if (isMountedRef.current) {
@@ -475,7 +475,7 @@ export default function VideoRoom({
                 joiningRef.current = null;
                 isJoiningRef.current = false;
                 if (!isMountedRef.current) {
-                    console.log(
+                    console.warn(
                         "[VideoRoom] handleJoinMeeting: Component unmounted, skipping error state update"
                     );
                     return;
@@ -496,28 +496,28 @@ export default function VideoRoom({
     );
 
     const handleLeave = useCallback(() => {
-        console.log(
+        console.warn(
             "[VideoRoom] handleLeave: Called, current meeting:",
             !!meeting
         );
         if (meeting) {
-            console.log("[VideoRoom] handleLeave: Calling meeting.leave()...");
+            console.warn("[VideoRoom] handleLeave: Calling meeting.leave()...");
             void meeting.leave();
             setMeeting(null);
-            console.log("[VideoRoom] handleLeave: Meeting cleared");
+            console.warn("[VideoRoom] handleLeave: Meeting cleared");
         }
         joiningRef.current = null;
         setRoomState("idle");
         setError(null);
-        console.log("[VideoRoom] handleLeave: State reset to idle");
+        console.warn("[VideoRoom] handleLeave: State reset to idle");
         if (onLeave) {
-            console.log("[VideoRoom] handleLeave: Calling onLeave callback");
+            console.warn("[VideoRoom] handleLeave: Calling onLeave callback");
             onLeave();
         }
     }, [meeting, onLeave]);
 
     useEffect(() => {
-        console.log("[VideoRoom] useEffect (auto-join): Checking conditions:", {
+        console.warn("[VideoRoom] useEffect (auto-join): Checking conditions:", {
             meetingId,
             roomState,
             hasMeeting: !!meeting,
@@ -529,31 +529,31 @@ export default function VideoRoom({
             !meeting &&
             joiningRef.current !== meetingId
         ) {
-            console.log(
+            console.warn(
                 "[VideoRoom] useEffect (auto-join): Conditions met, joining meeting"
             );
             joiningRef.current = meetingId;
             void handleJoinMeeting(meetingId);
         } else {
-            console.log(
+            console.warn(
                 "[VideoRoom] useEffect (auto-join): Conditions not met, skipping join"
             );
         }
     }, [meetingId, roomState, meeting, handleJoinMeeting]);
 
     useEffect(() => {
-        console.log(
+        console.warn(
             "[VideoRoom] useEffect (cleanup): Setting up cleanup handler"
         );
         isMountedRef.current = true;
         return (): void => {
-            console.log(
+            console.warn(
                 "[VideoRoom] useEffect (cleanup): Component unmounting, cleaning up resources"
             );
             isMountedRef.current = false;
             // Only clean up meeting resources, don't call handleLeave which navigates away
             if (meeting) {
-                console.log(
+                console.warn(
                     "[VideoRoom] useEffect (cleanup): Leaving meeting on unmount"
                 );
                 void meeting.leave();
@@ -563,7 +563,7 @@ export default function VideoRoom({
         };
     }, [meeting]);
 
-    console.log("[VideoRoom] Render: Current state check:", {
+    console.warn("[VideoRoom] Render: Current state check:", {
         roomState,
         showMeetingList,
         hasMeeting: !!meeting,
@@ -571,7 +571,7 @@ export default function VideoRoom({
     });
 
     if (roomState === "idle" && showMeetingList) {
-        console.log(
+        console.warn(
             "[VideoRoom] Render: Rendering idle state with meeting list"
         );
         return (
@@ -598,7 +598,7 @@ export default function VideoRoom({
     }
 
     if (roomState === "idle" && !showMeetingList) {
-        console.log(
+        console.warn(
             "[VideoRoom] Render: Rendering idle state without meeting list"
         );
         return (
@@ -612,7 +612,7 @@ export default function VideoRoom({
     }
 
     if (roomState === "connecting") {
-        console.log("[VideoRoom] Render: Rendering connecting state");
+        console.warn("[VideoRoom] Render: Rendering connecting state");
         return (
             <div className={styles["container"]}>
                 <div className={styles["connectingState"]}>
@@ -624,7 +624,7 @@ export default function VideoRoom({
     }
 
     if (roomState === "error") {
-        console.log("[VideoRoom] Render: Rendering error state:", error);
+        console.warn("[VideoRoom] Render: Rendering error state:", error);
         return (
             <div className={styles["container"]}>
                 <div className={styles["errorState"]}>
@@ -638,7 +638,7 @@ export default function VideoRoom({
                         type="button"
                         className={styles["backButton"]}
                         onClick={() => {
-                            console.log(
+                            console.warn(
                                 "[VideoRoom] Render: Go Back button clicked"
                             );
                             handleLeave();
@@ -653,7 +653,7 @@ export default function VideoRoom({
     }
 
     if (roomState === "connected" && meeting) {
-        console.log(
+        console.warn(
             "[VideoRoom] Render: Rendering connected state with RealtimeKitProvider",
             {
                 meetingRoomState: meeting.self.roomState,
@@ -661,7 +661,7 @@ export default function VideoRoom({
                 participantName: meeting.self.name,
             }
         );
-        console.log(
+        console.warn(
             "[VideoRoom] Render: Setup screen is now available - join button should be visible"
         );
         return (
@@ -684,7 +684,7 @@ export default function VideoRoom({
         );
     }
 
-    console.log("[VideoRoom] Render: Rendering fallback loading state");
+    console.warn("[VideoRoom] Render: Rendering fallback loading state");
     return (
         <div className={styles["container"]}>
             <div className={styles["idleState"]}>

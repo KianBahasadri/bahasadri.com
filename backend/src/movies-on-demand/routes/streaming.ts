@@ -25,16 +25,17 @@ app.get(
         async (c) => {
             const idParam = c.req.param("id");
 
-            let job: JobRow | null = null;
+            let job: JobRow | undefined;
 
             // Determine if ID is job_id or movie_id
             if (idParam.startsWith("job_")) {
                 // It's a job ID
-                job = (await c.env.MOVIES_D1.prepare(
+                const jobResult = await c.env.MOVIES_D1.prepare(
                     `SELECT * FROM jobs WHERE job_id = ?`
                 )
                     .bind(idParam)
-                    .first()) as JobRow | null;
+                    .first();
+                job = jobResult as JobRow | undefined;
             } else {
                 // It's a movie ID - get latest job
                 const movieIdValidation = validateMovieId(idParam);
@@ -49,11 +50,23 @@ app.get(
                     );
                 }
 
-                job = (await c.env.MOVIES_D1.prepare(
+                const movieId = movieIdValidation.id;
+                if (!movieId) {
+                    return c.json<ErrorResponse>(
+                        {
+                            error: "Invalid movie ID",
+                            code: "INVALID_INPUT",
+                        },
+                        400
+                    );
+                }
+
+                const jobResult = await c.env.MOVIES_D1.prepare(
                     `SELECT * FROM jobs WHERE movie_id = ? ORDER BY created_at DESC LIMIT 1`
                 )
-                    .bind(movieIdValidation.id!)
-                    .first()) as JobRow | null;
+                    .bind(movieId)
+                    .first();
+                job = jobResult as JobRow | undefined;
             }
 
             if (!job) {
@@ -83,7 +96,7 @@ app.get(
                 .run();
 
             // Get movie file metadata from R2
-            const r2Key = `movies/${job.job_id}/movie.mp4`;
+            const r2Key = `movies/${String(job.job_id)}/movie.mp4`;
             const object = await c.env.MOVIES_R2.head(r2Key);
 
             if (!object) {
@@ -137,11 +150,12 @@ app.get(
             }
 
             // Verify job exists and is ready
-            const job = (await c.env.MOVIES_D1.prepare(
+            const jobResult = await c.env.MOVIES_D1.prepare(
                 `SELECT * FROM jobs WHERE job_id = ? AND status = 'ready'`
             )
                 .bind(jobId)
-                .first()) as JobRow | undefined;
+                .first();
+            const job = jobResult as JobRow | undefined;
 
             if (!job) {
                 return c.json<ErrorResponse>(
@@ -174,11 +188,12 @@ app.get(
 
             if (rangeHeader) {
                 // Parse range header
-                const match = rangeHeader.match(/bytes=(\d+)-(\d*)/);
+                const rangeRegex = /bytes=(\d+)-(\d*)/;
+                const match = rangeRegex.exec(rangeHeader);
                 if (match) {
-                    const start = parseInt(match[1], 10);
+                    const start = Number.parseInt(match[1], 10);
                     const end = match[2]
-                        ? parseInt(match[2], 10)
+                        ? Number.parseInt(match[2], 10)
                         : fileSize - 1;
                     const contentLength = end - start + 1;
 
@@ -201,8 +216,8 @@ app.get(
                         status: 206,
                         headers: {
                             "Content-Type": contentType,
-                            "Content-Length": contentLength.toString(),
-                            "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+                            "Content-Length": String(contentLength),
+                            "Content-Range": `bytes ${String(start)}-${String(end)}/${String(fileSize)}`,
                             "Accept-Ranges": "bytes",
                         },
                     });
@@ -214,7 +229,7 @@ app.get(
                 status: 200,
                 headers: {
                     "Content-Type": contentType,
-                    "Content-Length": fileSize.toString(),
+                    "Content-Length": String(fileSize),
                     "Accept-Ranges": "bytes",
                 },
             });

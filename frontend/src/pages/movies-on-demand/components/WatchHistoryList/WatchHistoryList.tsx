@@ -86,11 +86,9 @@ export default function WatchHistoryList({
                                     className={styles["poster"]}
                                     loading="lazy"
                                 />
-                                {isDeleted && (
-                                    <div className={styles["deletedBadge"]}>
+                                {isDeleted ? <div className={styles["deletedBadge"]}>
                                         Deleted
-                                    </div>
-                                )}
+                                    </div> : null}
                             </div>
                             <div className={styles["info"]}>
                                 <h3 className={styles["title"]}>{movie.title}</h3>
@@ -102,8 +100,7 @@ export default function WatchHistoryList({
                     );
                 })}
             </div>
-            {hasMore && onLoadMore && (
-                <div className={styles["loadMoreContainer"]}>
+            {hasMore && onLoadMore ? <div className={styles["loadMoreContainer"]}>
                     <button
                         className={styles["loadMoreButton"]}
                         onClick={onLoadMore}
@@ -111,8 +108,7 @@ export default function WatchHistoryList({
                     >
                         {isLoading ? "Loading..." : "Load More"}
                     </button>
-                </div>
-            )}
+                </div> : null}
         </div>
     );
 }

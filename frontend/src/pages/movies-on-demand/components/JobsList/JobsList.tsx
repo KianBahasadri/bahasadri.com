@@ -4,7 +4,7 @@ import type { Movie, JobStatus } from "../../../../types/movies-on-demand";
 import styles from "./JobsList.module.css";
 
 interface JobsListProps {
-    items: Array<{ movie: Movie; job: JobStatus }>;
+    items: { movie: Movie; job: JobStatus }[];
     isLoading: boolean;
 }
 
