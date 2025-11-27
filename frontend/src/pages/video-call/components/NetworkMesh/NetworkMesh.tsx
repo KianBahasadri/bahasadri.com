@@ -24,8 +24,9 @@ function generateRandomNodes(count: number): Node[] {
         let y: number;
         let attempts = 0;
         do {
-            // Use deterministic randomness for visual effect (not security-critical)
+            // Math.random() is safe here - used only for visual effects, not security
             x = centerX + (Math.random() - 0.5) * xRange;
+            // Math.random() is safe here - used only for visual effects, not security
             y = centerY + (Math.random() - 0.5) * yRange;
             attempts++;
         } while (
@@ -38,7 +39,7 @@ function generateRandomNodes(count: number): Node[] {
             )
         );
 
-        // Use deterministic randomness for visual effect (not security-critical)
+        // Math.random() is safe here - used only for visual effects, not security
         nodes.push({
             id: i,
             x,
@@ -49,22 +50,22 @@ function generateRandomNodes(count: number): Node[] {
     }
 
     for (const node of nodes) {
-        // Use deterministic randomness for visual effect (not security-critical)
+        // Math.random() is safe here - used only for visual effects, not security
         const connectionCount =
             Math.floor(Math.random() * (maxConnections - minConnections + 1)) +
             minConnections;
-        const sortedCandidates = nodes
+        const candidatesWithDistance = nodes
             .filter((n) => n.id !== node.id)
             .map((n) => ({
                 node: n,
                 distance: Math.sqrt(
                     Math.pow(node.x - n.x, 2) + Math.pow(node.y - n.y, 2)
                 ),
-            }))
-            .toSorted((a, b) => a.distance - b.distance);
+            }));
+        const sortedCandidates = [...candidatesWithDistance].sort((a: { node: Node; distance: number }, b: { node: Node; distance: number }) => a.distance - b.distance);
         const candidates = sortedCandidates
             .slice(0, connectionCount)
-            .map((c) => c.node.id);
+            .map((c: { node: Node; distance: number }) => c.node.id);
 
         node.connections = candidates;
     }

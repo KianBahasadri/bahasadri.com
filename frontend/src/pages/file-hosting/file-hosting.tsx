@@ -87,7 +87,7 @@ export default function FileHosting(): React.JSX.Element {
             <div className={styles["upload-section"]}>
                 <div
                     className={`${styles["upload-zone"]} ${
-                        isDragging ? (styles["dragging"] ?? "") : ""
+                        isDragging && styles["dragging"] ? (styles["dragging"] ?? "") : ""
                     }`}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
@@ -173,7 +173,7 @@ export default function FileHosting(): React.JSX.Element {
                             </div>
                         );
                     }
-                    return null;
+                    return <p>No files uploaded yet</p>;
                 })()}
             </div>
         </div>

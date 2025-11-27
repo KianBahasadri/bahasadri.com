@@ -113,7 +113,8 @@ export async function generateAgentResponse(
         );
     }
 
-    const data = await response.json() as OpenRouterResponse;
+    // response.json() returns any, but we know the structure from OpenRouter API
+    const data = await response.json() as unknown as OpenRouterResponse;
 
     if (data.choices.length === 0) {
         throw new Error("Invalid response format from OpenRouter API");

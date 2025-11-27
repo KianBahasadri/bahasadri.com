@@ -57,7 +57,8 @@ app.post(
             );
 
             // Validate required fields
-            if (!body.job_id || !body.status) {
+            // body.job_id and body.status are typed as string | undefined from Hono
+            if (body.job_id === undefined || body.status === undefined) {
                 return c.json<ErrorResponse>(
                     {
                         error: "Missing required fields: job_id, status",
@@ -84,11 +85,12 @@ app.post(
             }
 
             // Verify job exists
-            const existingJobRaw = await c.env.MOVIES_D1.prepare(
+            // D1.prepare().bind().first() returns any, but we know the structure
+            const existingJobRaw = await (c.env.MOVIES_D1.prepare(
                 `SELECT job_id, status FROM jobs WHERE job_id = ?`
             )
                 .bind(body.job_id)
-                .first();
+                .first() as Promise<{ job_id: string; status: string } | null>);
             const existingJob = existingJobRaw as JobRow | undefined;
 
             if (!existingJob) {

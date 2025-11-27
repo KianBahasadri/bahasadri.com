@@ -11,10 +11,12 @@ interface ReleaseSelectorProps {
 
 function formatFileSize(bytes: number): string {
     if (bytes < 1024) return `${String(bytes)} B`;
-    if (bytes < 1024 * 1024) return `${String((bytes / 1024).toFixed(2))} KB`;
-    if (bytes < 1024 * 1024 * 1024)
-        return `${String((bytes / (1024 * 1024)).toFixed(2))} MB`;
-    return `${String((bytes / (1024 * 1024 * 1024)).toFixed(2))} GB`;
+    const kb = (bytes / 1024).toFixed(2);
+    if (bytes < 1024 * 1024) return `${String(kb)} KB`;
+    const mb = (bytes / (1024 * 1024)).toFixed(2);
+    if (bytes < 1024 * 1024 * 1024) return `${String(mb)} MB`;
+    const gb = (bytes / (1024 * 1024 * 1024)).toFixed(2);
+    return `${String(gb)} GB`;
 }
 
 export default function ReleaseSelector({

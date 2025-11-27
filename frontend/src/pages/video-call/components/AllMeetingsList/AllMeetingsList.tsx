@@ -53,9 +53,12 @@ export default function AllMeetingsList(): React.JSX.Element {
                         type="button"
                         className={styles["retryButton"]}
                     onClick={() => {
-                        refetch().catch(() => {
-                            // Error handled by query
-                        });
+                        const result = refetch();
+                        if (result instanceof Promise) {
+                            result.catch(() => {
+                                // Error handled by query
+                            });
+                        }
                     }}
                     >
                         Retry
@@ -109,7 +112,12 @@ export default function AllMeetingsList(): React.JSX.Element {
                             className={styles["joinButton"]}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/video-call/${meeting.id}`);
+                                const result = navigate(`/video-call/${meeting.id}`);
+                                if (result instanceof Promise) {
+                                    result.catch(() => {
+                                        // Navigation errors are handled by React Router
+                                    });
+                                }
                             }}
                         >
                             Join

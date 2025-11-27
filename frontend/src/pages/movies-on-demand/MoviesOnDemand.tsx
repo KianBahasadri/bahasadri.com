@@ -66,14 +66,14 @@ export default function MoviesOnDemand(): React.JSX.Element {
         queryKey: queryKeys.available(),
         queryFn: async (): Promise<{ movie: Movie; job: JobStatus }[]> => {
             const jobsResponse = await listActiveJobs();
-            const sortedJobs = [...jobsResponse.jobs].toSorted((a, b) => {
+            const sortedJobs = [...jobsResponse.jobs].sort((a: JobStatus, b: JobStatus) => {
                 const dateA = new Date(a.created_at).getTime();
                 const dateB = new Date(b.created_at).getTime();
                 return dateB - dateA;
             });
 
             const moviePromises = sortedJobs.map(
-                async (job) => {
+                async (job: JobStatus): Promise<{ movie: Movie; job: JobStatus }> => {
                     const movie = await getMovieDetails(job.movie_id);
                     return { movie, job };
                 }
@@ -175,7 +175,7 @@ export default function MoviesOnDemand(): React.JSX.Element {
             <div className={styles["tabs"]}>
                 <button
                     className={`${styles["tab"]} ${
-                        activeView === "popular" ? (styles["active"] ?? "") : ""
+                        activeView === "popular" && styles["active"] ? (styles["active"] ?? "") : ""
                     }`}
                     onClick={() => {
                         handleViewChange("popular");
@@ -185,7 +185,7 @@ export default function MoviesOnDemand(): React.JSX.Element {
                 </button>
                 <button
                     className={`${styles["tab"]} ${
-                        activeView === "top" ? (styles["active"] ?? "") : ""
+                        activeView === "top" && styles["active"] ? (styles["active"] ?? "") : ""
                     }`}
                     onClick={() => {
                         handleViewChange("top");
@@ -195,7 +195,7 @@ export default function MoviesOnDemand(): React.JSX.Element {
                 </button>
                 <button
                     className={`${styles["tab"]} ${
-                        activeView === "history" ? (styles["active"] ?? "") : ""
+                        activeView === "history" && styles["active"] ? (styles["active"] ?? "") : ""
                     }`}
                     onClick={() => {
                         handleViewChange("history");
@@ -205,7 +205,7 @@ export default function MoviesOnDemand(): React.JSX.Element {
                 </button>
                 <button
                     className={`${styles["tab"]} ${
-                        activeView === "available" ? (styles["active"] ?? "") : ""
+                        activeView === "available" && styles["active"] ? (styles["active"] ?? "") : ""
                     }`}
                     onClick={() => {
                         handleViewChange("available");

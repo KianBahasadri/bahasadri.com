@@ -25,9 +25,12 @@ export default function MovieList({
 
     const handleMovieClick = (movieId: number): void => {
         onMovieClick(movieId);
-        navigate(`/movies-on-demand/movies/${String(movieId)}`).catch(() => {
-            // Navigation errors are handled by React Router
-        });
+        const result = navigate(`/movies-on-demand/movies/${String(movieId)}`);
+        if (result instanceof Promise) {
+            result.catch(() => {
+                // Navigation errors are handled by React Router
+            });
+        }
     };
 
     if (isLoading) {

@@ -66,9 +66,12 @@ export default function MeetingsList(): React.JSX.Element {
                         className={styles["retryButton"]}
                         onClick={() => {
                             console.warn("[MeetingsList] Retry button clicked");
-                            refetch().catch(() => {
-                                // Error handled by query
-                            });
+                            const result = refetch();
+                            if (result instanceof Promise) {
+                                result.catch(() => {
+                                    // Error handled by query
+                                });
+                            }
                         }}
                     >
                         Retry
@@ -109,20 +112,25 @@ export default function MeetingsList(): React.JSX.Element {
                     </div>
                 </div>
                 <div className={styles["joinButtons"]}>
-                    <button
-                        type="button"
-                        className={styles["joinButton"]}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            console.warn(
-                                "[MeetingsList] Join clicked:",
-                                session.meeting_id
-                            );
-                            navigate(`/video-call/${session.meeting_id}`);
-                        }}
-                    >
-                        Join
-                    </button>
+                        <button
+                            type="button"
+                            className={styles["joinButton"]}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                console.warn(
+                                    "[MeetingsList] Join clicked:",
+                                    session.meeting_id
+                                );
+                                const result = navigate(`/video-call/${session.meeting_id}`);
+                                if (result instanceof Promise) {
+                                    result.catch(() => {
+                                        // Navigation errors are handled by React Router
+                                    });
+                                }
+                            }}
+                        >
+                            Join
+                        </button>
                 </div>
             </div>
         );

@@ -51,6 +51,113 @@ export function useIceServerTest(): IceTestResult & { retest: () => void } {
     
     const isRunningRef = useRef(false);
 
+    const setupIceHandlers = useCallback(
+        (
+            peerConnection: RTCPeerConnection,
+            candidateTypes: Set<string>,
+            hasStunRef: { current: boolean },
+            hasTurnRef: { current: boolean },
+            timeout: NodeJS.Timeout,
+            resolve: () => void,
+            reject: (error: Error) => void
+        ): void => {
+            peerConnection.onicecandidate = (event): void => {
+                if (event.candidate) {
+                    const candidate = event.candidate;
+                    console.warn(
+                        "[useIceServerTest] runTest: ICE candidate received:",
+                        {
+                            type: candidate.type,
+                            protocol: candidate.protocol,
+                            address: candidate.address,
+                        }
+                    );
+                    if (candidate.type) {
+                        candidateTypes.add(candidate.type);
+                        if (candidate.type === "srflx") {
+                            hasStunRef.current = true;
+                            console.warn(
+                                "[useIceServerTest] runTest: STUN candidate detected"
+                            );
+                        }
+                        if (candidate.type === "relay") {
+                            hasTurnRef.current = true;
+                            console.warn(
+                                "[useIceServerTest] runTest: TURN candidate detected"
+                            );
+                        }
+                    }
+                } else {
+                    console.warn(
+                        "[useIceServerTest] runTest: ICE gathering complete (null candidate)"
+                    );
+                    clearTimeout(timeout);
+                    resolve();
+                }
+            };
+
+            peerConnection.onicegatheringstatechange = (): void => {
+                console.warn(
+                    "[useIceServerTest] runTest: ICE gathering state changed:",
+                    peerConnection.iceGatheringState
+                );
+                if (peerConnection.iceGatheringState === "complete") {
+                    console.warn(
+                        "[useIceServerTest] runTest: ICE gathering state is complete"
+                    );
+                    clearTimeout(timeout);
+                    resolve();
+                }
+            };
+
+            peerConnection.oniceconnectionstatechange = (): void => {
+                console.warn(
+                    "[useIceServerTest] runTest: ICE connection state changed:",
+                    peerConnection.iceConnectionState
+                );
+                if (peerConnection.iceConnectionState === "failed") {
+                    console.error(
+                        "[useIceServerTest] runTest: ICE connection failed"
+                    );
+                    clearTimeout(timeout);
+                    reject(new Error("ICE connection failed"));
+                }
+            };
+        },
+        []
+    );
+
+    const analyzeCandidates = useCallback(
+        (candidateTypes: Set<string>, hasStun: boolean, hasTurn: boolean): void => {
+            const hasHostCandidates = candidateTypes.has("host");
+            const hasViableCandidates = hasHostCandidates || hasStun;
+
+            if (hasViableCandidates) {
+                const firefoxWarning = isFirefox && !hasStun;
+                setResult({
+                    status: firefoxWarning ? "warning" : "success",
+                    hasStun,
+                    hasTurn,
+                    candidateTypes: [...candidateTypes],
+                    error: firefoxWarning
+                        ? "Firefox may require TURN servers for video calls on this network"
+                        : null,
+                    isFirefox,
+                });
+            } else {
+                setResult({
+                    status: "failed",
+                    hasStun,
+                    hasTurn,
+                    candidateTypes: [...candidateTypes],
+                    error: "No viable ICE candidates found. WebRTC may not work on this network.",
+                    isFirefox,
+                });
+            }
+        },
+        [isFirefox]
+    );
+
     const runTest = useCallback(async () => {
         // Prevent multiple simultaneous tests
         if (isRunningRef.current) {
@@ -72,15 +179,13 @@ export function useIceServerTest(): IceTestResult & { retest: () => void } {
         });
 
         const candidateTypes = new Set<string>();
-        let hasStun = false;
-        let hasTurn = false;
+        const hasStunRef = { current: false };
+        const hasTurnRef = { current: false };
 
         let pc: RTCPeerConnection | null = null;
         let mediaStream: MediaStream | null = null;
 
         try {
-            // Request media permission first - Firefox requires this to unlock
-            // network interfaces for proper ICE candidate gathering
             console.warn(
                 "[useIceServerTest] runTest: Requesting media permissions..."
             );
@@ -92,7 +197,6 @@ export function useIceServerTest(): IceTestResult & { retest: () => void } {
                     "[useIceServerTest] runTest: Media permission granted"
                 );
             } catch (error) {
-                // If permission denied, continue anyway - test may still partially work
                 console.warn(
                     "[useIceServerTest] runTest: Media permission denied, ICE test may be limited:",
                     error
@@ -107,12 +211,8 @@ export function useIceServerTest(): IceTestResult & { retest: () => void } {
                 iceServers: TEST_ICE_SERVERS,
             });
 
-            // Create a data channel to trigger ICE gathering
             console.warn("[useIceServerTest] runTest: Creating data channel");
             pc.createDataChannel("ice-test");
-
-            // Capture pc in a const for use in callbacks
-            const peerConnection = pc;
 
             const gatheringComplete = new Promise<void>((resolve, reject) => {
                 console.warn(
@@ -124,7 +224,6 @@ export function useIceServerTest(): IceTestResult & { retest: () => void } {
                         "[useIceServerTest] runTest: Timeout reached, candidateTypes:",
                         [...candidateTypes]
                     );
-                    // If we gathered some candidates, consider it a partial success
                     if (candidateTypes.size > 0) {
                         console.warn(
                             "[useIceServerTest] runTest: Timeout but has candidates, resolving"
@@ -142,75 +241,23 @@ export function useIceServerTest(): IceTestResult & { retest: () => void } {
                     }
                 }, ICE_TEST_TIMEOUT_MS);
 
-                peerConnection.onicecandidate = (event): void => {
-                    if (event.candidate) {
-                        const candidate = event.candidate;
-                        console.warn(
-                            "[useIceServerTest] runTest: ICE candidate received:",
-                            {
-                                type: candidate.type,
-                                protocol: candidate.protocol,
-                                address: candidate.address,
-                            }
-                        );
-                        if (candidate.type) {
-                            candidateTypes.add(candidate.type);
-                        }
-
-                        // Check candidate types
-                        if (candidate.type === "srflx") {
-                            hasStun = true;
-                            console.warn(
-                                "[useIceServerTest] runTest: STUN candidate detected"
-                            );
-                        }
-                        if (candidate.type === "relay") {
-                            hasTurn = true;
-                            console.warn(
-                                "[useIceServerTest] runTest: TURN candidate detected"
-                            );
-                        }
-                    } else {
-                        // ICE gathering complete (null candidate)
-                        console.warn(
-                            "[useIceServerTest] runTest: ICE gathering complete (null candidate)"
-                        );
-                        clearTimeout(timeout);
-                        resolve();
-                    }
-                };
-
-                peerConnection.onicegatheringstatechange = (): void => {
-                    console.warn(
-                        "[useIceServerTest] runTest: ICE gathering state changed:",
-                        peerConnection.iceGatheringState
+                if (pc) {
+                    setupIceHandlers(
+                        pc,
+                        candidateTypes,
+                        hasStunRef,
+                        hasTurnRef,
+                        timeout,
+                        resolve,
+                        reject
                     );
-                    if (peerConnection.iceGatheringState === "complete") {
-                        console.warn(
-                            "[useIceServerTest] runTest: ICE gathering state is complete"
-                        );
-                        clearTimeout(timeout);
-                        resolve();
-                    }
-                };
-
-                // Handle connection failures
-                peerConnection.oniceconnectionstatechange = (): void => {
-                    console.warn(
-                        "[useIceServerTest] runTest: ICE connection state changed:",
-                        peerConnection.iceConnectionState
-                    );
-                    if (peerConnection.iceConnectionState === "failed") {
-                        console.error(
-                            "[useIceServerTest] runTest: ICE connection failed"
-                        );
-                        clearTimeout(timeout);
-                        reject(new Error("ICE connection failed"));
-                    }
-                };
+                }
             });
 
-            // Create and set local description to start ICE gathering
+            if (!pc) {
+                throw new Error("Failed to create RTCPeerConnection");
+            }
+
             console.warn("[useIceServerTest] runTest: Creating offer...");
             const offer = await pc.createOffer();
             console.warn(
@@ -221,70 +268,25 @@ export function useIceServerTest(): IceTestResult & { retest: () => void } {
                 "[useIceServerTest] runTest: Local description set, waiting for gathering..."
             );
 
-            // Wait for gathering to complete
             console.warn(
                 "[useIceServerTest] runTest: Waiting for gathering to complete..."
             );
             await gatheringComplete;
             console.warn("[useIceServerTest] runTest: Gathering complete");
 
-            // We expect at least host candidates, and ideally srflx (STUN) candidates
-            const hasHostCandidates = candidateTypes.has("host");
-            console.warn(
-                "[useIceServerTest] runTest: Final candidate analysis:",
-                {
-                    hasHostCandidates,
-                    hasStun,
-                    hasTurn,
-                    candidateTypes: [...candidateTypes],
-                }
-            );
-
-            // Firefox is stricter about TURN - warn if no STUN on Firefox
-            const hasViableCandidates = hasHostCandidates || hasStun;
-            if (hasViableCandidates) {
-                // On Firefox without STUN, this may still fail in the actual call
-                const firefoxWarning = isFirefox && !hasStun;
-                console.warn(
-                    "[useIceServerTest] runTest: Test success (with possible Firefox warning):",
-                    firefoxWarning
-                );
-                setResult({
-                    status: firefoxWarning ? "warning" : "success",
-                    hasStun,
-                    hasTurn,
-                    candidateTypes: [...candidateTypes],
-                    error: firefoxWarning
-                        ? "Firefox may require TURN servers for video calls on this network"
-                        : null,
-                    isFirefox,
-                });
-            } else {
-                console.error(
-                    "[useIceServerTest] runTest: Test failed - no viable candidates"
-                );
-                setResult({
-                    status: "failed",
-                    hasStun,
-                    hasTurn,
-                    candidateTypes: [...candidateTypes],
-                    error: "No viable ICE candidates found. WebRTC may not work on this network.",
-                    isFirefox,
-                });
-            }
+            analyzeCandidates(candidateTypes, hasStunRef.current, hasTurnRef.current);
         } catch (error) {
             console.error("[useIceServerTest] runTest: Test error:", error);
             setResult({
                 status: "failed",
-                hasStun,
-                hasTurn,
+                hasStun: hasStunRef.current,
+                hasTurn: hasTurnRef.current,
                 candidateTypes: [...candidateTypes],
                 error:
                     error instanceof Error ? error.message : "ICE test failed",
                 isFirefox,
             });
         } finally {
-            // Always clean up the peer connection
             console.warn("[useIceServerTest] runTest: Cleaning up...");
             if (pc) {
                 console.warn(
@@ -292,7 +294,6 @@ export function useIceServerTest(): IceTestResult & { retest: () => void } {
                 );
                 pc.close();
             }
-            // Stop all media tracks
             if (mediaStream) {
                 console.warn(
                     "[useIceServerTest] runTest: Stopping media tracks"
@@ -302,7 +303,7 @@ export function useIceServerTest(): IceTestResult & { retest: () => void } {
             console.warn("[useIceServerTest] runTest: Cleanup complete");
             isRunningRef.current = false;
         }
-    }, [isFirefox]);
+    }, [isFirefox, setupIceHandlers, analyzeCandidates]);
 
     useEffect(() => {
         console.warn("[useIceServerTest] useEffect: Running initial test");

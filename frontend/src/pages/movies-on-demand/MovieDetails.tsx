@@ -25,10 +25,11 @@ const queryKeys = {
 
 function getRefetchInterval(query: { state: { data?: JobStatus | undefined } }): number | false {
     const data = query.state.data;
-    if (data?.status === "ready" || data?.status === "error") {
-        return false;
+    if (!data) {
+        return 2000;
     }
-    return 2000;
+    const isComplete = data.status === "ready" || data.status === "error";
+    return isComplete ? false : 2000;
 }
 
 export default function MovieDetails(): React.JSX.Element {
@@ -108,15 +109,21 @@ export default function MovieDetails(): React.JSX.Element {
     };
 
     const handleWatchClick = (): void => {
-        navigate(`/movies-on-demand/movies/${String(movieId)}/watch`).catch(() => {
-            // Navigation errors are handled by React Router
-        });
+        const result = navigate(`/movies-on-demand/movies/${String(movieId)}/watch`);
+        if (result instanceof Promise) {
+            result.catch(() => {
+                // Navigation errors are handled by React Router
+            });
+        }
     };
 
     const handleSimilarMovieClick = (similarMovieId: number): void => {
-        navigate(`/movies-on-demand/movies/${String(similarMovieId)}`).catch(() => {
-            // Navigation errors are handled by React Router
-        });
+        const result = navigate(`/movies-on-demand/movies/${String(similarMovieId)}`);
+        if (result instanceof Promise) {
+            result.catch(() => {
+                // Navigation errors are handled by React Router
+            });
+        }
     };
 
     if (isDetailsLoading || !movieDetails) {
@@ -133,9 +140,12 @@ export default function MovieDetails(): React.JSX.Element {
     const isReady = currentJob?.status === "ready";
 
     const handleBackClick = (): void => {
-        navigate("/movies-on-demand").catch(() => {
-            // Navigation errors are handled by React Router
-        });
+        const result = navigate("/movies-on-demand");
+        if (result instanceof Promise) {
+            result.catch(() => {
+                // Navigation errors are handled by React Router
+            });
+        }
     };
 
     return (
@@ -280,13 +290,19 @@ export default function MovieDetails(): React.JSX.Element {
                             </button>
                         )}
                     </div>
-                    {(currentJob || jobId) ? (
-                        <JobStatusDisplay
-                            job={currentJob ?? null}
-                            isLoading={isJobStatusLoading}
-                            {...(isReady ? { onWatchClick: handleWatchClick } : {})}
-                        />
-                    ) : null}
+                    {(() => {
+                        if (!currentJob && !jobId) {
+                            return null;
+                        }
+                        const watchClickProps = isReady ? { onWatchClick: handleWatchClick } : {};
+                        return (
+                            <JobStatusDisplay
+                                job={currentJob ?? null}
+                                isLoading={isJobStatusLoading}
+                                {...watchClickProps}
+                            />
+                        );
+                    })() as React.JSX.Element | null}
                 </section>
 
                 {movieDetails.credits && movieDetails.credits.cast.length > 0 ? (

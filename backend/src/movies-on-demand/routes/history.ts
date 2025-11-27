@@ -33,16 +33,18 @@ app.get(
             const offset = offsetValidation.offset;
 
             // Query watch history from D1
-            const result = await c.env.MOVIES_D1.prepare(
+            // D1.prepare().bind().all() returns any, but we know the structure
+            const result = await (c.env.MOVIES_D1.prepare(
                 `SELECT * FROM watch_history ORDER BY last_watched_at DESC LIMIT ? OFFSET ?`
             )
                 .bind(limit, offset)
-                .all();
+                .all() as Promise<{ results: WatchHistoryRow[] }>);
 
             // Get total count
-            const countResultRaw = await c.env.MOVIES_D1.prepare(
+            // D1.prepare().first() returns any, but we know it's { count: number } | null
+            const countResultRaw = await (c.env.MOVIES_D1.prepare(
                 `SELECT COUNT(*) as count FROM watch_history`
-            ).first();
+            ).first() as Promise<{ count: number } | null>);
             const countResult = countResultRaw as { count: number } | undefined;
 
             const movies = ((result.results ?? []) as WatchHistoryRow[]).map(

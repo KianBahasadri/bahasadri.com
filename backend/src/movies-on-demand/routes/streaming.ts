@@ -30,12 +30,13 @@ app.get(
             // Determine if ID is job_id or movie_id
             if (idParam.startsWith("job_")) {
                 // It's a job ID
-                const jobResult = await c.env.MOVIES_D1.prepare(
+                // D1.prepare().bind().first() is typed as any, cast through unknown to break any chain
+                const jobResult = await (c.env.MOVIES_D1.prepare(
                     `SELECT * FROM jobs WHERE job_id = ?`
                 )
                     .bind(idParam)
-                    .first();
-                job = jobResult as JobRow | undefined;
+                    .first() as unknown as Promise<JobRow | null>);
+                job = jobResult ?? undefined;
             } else {
                 // It's a movie ID - get latest job
                 const movieIdValidation = validateMovieId(idParam);
@@ -61,12 +62,13 @@ app.get(
                     );
                 }
 
-                const jobResult = await c.env.MOVIES_D1.prepare(
+                // D1.prepare().bind().first() is typed as any, cast through unknown to break any chain
+                const jobResult = await (c.env.MOVIES_D1.prepare(
                     `SELECT * FROM jobs WHERE movie_id = ? ORDER BY created_at DESC LIMIT 1`
                 )
                     .bind(movieId)
-                    .first();
-                job = jobResult as JobRow | undefined;
+                    .first() as unknown as Promise<JobRow | null>);
+                job = jobResult ?? undefined;
             }
 
             if (!job) {
@@ -89,15 +91,20 @@ app.get(
 
             // Update last_watched_at
             const now = new Date().toISOString();
-            await c.env.MOVIES_D1.prepare(
+            // D1.prepare().bind().run() is typed as any, cast through unknown to break any chain
+            await (c.env.MOVIES_D1.prepare(
                 `UPDATE jobs SET last_watched_at = ?, updated_at = ? WHERE job_id = ?`
             )
                 .bind(now, now, job.job_id)
-                .run();
+                .run() as unknown as Promise<{ success: boolean }>);
 
             // Get movie file metadata from R2
             const r2Key = `movies/${job.job_id}/movie.mp4`;
-            const object = await c.env.MOVIES_R2.head(r2Key);
+            // R2.head is typed as any, cast through unknown to break any chain
+            const object = await (c.env.MOVIES_R2.head(r2Key) as unknown as Promise<{
+                size: number;
+                httpMetadata: { contentType?: string } | null;
+            } | null>);
 
             if (!object) {
                 return c.json<ErrorResponse>(
@@ -150,11 +157,12 @@ app.get(
             }
 
             // Verify job exists and is ready
-            const jobResult = await c.env.MOVIES_D1.prepare(
+            // D1.prepare().bind().first() is typed as any, cast through unknown to break any chain
+            const jobResult = await (c.env.MOVIES_D1.prepare(
                 `SELECT * FROM jobs WHERE job_id = ? AND status = 'ready'`
             )
                 .bind(jobId)
-                .first();
+                .first() as unknown as Promise<JobRow | null>);
             const job = jobResult as JobRow | undefined;
 
             if (!job) {
@@ -169,7 +177,12 @@ app.get(
 
             // Get video from R2
             const r2Key = `movies/${jobId}/movie.mp4`;
-            const object = await c.env.MOVIES_R2.get(r2Key);
+            // R2.get is typed as any, cast through unknown to break any chain
+            const object = await (c.env.MOVIES_R2.get(r2Key) as unknown as Promise<{
+                body: ReadableStream;
+                size: number;
+                httpMetadata: { contentType?: string } | null;
+            } | null>);
 
             if (!object) {
                 return c.json<ErrorResponse>(
@@ -198,9 +211,12 @@ app.get(
                     const contentLength = end - start + 1;
 
                     // Get partial content from R2
-                    const partialObject = await c.env.MOVIES_R2.get(r2Key, {
+                    // R2.get with range is typed as any, cast through unknown to break any chain
+                    const partialObject = await (c.env.MOVIES_R2.get(r2Key, {
                         range: { offset: start, length: contentLength },
-                    });
+                    }) as unknown as Promise<{
+                        body: ReadableStream;
+                    } | null>);
 
                     if (!partialObject) {
                         return c.json<ErrorResponse>(

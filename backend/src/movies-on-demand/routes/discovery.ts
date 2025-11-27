@@ -51,7 +51,7 @@ app.get(
             }
 
             const page = validatePage(pageParam);
-            const queryValue = query ?? "";
+            const queryValue = String(query ?? "");
             const results = await tmdbSearchMovies(
                 c.env.TMDB_API_KEY,
                 queryValue,
@@ -76,7 +76,7 @@ app.get(
             const pageParam = c.req.query("page");
             const page = validatePage(pageParam);
 
-            const apiKey = c.env.TMDB_API_KEY;
+            const apiKey = String(c.env.TMDB_API_KEY);
             const results = await tmdbGetPopular(apiKey, page);
             return c.json<MovieSearchResponse>(results, 200);
         },
@@ -96,7 +96,7 @@ app.get(
             const pageParam = c.req.query("page");
             const page = validatePage(pageParam);
 
-            const results = await tmdbGetTopRated(c.env.TMDB_API_KEY, page);
+            const results = await tmdbGetTopRated(String(c.env.TMDB_API_KEY), page);
             return c.json<MovieSearchResponse>(results, 200);
         },
         "/api/movies-on-demand/top",
@@ -139,17 +139,18 @@ app.get(
 
             // Get movie details from TMDB
             const movieDetails = await tmdbGetMovieDetails(
-                c.env.TMDB_API_KEY,
+                String(c.env.TMDB_API_KEY),
                 movieId
             );
 
             // Check for active job in D1
-            const jobResult = await c.env.MOVIES_D1.prepare(
+            // D1.prepare().bind().first() returns any, but we know it's JobRow | null
+            const jobResult = await (c.env.MOVIES_D1.prepare(
                 `SELECT * FROM jobs WHERE movie_id = ? ORDER BY created_at DESC LIMIT 1`
             )
                 .bind(movieId)
-                .first();
-            const job = jobResult as JobRow | undefined;
+                .first() as Promise<JobRow | null>);
+            const job = jobResult ?? undefined;
 
             let jobStatus: MovieDetails["job_status"];
             if (job) {
@@ -209,7 +210,7 @@ app.get(
             const page = validatePage(pageParam);
 
             const results = await tmdbGetSimilar(
-                c.env.TMDB_API_KEY,
+                String(c.env.TMDB_API_KEY),
                 movieId,
                 page
             );

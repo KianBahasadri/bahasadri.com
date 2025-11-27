@@ -74,7 +74,7 @@ export default function JobStatusDisplay({
     }
 
     if (!job) {
-        return null;
+        return <div className={styles["container"]} />;
     }
 
     const statusColor = getStatusColor(job.status);
@@ -100,14 +100,14 @@ export default function JobStatusDisplay({
                         <div
                             className={styles["progressFill"]}
                             style={{
-                                width: `${job.progress}%`,
+                                width: `${String(job.progress ?? 0)}%`,
                                 backgroundColor: statusColor,
                             }}
                         />
                     </div>
                     <span className={styles["progressText"]}>
                         {job.progress !== null && job.progress !== undefined
-                            ? `${String(job.progress.toFixed(1))}%`
+                            ? `${job.progress.toFixed(1)}%`
                             : "0%"}
                     </span>
                 </div> : null}

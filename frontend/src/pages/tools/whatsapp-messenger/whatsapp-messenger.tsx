@@ -65,9 +65,12 @@ export default function WhatsAppMessenger(): React.JSX.Element {
                             <button
                                 className={styles["bannerButton"]}
                                 onClick={() => {
-                                    navigate("/").catch(() => {
-                                        // Navigation errors are handled by React Router
-                                    });
+                                    const result = navigate("/");
+                                    if (result instanceof Promise) {
+                                        result.catch(() => {
+                                            // Navigation errors are handled by React Router
+                                        });
+                                    }
                                 }}
                             >
                                 Go Back Home
@@ -75,9 +78,12 @@ export default function WhatsAppMessenger(): React.JSX.Element {
                             <button
                                 className={styles["bannerButtonSecondary"]}
                                 onClick={() => {
-                                    navigate("/sms-messenger").catch(() => {
-                                        // Navigation errors are handled by React Router
-                                    });
+                                    const result = navigate("/sms-messenger");
+                                    if (result instanceof Promise) {
+                                        result.catch(() => {
+                                            // Navigation errors are handled by React Router
+                                        });
+                                    }
                                 }}
                             >
                                 Try SMS Messenger

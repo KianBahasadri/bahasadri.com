@@ -281,6 +281,35 @@ export default function VideoRoom({
         },
     });
 
+    const updateParticipantName = useCallback(
+        (
+            meeting: ReturnType<typeof useRealtimeKitClient>[0],
+            name: string | undefined
+        ): void => {
+            const canEdit = meeting.self.permissions.canEditDisplayName;
+            const currentName = meeting.self.name;
+
+            if (canEdit && !currentName) {
+                const nameToSet = name ?? "admin-kun";
+                console.warn(
+                    "[VideoRoom] updateParticipantName: Setting participant name (no name currently set):",
+                    nameToSet
+                );
+                meeting.self.setName(nameToSet);
+            } else if (name && canEdit && currentName !== name) {
+                console.warn(
+                    "[VideoRoom] updateParticipantName: Updating participant name from prop:",
+                    {
+                        oldName: currentName,
+                        newName: name,
+                    }
+                );
+                meeting.self.setName(name);
+            }
+        },
+        []
+    );
+
     const handleJoinMeeting = useCallback(
         async (targetMeetingId: string, presetName?: string) => {
             console.warn("[VideoRoom] handleJoinMeeting: Called with:", {
@@ -352,114 +381,7 @@ export default function VideoRoom({
                     }
                 );
 
-                if (initializedMeeting) {
-                    console.warn(
-                        "[VideoRoom] handleJoinMeeting: Setting meeting state and joining room..."
-                    );
-                    if (!isMountedRef.current) {
-                        console.warn(
-                            "[VideoRoom] handleJoinMeeting: Component unmounted, cleaning up meeting"
-                        );
-                        void initializedMeeting.leave();
-                        isJoiningRef.current = false;
-                        return;
-                    }
-
-                    // Set default name to "admin-kun" if none was provided and user has permission
-                    console.warn(
-                        "[VideoRoom] handleJoinMeeting: Checking participant name...",
-                        {
-                            currentName: initializedMeeting.self.name,
-                            participantNameProp: participantName,
-                            canEditDisplayName:
-                                initializedMeeting.self.permissions
-                                    .canEditDisplayName,
-                        }
-                    );
-                    if (
-                        initializedMeeting.self.permissions
-                            .canEditDisplayName &&
-                        !initializedMeeting.self.name
-                    ) {
-                        const nameToSet = participantName ?? "admin-kun";
-                        console.warn(
-                            "[VideoRoom] handleJoinMeeting: Setting participant name (no name currently set):",
-                            nameToSet
-                        );
-                        initializedMeeting.self.setName(nameToSet);
-                        console.warn(
-                            "[VideoRoom] handleJoinMeeting: Name set, new name:",
-                            initializedMeeting.self.name
-                        );
-                    } else if (
-                        participantName &&
-                        initializedMeeting.self.permissions
-                            .canEditDisplayName &&
-                        initializedMeeting.self.name !== participantName
-                    ) {
-                        console.warn(
-                            "[VideoRoom] handleJoinMeeting: Updating participant name from prop:",
-                            {
-                                oldName: initializedMeeting.self.name,
-                                newName: participantName,
-                            }
-                        );
-                        initializedMeeting.self.setName(participantName);
-                        console.warn(
-                            "[VideoRoom] handleJoinMeeting: Name updated, current name:",
-                            initializedMeeting.self.name
-                        );
-                    } else {
-                        console.warn(
-                            "[VideoRoom] handleJoinMeeting: No name change needed",
-                            {
-                                currentName: initializedMeeting.self.name,
-                                participantNameProp: participantName,
-                            }
-                        );
-                    }
-
-                    setMeeting(initializedMeeting);
-                    console.warn(
-                        "[VideoRoom] handleJoinMeeting: Meeting set in state, about to call joinRoom()...",
-                        {
-                            currentName: initializedMeeting.self.name,
-                            canEditName:
-                                initializedMeeting.self.permissions
-                                    .canEditDisplayName,
-                            roomState: initializedMeeting.self.roomState,
-                        }
-                    );
-                    console.warn(
-                        "[VideoRoom] handleJoinMeeting: Calling joinRoom()..."
-                    );
-                    const joinStartTime = Date.now();
-                    await initializedMeeting.joinRoom();
-                    const joinDuration = Date.now() - joinStartTime;
-                    console.warn(
-                        "[VideoRoom] handleJoinMeeting: joinRoom() completed",
-                        {
-                            duration: `${String(joinDuration)}ms`,
-                            newRoomState: initializedMeeting.self.roomState,
-                            roomJoined: initializedMeeting.self.roomJoined,
-                        }
-                    );
-                    const stillMounted = isMountedRef.current;
-                    if (!stillMounted) {
-                        console.warn(
-                            "[VideoRoom] handleJoinMeeting: Component unmounted after joinRoom, cleaning up"
-                        );
-                        void initializedMeeting.leave();
-                        isJoiningRef.current = false;
-                        return;
-                    }
-                    console.warn(
-                        "[VideoRoom] handleJoinMeeting: Setting state to connected"
-                    );
-                    setError(null);
-                    setRoomState("connected");
-                    isJoiningRef.current = false;
-                } else {
+                if (!initializedMeeting) {
                     console.warn(
                         "[VideoRoom] handleJoinMeeting: No meeting returned from initMeeting"
                     );
@@ -468,7 +390,62 @@ export default function VideoRoom({
                         setRoomState("error");
                     }
                     isJoiningRef.current = false;
+                    return;
                 }
+
+                console.warn(
+                    "[VideoRoom] handleJoinMeeting: Setting meeting state and joining room..."
+                );
+                if (!isMountedRef.current) {
+                    console.warn(
+                        "[VideoRoom] handleJoinMeeting: Component unmounted, cleaning up meeting"
+                    );
+                    void initializedMeeting.leave();
+                    isJoiningRef.current = false;
+                    return;
+                }
+
+                updateParticipantName(initializedMeeting, participantName);
+
+                setMeeting(initializedMeeting);
+                console.warn(
+                    "[VideoRoom] handleJoinMeeting: Meeting set in state, about to call joinRoom()...",
+                    {
+                        currentName: initializedMeeting.self.name,
+                        canEditName:
+                            initializedMeeting.self.permissions
+                                .canEditDisplayName,
+                        roomState: initializedMeeting.self.roomState,
+                    }
+                );
+                console.warn(
+                    "[VideoRoom] handleJoinMeeting: Calling joinRoom()..."
+                );
+                const joinStartTime = Date.now();
+                await initializedMeeting.joinRoom();
+                const joinDuration = Date.now() - joinStartTime;
+                console.warn(
+                    "[VideoRoom] handleJoinMeeting: joinRoom() completed",
+                    {
+                        duration: `${String(joinDuration)}ms`,
+                        newRoomState: initializedMeeting.self.roomState,
+                        roomJoined: initializedMeeting.self.roomJoined,
+                    }
+                );
+                if (!isMountedRef.current) {
+                    console.warn(
+                        "[VideoRoom] handleJoinMeeting: Component unmounted after joinRoom, cleaning up"
+                    );
+                    void initializedMeeting.leave();
+                    isJoiningRef.current = false;
+                    return;
+                }
+                console.warn(
+                    "[VideoRoom] handleJoinMeeting: Setting state to connected"
+                );
+                setError(null);
+                setRoomState("connected");
+                isJoiningRef.current = false;
             } catch (error_) {
                 console.error(
                     "[VideoRoom] handleJoinMeeting: Error occurred:",
@@ -494,7 +471,7 @@ export default function VideoRoom({
                 setRoomState("error");
             }
         },
-        [participantName, generateTokenMutation, initMeeting]
+        [participantName, generateTokenMutation, initMeeting, updateParticipantName]
     );
 
     const handleLeave = useCallback(() => {
@@ -587,9 +564,7 @@ export default function VideoRoom({
                         isFirefox={iceTest.isFirefox}
                         onRetry={iceTest.retest}
                     />
-                    {error === null ? null : (
-                        <div className={styles["error"]}>{error}</div>
-                    )}
+                    {error ? <div className={styles["error"]}>{error}</div> : null}
                     <div className={styles["listsContainer"]}>
                         <MeetingsList />
                         <AllMeetingsList />

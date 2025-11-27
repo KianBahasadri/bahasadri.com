@@ -18,15 +18,21 @@ export default function MovieWithJobStatus({
     const posterUrl = getImageUrl(movie.poster_path, "w500");
 
     const handleMovieClick = (): void => {
-        navigate(`/movies-on-demand/movies/${String(movie.id)}`).catch(() => {
-            // Navigation errors are handled by React Router
-        });
+        const result = navigate(`/movies-on-demand/movies/${String(movie.id)}`);
+        if (result instanceof Promise) {
+            result.catch(() => {
+                // Navigation errors are handled by React Router
+            });
+        }
     };
 
     const handleWatchClick = (): void => {
-        navigate(`/movies-on-demand/movies/${String(movie.id)}/watch`).catch(() => {
-            // Navigation errors are handled by React Router
-        });
+        const result = navigate(`/movies-on-demand/movies/${String(movie.id)}/watch`);
+        if (result instanceof Promise) {
+            result.catch(() => {
+                // Navigation errors are handled by React Router
+            });
+        }
     };
 
     return (

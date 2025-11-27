@@ -153,6 +153,8 @@ export function generateJobId(): string {
     const timestamp = Date.now();
     // Using crypto for better randomness (if available) or fallback to Math.random
     // For job IDs, Math.random is acceptable as uniqueness is ensured by timestamp
+    // This is not used for cryptographic purposes, only for generating unique identifiers
+    // eslint-disable-next-line sonarjs/pseudo-random
     const random = Math.random().toString(36).slice(2, 10);
     return `job_${String(timestamp)}_${random}`;
 }

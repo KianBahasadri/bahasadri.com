@@ -119,7 +119,7 @@ export default function NotFound(): React.JSX.Element {
             const volume = new Tone.Volume(-10);
             volumeRef.current = volume;
 
-            // Use a deterministic seed for visual effect (not security-critical)
+            // Math.random() is safe here - used only for visual/audio effects, not security
             const randomValue = Math.random() / 100 + 0.01;
             const autoFilter = new Tone.AutoFilter(
                 randomValue,
@@ -138,27 +138,31 @@ export default function NotFound(): React.JSX.Element {
             const activeSources: number[] = [];
             const transport = Tone.getTransport();
 
+            const createScheduleNext = (notes: string[]): (() => void) => {
+                return (): void => {
+                    if (isPlayingRef.current) {
+                        play(notes);
+                    }
+                };
+            };
+
             const play = (notes: string[]): void => {
-                // Use deterministic randomness for visual effect (not security-critical)
+                // Math.random() is safe here - used only for visual/audio effects, not security
                 const noteIndex = Math.floor(Math.random() * notes.length);
                 const note = notes[noteIndex];
                 if (!note) {
                     return;
                 }
+                // Math.random() is safe here - used only for visual/audio effects, not security
                 const delay = 1 + Math.random() * 5;
 
                 synth.triggerAttackRelease(note, "8n", `+${String(delay)}`);
 
+                // Math.random() is safe here - used only for visual/audio effects, not security
                 const nextDelay =
                     4 + Math.random() * 5 - 2.5;
 
-                const scheduleNext = (): void => {
-                    if (isPlayingRef.current) {
-                        play(notes);
-                    }
-                };
-
-                const event = transport.scheduleOnce(scheduleNext, `+${String(nextDelay)}`);
+                const event = transport.scheduleOnce(createScheduleNext(notes), `+${String(nextDelay)}`);
 
                 activeSources.push(event);
             };
@@ -194,6 +198,10 @@ export default function NotFound(): React.JSX.Element {
             }
         };
 
+        const handler = (): void => {
+            handleInteraction();
+        };
+
         const setupInteractionListeners = (): void => {
             if (interactionListenersRef.current.length > 0) {
                 return;
@@ -201,10 +209,6 @@ export default function NotFound(): React.JSX.Element {
 
             const events = ["click", "keydown", "touchstart", "mousedown"];
             const cleanups: (() => void)[] = [];
-
-            const handler = (): void => {
-                handleInteraction();
-            };
 
             for (const eventType of events) {
                 globalThis.addEventListener(eventType, handler);

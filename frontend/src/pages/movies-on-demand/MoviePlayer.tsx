@@ -169,9 +169,12 @@ export default function MoviePlayer(): React.JSX.Element {
                 <button
                     className={styles["backButton"]}
                     onClick={() => {
-                        navigate(`/movies-on-demand/movies/${String(movieId)}`).catch(() => {
-                            // Navigation errors are handled by React Router
-                        });
+                        const result = navigate(`/movies-on-demand/movies/${String(movieId)}`);
+                        if (result instanceof Promise) {
+                            result.catch(() => {
+                                // Navigation errors are handled by React Router
+                            });
+                        }
                     }}
                 >
                     Back to Movie Details
@@ -203,9 +206,12 @@ export default function MoviePlayer(): React.JSX.Element {
                         <button
                             className={styles["backButton"]}
                             onClick={() => {
-                                navigate(`/movies-on-demand/movies/${String(movieId)}`).catch(() => {
-                                    // Navigation errors are handled by React Router
-                                });
+                                const result = navigate(`/movies-on-demand/movies/${String(movieId)}`);
+                                if (result instanceof Promise) {
+                                    result.catch(() => {
+                                        // Navigation errors are handled by React Router
+                                    });
+                                }
                             }}
                         >
                             ← Back

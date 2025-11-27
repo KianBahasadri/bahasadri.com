@@ -8,6 +8,8 @@ import {
     parseBooleanFormField,
 } from "./lib/validation";
 import type { FileRow } from "./types";
+import { d1First, d1All, d1Run } from "../lib/d1-helpers";
+import { r2Get, r2Put } from "../lib/r2-helpers";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -60,7 +62,7 @@ app.post(
 
             // Upload to R2
             const contentType = fileObj.type || "application/octet-stream";
-            await env.file_hosting_prod.put(r2Key, fileBuffer, {
+            await r2Put(env.file_hosting_prod, r2Key, fileBuffer, {
                 httpMetadata: {
                     contentType,
                 },
@@ -72,22 +74,20 @@ app.post(
             const downloadUrl = `${baseUrl}/api/file-hosting/download/${fileId}`;
 
             // Store metadata in D1
-            await env.FILE_HOSTING_DB.prepare(
+            await d1Run(
+                env.FILE_HOSTING_DB,
                 `INSERT INTO files (
                     id, name, original_size, mime_type, original_url, 
                     compression_status, is_public
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)`
-            )
-                .bind(
-                    fileId,
-                    sanitizedName,
-                    fileObj.size,
-                    fileObj.type ?? "application/octet-stream",
-                    r2Key,
-                    "pending",
-                    isPublic ? 1 : 0
-                )
-                .run();
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                fileId,
+                sanitizedName,
+                fileObj.size,
+                fileObj.type || "application/octet-stream",
+                r2Key,
+                "pending",
+                isPublic ? 1 : 0
+            );
 
             // Return response per API contract
             return c.json(
@@ -139,11 +139,8 @@ app.get(
                 params.unshift(cursor);
             }
 
-            const result = await env.FILE_HOSTING_DB.prepare(query)
-                .bind(...params)
-                .all();
-
-            const files = (result.results as FileRow[]);
+            const result = await d1All<FileRow>(env.FILE_HOSTING_DB, query, ...params);
+            const files = result.results;
             const hasMore = files.length > limit;
             const filesToReturn = hasMore ? files.slice(0, limit) : files;
 
@@ -214,11 +211,12 @@ app.get(
             const uiAccess = c.req.query("uiAccess") === "true";
 
             // Query D1 for file metadata
-            const fileResult = await env.FILE_HOSTING_DB.prepare(
-                `SELECT * FROM files WHERE id = ? AND deleted = 0`
-            )
-                .bind(fileId)
-                .first() as FileRow | undefined;
+            const fileResultRaw = await d1First<FileRow>(
+                env.FILE_HOSTING_DB,
+                `SELECT * FROM files WHERE id = ? AND deleted = 0`,
+                fileId
+            );
+            const fileResult = fileResultRaw ?? undefined;
 
             if (!fileResult) {
                 return c.json(
@@ -245,7 +243,7 @@ app.get(
                 : fileResult.original_url;
 
             // Get file from R2
-            const object = await env.file_hosting_prod.get(r2Key);
+            const object = await r2Get(env.file_hosting_prod, r2Key);
 
             if (!object) {
                 return c.json(
@@ -257,14 +255,14 @@ app.get(
             }
 
             // Increment access count
-            await env.FILE_HOSTING_DB.prepare(
+            await d1Run(
+                env.FILE_HOSTING_DB,
                 `UPDATE files 
                 SET access_count = access_count + 1, 
                     last_accessed = CURRENT_TIMESTAMP 
-                WHERE id = ?`
-            )
-                .bind(fileId)
-                .run();
+                WHERE id = ?`,
+                fileId
+            );
 
             // Log access (basic logging - WHOIS enrichment can be added later)
             const accessLogId = crypto.randomUUID();
@@ -275,24 +273,30 @@ app.get(
             const userAgent = c.req.header("User-Agent") ?? undefined;
             const referrer = c.req.header("Referer") ?? undefined;
 
-            await env.FILE_HOSTING_DB.prepare(
+            await d1Run(
+                env.FILE_HOSTING_DB,
                 `INSERT INTO access_logs (
                     id, file_id, ip_address, user_agent, referrer
-                ) VALUES (?, ?, ?, ?, ?)`
-            )
-                .bind(accessLogId, fileId, ipAddress, userAgent, referrer)
-                .run();
+                ) VALUES (?, ?, ?, ?, ?)`,
+                accessLogId,
+                fileId,
+                ipAddress,
+                userAgent,
+                referrer
+            );
 
             // Get file body
             const fileBody = await object.arrayBuffer();
 
             // Get content type from object metadata or use stored mime type
+            // fileResult.mime_type can be null, but we provide a default
             const contentType =
-                object.httpMetadata?.contentType ??
-                fileResult.mime_type ??
+                object.httpMetadata?.contentType ||
+                fileResult.mime_type ||
                 "application/octet-stream";
 
             // Return file with proper headers
+            // fileBody is ArrayBuffer, which is valid for Response constructor
             return new Response(fileBody, {
                 status: 200,
                 headers: {
