@@ -20,6 +20,11 @@ app.get(
     withErrorHandling(
         async (c) => {
             const idParam = c.req.param("id");
+            const logStreamBadRequest = (message: string) => {
+                console.warn(
+                    `[movies-on-demand] GET /api/movies-on-demand/movies/${idParam}/stream 400 Bad Request - ${message}`
+                );
+            };
 
             let job: JobRow | undefined;
 
@@ -37,18 +42,17 @@ app.get(
                 // It's a movie ID - get latest job
                 const movieIdValidation = validateMovieId(idParam);
                 if (!movieIdValidation.ok) {
+                    const reason = movieIdValidation.error ?? "Invalid movie ID";
+                    logStreamBadRequest(reason);
                     return c.json<ErrorResponse>(
-                        {
-                            error:
-                                movieIdValidation.error ?? "Invalid movie ID",
-                            code: "INVALID_INPUT",
-                        },
+                        { error: reason, code: "INVALID_INPUT" },
                         400
                     );
                 }
 
                 const movieId = movieIdValidation.id;
                 if (!movieId) {
+                    logStreamBadRequest("Invalid movie ID (missing after validation)");
                     return c.json<ErrorResponse>(
                         {
                             error: "Invalid movie ID",
@@ -76,6 +80,9 @@ app.get(
 
             // Verify job status is "ready"
             if (job.status !== "ready") {
+                logStreamBadRequest(
+                    `Movie not ready for streaming. Current status: ${job.status} (job_id=${job.job_id})`
+                );
                 return c.json<ErrorResponse>(
                     {
                         error: `Movie not ready for streaming. Current status: ${job.status}`,
