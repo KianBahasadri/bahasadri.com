@@ -43,7 +43,13 @@ export interface Credits {
 
 export interface JobStatusInfo {
     job_id: string;
-    status: "queued" | "starting" | "downloading" | "ready" | "error";
+    status:
+        | "queued"
+        | "starting"
+        | "downloading"
+        | "uploading"
+        | "ready"
+        | "error";
     progress?: number;
     error_message?: string | null;
 }
@@ -97,6 +103,7 @@ export interface JobStatus {
         | "queued"
         | "starting"
         | "downloading"
+        | "uploading"
         | "ready"
         | "error"
         | "deleted";

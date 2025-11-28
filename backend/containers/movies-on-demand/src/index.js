@@ -7,6 +7,7 @@ import {
     existsSync,
     mkdirSync,
     writeFileSync,
+    statSync,
 } from "node:fs";
 import { join, extname } from "node:path";
 
@@ -527,6 +528,15 @@ function combineParts(lo, hi) {
 
 async function upload(filePath, key) {
     console.log(`[movies-on-demand] upload started for ${key}`);
+    
+    // Get file size for progress tracking
+    const fileStats = statSync(filePath);
+    const fileSize = fileStats.size;
+    let lastProgressPercent = -1;
+    
+    // Notify that upload has started
+    await notify("uploading", { progress: 0 });
+    
     const upload = new Upload({
         client: uploader,
         params: {
@@ -536,7 +546,27 @@ async function upload(filePath, key) {
             ContentType: contentType(filePath),
         },
     });
-
+    
+    // Track upload progress
+    upload.on("httpUploadProgress", (progress) => {
+        if (fileSize > 0) {
+            const uploaded = progress.loaded || 0;
+            const progressPercent = Math.min(100, Math.max(0, (uploaded / fileSize) * 100));
+            
+            // Only send progress updates when it changes by at least 1%
+            if (Math.abs(progressPercent - lastProgressPercent) >= 1) {
+                notify("uploading", { progress: Number(progressPercent.toFixed(1)) }).catch(
+                    (error) => {
+                        console.error(
+                            `[movies-on-demand] Failed to send upload progress: ${error.message}`
+                        );
+                    }
+                );
+                lastProgressPercent = progressPercent;
+            }
+        }
+    });
+    
     await upload.done();
 }
 

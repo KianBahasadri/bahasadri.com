@@ -33,6 +33,10 @@ RUN npm install --production
 # Copy the wrapper script
 COPY src/ ./src/
 
+# has to be here for cloudflare or it shits the bed
+# DO NOT REMOVE
+EXPOSE 42069
+
 # Run the Node.js wrapper which:
 # 1. Initializes NZBGet config
 # 2. Starts NZBGet in daemon mode

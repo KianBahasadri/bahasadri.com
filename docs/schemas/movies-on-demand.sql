@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     ready_at TEXT,
     expires_at TEXT,
     last_watched_at TEXT,
-    error_message TEXT
+    error_message TEXT,
+    r2_key TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);

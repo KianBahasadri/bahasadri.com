@@ -180,7 +180,7 @@ app.post(
             try {
                 const existingJobResult = await c.env.MOVIES_D1.prepare(
                     `SELECT job_id, status FROM jobs 
-                     WHERE movie_id = ? AND status IN ('queued', 'downloading', 'ready') 
+                     WHERE movie_id = ? AND status IN ('queued', 'downloading', 'uploading', 'ready') 
                      ORDER BY created_at DESC LIMIT 1`
                 )
                     .bind(movieId)
@@ -658,7 +658,13 @@ app.get(
             const statusParam = c.req.query("status");
 
             // Validate status if provided
-            const validStatuses = ["queued", "downloading", "ready", "error"];
+            const validStatuses = [
+                "queued",
+                "downloading",
+                "uploading",
+                "ready",
+                "error",
+            ];
             if (statusParam && !validStatuses.includes(statusParam)) {
                 return c.json<ErrorResponse>(
                     { error: "Invalid status filter", code: "INVALID_INPUT" },
@@ -680,7 +686,7 @@ app.get(
             } else {
                 // Get all active jobs (exclude deleted)
                 const result = await c.env.MOVIES_D1.prepare(
-                    `SELECT * FROM jobs WHERE status IN ('queued', 'downloading', 'ready', 'error') 
+                    `SELECT * FROM jobs WHERE status IN ('queued', 'downloading', 'uploading', 'ready', 'error') 
                      ORDER BY updated_at DESC LIMIT 50`
                 ).all();
                 const results = result.results ?? [];

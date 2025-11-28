@@ -7,11 +7,7 @@ import { Hono } from "hono";
 import type { Env } from "../../types/env";
 import { withErrorHandling } from "../../lib/error-handling";
 import { validateMovieId, validateJobId } from "../lib/validation";
-import type {
-    ErrorResponse,
-    StreamResponse,
-    JobRow,
-} from "../types";
+import type { ErrorResponse, StreamResponse, JobRow } from "../types";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -99,9 +95,12 @@ app.get(
                 .run() as unknown as Promise<{ success: boolean }>);
 
             // Get movie file metadata from R2
-            const r2Key = `movies/${job.job_id}/movie.mp4`;
+            // Use r2_key from database if available, otherwise fall back to default path
+            const r2Key = job.r2_key ?? `movies/${job.job_id}/movie.mp4`;
             // R2.head is typed as any, cast through unknown to break any chain
-            const object = await (c.env.MOVIES_R2.head(r2Key) as unknown as Promise<{
+            const object = await (c.env.MOVIES_R2.head(
+                r2Key
+            ) as unknown as Promise<{
                 size: number;
                 httpMetadata: { contentType?: string } | null;
             } | null>);
@@ -176,9 +175,12 @@ app.get(
             }
 
             // Get video from R2
-            const r2Key = `movies/${jobId}/movie.mp4`;
+            // Use r2_key from database if available, otherwise fall back to default path
+            const r2Key = job.r2_key ?? `movies/${jobId}/movie.mp4`;
             // R2.get is typed as any, cast through unknown to break any chain
-            const object = await (c.env.MOVIES_R2.get(r2Key) as unknown as Promise<{
+            const object = await (c.env.MOVIES_R2.get(
+                r2Key
+            ) as unknown as Promise<{
                 body: ReadableStream;
                 size: number;
                 httpMetadata: { contentType?: string } | null;
@@ -233,7 +235,9 @@ app.get(
                         headers: {
                             "Content-Type": contentType,
                             "Content-Length": String(contentLength),
-                            "Content-Range": `bytes ${String(start)}-${String(end)}/${String(fileSize)}`,
+                            "Content-Range": `bytes ${String(start)}-${String(
+                                end
+                            )}/${String(fileSize)}`,
                             "Accept-Ranges": "bytes",
                         },
                     });
@@ -256,4 +260,3 @@ app.get(
 );
 
 export default app;
-

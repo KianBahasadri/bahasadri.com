@@ -19,6 +19,9 @@ function getStatusColor(status: JobStatus["status"]): string {
         case "downloading": {
             return "var(--terminal-cyan)";
         }
+        case "uploading": {
+            return "var(--pink-hot)";
+        }
         case "ready": {
             return "var(--terminal-green)";
         }
@@ -44,6 +47,9 @@ function getStatusLabel(status: JobStatus["status"]): string {
         }
         case "downloading": {
             return "Downloading";
+        }
+        case "uploading": {
+            return "Uploading";
         }
         case "ready": {
             return "Ready";
@@ -80,7 +86,9 @@ export default function JobStatusDisplay({
     const statusColor = getStatusColor(job.status);
     const statusLabel = getStatusLabel(job.status);
     const showProgress =
-        job.status === "downloading" && job.progress !== null && job.progress !== undefined;
+        (job.status === "downloading" || job.status === "uploading") &&
+        job.progress !== null &&
+        job.progress !== undefined;
 
     return (
         <div className={styles["container"]}>

@@ -21,6 +21,7 @@ export interface JobRow {
     expires_at: string | null;
     last_watched_at: string | null;
     error_message: string | null;
+    r2_key: string | null;
 }
 
 export interface WatchHistoryRow {
@@ -50,6 +51,7 @@ export type JobStatus =
     | "queued"
     | "starting"
     | "downloading"
+    | "uploading"
     | "ready"
     | "error"
     | "deleted";

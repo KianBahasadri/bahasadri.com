@@ -38,6 +38,7 @@ app.post(
                 status: JobStatus;
                 progress?: number | null;
                 error_message?: string | null;
+                r2_key?: string | null;
             }>();
 
             // Log the complete request body for debugging
@@ -53,6 +54,7 @@ app.post(
                         status: body.status,
                         progress: body.progress,
                         error_message: body.error_message,
+                        r2_key: body.r2_key,
                     },
                 })
             );
@@ -74,6 +76,7 @@ app.post(
                 "queued",
                 "starting",
                 "downloading",
+                "uploading",
                 "ready",
                 "error",
                 "deleted",
@@ -123,7 +126,7 @@ app.post(
 
                 await c.env.MOVIES_D1.prepare(
                     `UPDATE jobs 
-                     SET status = ?, progress = ?, error_message = ?, ready_at = ?, expires_at = ?, updated_at = ?
+                     SET status = ?, progress = ?, error_message = ?, ready_at = ?, expires_at = ?, r2_key = ?, updated_at = ?
                      WHERE job_id = ?`
                 )
                     .bind(
@@ -132,6 +135,7 @@ app.post(
                         body.error_message ?? null,
                         now,
                         expiresAt,
+                        body.r2_key ?? null,
                         now,
                         body.job_id
                     )

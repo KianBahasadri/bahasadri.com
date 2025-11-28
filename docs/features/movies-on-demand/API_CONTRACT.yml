@@ -200,6 +200,7 @@ components:
                                       [
                                           queued,
                                           downloading,
+                                          uploading,
                                           ready,
                                           error,
                                       ]
@@ -336,7 +337,7 @@ components:
                 status:
                     type: string
                     enum:
-                        [queued, starting, downloading, ready, error, deleted]
+                        [queued, starting, downloading, uploading, ready, error, deleted]
                     description: Current job status
                     example: "downloading"
                 progress:
@@ -486,7 +487,7 @@ components:
                     example: "job_abc123"
                 status:
                     type: string
-                    enum: [queued, downloading, ready]
+                    enum: [queued, downloading, uploading, ready]
                     description: Initial job status
                     example: "queued"
                 releases:
@@ -815,7 +816,7 @@ paths:
                   description: Filter by status
                   schema:
                       type: string
-                      enum: [queued, downloading, ready, error]
+                      enum: [queued, downloading, uploading, ready, error]
             responses:
                 "200":
                     description: List of jobs
@@ -970,6 +971,7 @@ paths:
                                         [
                                             queued,
                                             downloading,
+                                            uploading,
                                             ready,
                                             error,
                                         ]
@@ -979,7 +981,7 @@ paths:
                                     type: number
                                     format: float
                                     nullable: true
-                                    description: Download progress percentage (0-100)
+                                    description: Progress percentage (0-100) for downloading or uploading
                                     example: 45.5
                                 error_message:
                                     type: string
