@@ -6,11 +6,7 @@
 import { Hono } from "hono";
 import type { Env } from "../../types/env";
 import { withErrorHandling } from "../../lib/error-handling";
-import type {
-    ErrorResponse,
-    JobRow,
-    JobStatus,
-} from "../types";
+import type { ErrorResponse, JobRow, JobStatus } from "../types";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -20,12 +16,12 @@ const app = new Hono<{ Bindings: Env }>();
  * Protected by Cloudflare Zero Trust (Access policies configured externally)
  */
 app.post(
-    "/internal/progress",
+    "/progress",
     withErrorHandling(
         async (c) => {
             // Log incoming request for debugging
             const ip = c.req.header("CF-Connecting-IP") ?? "unknown";
-            console.error(
+            console.log(
                 JSON.stringify({
                     timestamp: new Date().toISOString(),
                     endpoint: "/api/movies-on-demand/internal/progress",
@@ -44,15 +40,20 @@ app.post(
                 error_message?: string | null;
             }>();
 
-            console.error(
+            // Log the complete request body for debugging
+            console.log(
                 JSON.stringify({
                     timestamp: new Date().toISOString(),
                     endpoint: "/api/movies-on-demand/internal/progress",
                     method: "POST",
                     level: "info",
-                    message: "Processing callback",
-                    job_id: body.job_id,
-                    status: body.status,
+                    message: "Received callback data",
+                    request_body: {
+                        job_id: body.job_id,
+                        status: body.status,
+                        progress: body.progress,
+                        error_message: body.error_message,
+                    },
                 })
             );
 
@@ -71,6 +72,7 @@ app.post(
             // Validate status
             const validStatuses: JobStatus[] = [
                 "queued",
+                "starting",
                 "downloading",
                 "preparing",
                 "ready",
@@ -94,6 +96,17 @@ app.post(
             const existingJob = existingJobRaw as JobRow | undefined;
 
             if (!existingJob) {
+                console.error(
+                    JSON.stringify({
+                        timestamp: new Date().toISOString(),
+                        endpoint: "/api/movies-on-demand/internal/progress",
+                        method: "POST",
+                        level: "error",
+                        message: "Job not found in database",
+                        job_id: body.job_id,
+                        status: body.status,
+                    })
+                );
                 return c.json<ErrorResponse>(
                     { error: "Job not found", code: "NOT_FOUND" },
                     404
@@ -117,7 +130,7 @@ app.post(
                     .bind(
                         body.status,
                         body.progress ?? 100,
-                        body.error_message ?? undefined,
+                        body.error_message ?? null,
                         now,
                         expiresAt,
                         now,
@@ -132,7 +145,7 @@ app.post(
                 )
                     .bind(
                         body.status,
-                        body.progress ?? undefined,
+                        body.progress ?? null,
                         body.error_message ?? "Unknown error",
                         now,
                         body.job_id
@@ -145,7 +158,7 @@ app.post(
                      SET status = ?, progress = ?, updated_at = ?
                      WHERE job_id = ?`
                 )
-                    .bind(body.status, body.progress ?? undefined, now, body.job_id)
+                    .bind(body.status, body.progress ?? null, now, body.job_id)
                     .run();
             }
 
@@ -157,4 +170,3 @@ app.post(
 );
 
 export default app;
-

@@ -48,6 +48,7 @@ export interface MovieMetadataRow {
 
 export type JobStatus =
     | "queued"
+    | "starting"
     | "downloading"
     | "preparing"
     | "ready"

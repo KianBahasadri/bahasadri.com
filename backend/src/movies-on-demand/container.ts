@@ -26,8 +26,8 @@ export class MovieDownloaderContainer extends Container<Env> {
     // Default port for health checks (the container exposes 8080)
     defaultPort = 8080;
 
-    // Container can run for up to 20 minutes for downloads
-    sleepAfter = "20m";
+    // Container can run for up to 10 minutes for downloads
+    sleepAfter = "10m";
 
     // Don't auto-start - we start manually with job-specific env vars
     manualStart = true;
@@ -59,7 +59,7 @@ export async function handleMovieQueue(
     for (const message of batch.messages) {
         const job = message.body;
 
-        console.error(`Processing job: ${job.job_id} for movie: ${String(job.movie_id)}`);
+        console.log(`Processing job: ${job.job_id} for movie: ${String(job.movie_id)}`);
 
         try {
             // Get a unique container instance for this job using the job_id as identifier
@@ -76,7 +76,7 @@ export async function handleMovieQueue(
                 /(https?:\/\/)[^:]+:[^@]+@/u,
                 "$1***:***@"
             );
-            console.error(`Using callback URL: ${maskedUrl}`);
+            console.log(`Using callback URL: ${maskedUrl}`);
 
             // Detect dev mode (local development) - for connection count adjustment
             // Check ENVIRONMENT instead of callback URL since callback always uses production
@@ -103,7 +103,7 @@ export async function handleMovieQueue(
                 // Use fewer connections in dev mode to reduce resource usage
                 USENET_CONNECTIONS: isDev
                     ? "5"
-                    : env.USENET_CONNECTIONS || "10",
+                    : env.USENET_CONNECTIONS || "40",
                 USENET_ENCRYPTION: env.USENET_ENCRYPTION || "true",
 
                 // R2 credentials for upload
@@ -128,7 +128,7 @@ export async function handleMovieQueue(
             // Acknowledge the message - container will handle the rest
             message.ack();
 
-            console.error(
+            console.log(
                 `Container started for job: ${job.job_id}, status updated to downloading`
             );
         } catch (error) {

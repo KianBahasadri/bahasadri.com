@@ -45,7 +45,7 @@ app.post(
             const idParam = c.req.param("id");
 
             // Log request start
-            console.error(
+            console.log(
                 JSON.stringify({
                     timestamp: new Date().toISOString(),
                     endpoint,
@@ -210,7 +210,7 @@ app.post(
             }
 
             if (existingJob) {
-                console.error(
+                console.log(
                     JSON.stringify({
                         timestamp: new Date().toISOString(),
                         endpoint,
@@ -356,7 +356,7 @@ app.post(
                         404
                     );
                 }
-                console.error(
+                console.log(
                     JSON.stringify({
                         timestamp: new Date().toISOString(),
                         endpoint,
@@ -395,7 +395,7 @@ app.post(
                         404
                     );
                 }
-                console.error(
+                console.log(
                     JSON.stringify({
                         timestamp: new Date().toISOString(),
                         endpoint,
@@ -440,7 +440,7 @@ app.post(
                         now
                     )
                     .run();
-                console.error(
+                console.log(
                     JSON.stringify({
                         timestamp: new Date().toISOString(),
                         endpoint,
@@ -486,7 +486,7 @@ app.post(
                     nzb_url: selectedRelease.nzb_url,
                     release_title: selectedRelease.title,
                 });
-                console.error(
+                console.log(
                     JSON.stringify({
                         timestamp: new Date().toISOString(),
                         endpoint,
@@ -553,7 +553,7 @@ app.post(
                 );
             }
 
-            console.error(
+            console.log(
                 JSON.stringify({
                     timestamp: new Date().toISOString(),
                     endpoint,

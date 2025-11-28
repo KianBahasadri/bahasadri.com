@@ -27,17 +27,21 @@ try {
 }
 
 // Export container class (mocked in tests)
-export const MovieDownloaderContainer = containerModule?.MovieDownloaderContainer ?? (class {
-    defaultPort = 8080;
-    sleepAfter = "20m";
-    manualStart = true;
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
-} as unknown as import("./movies-on-demand/container").MovieDownloaderContainer);
+export const MovieDownloaderContainer =
+    containerModule?.MovieDownloaderContainer ??
+    (class {
+        defaultPort = 8080;
+        sleepAfter = "10m";
+        manualStart = true;
+        // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    } as unknown as import("./movies-on-demand/container").MovieDownloaderContainer);
 
 // Queue handler (mocked in tests)
-const handleMovieQueue = containerModule?.handleMovieQueue ?? (async (): Promise<void> => {
-    // Mock implementation for tests
-});
+const handleMovieQueue =
+    containerModule?.handleMovieQueue ??
+    (async (): Promise<void> => {
+        // Mock implementation for tests
+    });
 
 const app = new Hono();
 
@@ -81,14 +85,22 @@ app.get("/", (c) => c.json({ success: true, message: "bahasadri.com API" }));
 // Export default with fetch handler, queue consumer, and request method for testing
 // Note: MovieDownloaderContainer is already exported above as a const
 export default {
-    async fetch(request: Request, env?: Env, ctx?: ExecutionContext): Promise<Response> {
+    async fetch(
+        request: Request,
+        env?: Env,
+        ctx?: ExecutionContext
+    ): Promise<Response> {
         // In test environment, use ENV from globalThis if not provided
-        const testEnv = (typeof globalThis !== "undefined" && "ENV" in globalThis)
-            ? (globalThis as { ENV: Env }).ENV
-            : env;
+        const testEnv =
+            typeof globalThis !== "undefined" && "ENV" in globalThis
+                ? (globalThis as { ENV: Env }).ENV
+                : env;
         return await app.fetch(request, testEnv, ctx);
     },
-    async request(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    async request(
+        input: RequestInfo | URL,
+        init?: RequestInit
+    ): Promise<Response> {
         // In test environment, inject ENV from globalThis
         // Hono's request method doesn't directly accept env, so we use fetch instead
         if (typeof globalThis !== "undefined" && "ENV" in globalThis) {
@@ -96,13 +108,16 @@ export default {
             // Convert string paths to full URLs for Request constructor
             let url: string | URL;
             if (typeof input === "string") {
-                url = input.startsWith("http") ? input : `http://localhost${input}`;
+                url = input.startsWith("http")
+                    ? input
+                    : `http://localhost${input}`;
             } else if (input instanceof URL) {
                 url = input;
             } else {
                 url = input.url;
             }
-            const request = input instanceof Request ? input : new Request(url, init);
+            const request =
+                input instanceof Request ? input : new Request(url, init);
             return await app.fetch(request, env);
         }
         return await app.request(input, init);

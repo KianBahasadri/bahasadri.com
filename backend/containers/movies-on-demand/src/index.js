@@ -45,7 +45,10 @@ const config = {
     usenetPort: Number.parseInt(process.env.USENET_PORT || "563", 10),
     usenetUser: process.env.USENET_USERNAME,
     usenetPass: process.env.USENET_PASSWORD,
-    usenetConnections: Number.parseInt(process.env.USENET_CONNECTIONS || "10", 10),
+    usenetConnections: Number.parseInt(
+        process.env.USENET_CONNECTIONS || "40",
+        10
+    ),
     usenetEncryption: process.env.USENET_ENCRYPTION === "true",
     r2Account: process.env.R2_ACCOUNT_ID,
     r2Key: process.env.R2_ACCESS_KEY_ID,
@@ -80,7 +83,11 @@ class NZBGetClient {
                 "Content-Type": "application/json",
                 Authorization: `Basic ${this.auth}`,
             },
-            body: JSON.stringify({ method, params: parameters, id: Date.now() }),
+            body: JSON.stringify({
+                method,
+                params: parameters,
+                id: Date.now(),
+            }),
         });
 
         if (!response.ok) {
@@ -128,15 +135,15 @@ const uploader = new S3Client({
     },
 });
 
-main().catch((error) => {
+main().catch(async (error) => {
     console.error(error);
-    notify("error", { message: error.message });
+    await notify("error", { message: error.message });
     process.exit(1);
 });
 
 async function main() {
     console.log("[movies-on-demand] main start");
-    notify("starting");
+    await notify("starting");
 
     const configPath = "/config/nzbget/nzbget.conf";
     console.log("[movies-on-demand] writing NZBGet config");
@@ -148,6 +155,17 @@ async function main() {
 
     nzbProcess.on("error", (err) => {
         throw new Error(`Failed to start nzbget: ${err.message}`);
+    });
+
+    nzbProcess.on("exit", (code, signal) => {
+        if (code !== null && code !== 0) {
+            console.error(
+                `[movies-on-demand] NZBGet process exited with code ${code}, signal ${signal}`
+            );
+            throw new Error(
+                `NZBGet process exited unexpectedly with code ${code}`
+            );
+        }
     });
 
     console.log("[movies-on-demand] waiting for NZBGet to become ready");
@@ -175,7 +193,7 @@ async function main() {
     console.log(
         "[movies-on-demand] upload complete, sending ready notification"
     );
-    notify("ready", { r2_key: r2Key });
+    await notify("ready", { r2_key: r2Key });
     nzbProcess.kill("SIGTERM");
 }
 
@@ -271,43 +289,69 @@ async function waitForCompletion(nzbId) {
     let lastStatus = "";
 
     while (true) {
-        const [history, groups] = await Promise.all([
-            nzbClient.call("history", [false]),
-            nzbClient.call("listgroups", [0]),
-        ]);
+        try {
+            const [history, groups] = await Promise.all([
+                nzbClient.call("history", [false]),
+                nzbClient.call("listgroups", [0]),
+            ]);
 
-        const group = groups.find((g) => g.NZBID === nzbId);
-        if (group) {
-            const { progress, statusText } = extractProgress(group);
-            if (
-                progress !== null &&
-                (Math.abs(progress - lastProgress) >= 1 ||
-                    statusText !== lastStatus)
-            ) {
-                notify("downloading", {
-                    progress,
-                    nzb_status: statusText,
-                });
-                lastProgress = progress;
-                lastStatus = statusText;
-            }
-        } else if (lastStatus !== "queued") {
-            notify("downloading", { progress: 0, nzb_status: "queued" });
-            lastStatus = "queued";
-        }
-
-        const entry = history.find((item) => item.NZBID === nzbId);
-        if (entry) {
-            if (entry.Status === "SUCCESS") {
-                if (lastProgress < 100) {
-                    notify("downloading", {
-                        progress: 100,
-                        nzb_status: "complete",
+            const group = groups.find((g) => g.NZBID === nzbId);
+            if (group) {
+                const { progress, statusText } = extractProgress(group);
+                if (
+                    progress !== null &&
+                    (Math.abs(progress - lastProgress) >= 1 ||
+                        statusText !== lastStatus)
+                ) {
+                    await notify("downloading", {
+                        progress,
+                        nzb_status: statusText,
                     });
+                    lastProgress = progress;
+                    lastStatus = statusText;
                 }
-                return;
+            } else if (lastStatus !== "queued") {
+                await notify("downloading", {
+                    progress: 0,
+                    nzb_status: "queued",
+                });
+                lastStatus = "queued";
             }
-            throw new Error(`NZB failed: ${entry.Status}`);
+
+            const entry = history.find((item) => item.NZBID === nzbId);
+            if (entry) {
+                if (entry.Status.startsWith("SUCCESS")) {
+                    if (lastProgress < 100) {
+                        await notify("downloading", {
+                            progress: 100,
+                            nzb_status: "complete",
+                        });
+                    }
+                    return;
+                }
+                // Include detailed NZBGet status info for debugging
+                const healthPercent = (entry.Health / 10).toFixed(1);
+                const failedArticles = entry.FailedArticles || 0;
+                const totalArticles = entry.TotalArticles || 0;
+                const errorDetails = [
+                    `Status: ${entry.Status}`,
+                    `Health: ${healthPercent}%`,
+                    `Articles: ${failedArticles}/${totalArticles} failed`,
+                    `ParStatus: ${entry.ParStatus || "NONE"}`,
+                    `UnpackStatus: ${entry.UnpackStatus || "NONE"}`,
+                    `DeleteStatus: ${entry.DeleteStatus || "NONE"}`,
+                ].join(", ");
+                throw new Error(`NZB failed: ${errorDetails}`);
+            }
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : String(error);
+            console.error(
+                `[movies-on-demand] Error in waitForCompletion loop: ${errorMessage}`
+            );
+            throw new Error(
+                `Failed to monitor download progress: ${errorMessage}`
+            );
         }
 
         await sleep(5000);
@@ -400,41 +444,97 @@ function decodeHtml(string_) {
         .replaceAll("&#39;", "'");
 }
 
-function notify(status, extra = {}) {
+async function notify(status, extra = {}, retries = 3) {
     console.log(`[movies-on-demand] notify -> ${status}`);
     if (!config.callbackUrl) {
         console.log("No callback URL configured!!!");
         return;
     }
 
-    console.log(`[movies-on-demand] sending callback to ${config.callbackUrl}`);
-    fetch(config.callbackUrl, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "CF-Access-Client-Id": config.cfId,
-            "CF-Access-Client-Secret": config.cfSecret,
-        },
-        body: JSON.stringify({ job_id: config.jobId, status, ...extra }),
-    })
-        .then(async (response) => {
+    const isCritical = status === "error" || status === "ready";
+    const maxRetries = isCritical ? retries : 1;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(
+                `[movies-on-demand] sending callback to ${config.callbackUrl} (attempt ${attempt}/${maxRetries}) for job_id: ${config.jobId}`
+            );
+
+            const response = await fetch(config.callbackUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "CF-Access-Client-Id": config.cfId,
+                    "CF-Access-Client-Secret": config.cfSecret,
+                },
+                body: JSON.stringify({
+                    job_id: config.jobId,
+                    status,
+                    ...extra,
+                }),
+            });
+
             if (response.ok) {
                 console.log(
                     `[movies-on-demand] Callback succeeded for status ${status}`
                 );
-            } else {
-                const text = await response.text();
-                console.error(
-                    `[movies-on-demand] Callback failed with status ${response.status}: ${text}`
-                );
+                return;
             }
-        })
-        .catch((error) => {
+
+            const text = await response.text();
+
+            if (response.status === 403) {
+                console.error(
+                    `[movies-on-demand] Callback failed with 403 Forbidden - authentication error. Check CF-Access service token credentials. Response: ${text}`
+                );
+                return;
+            }
+
+            if (response.status === 302) {
+                console.error(
+                    `[movies-on-demand] Callback failed with 302 Redirect - authentication error. Cloudflare Zero Trust is redirecting to login. Check CF-Access service token credentials and application policy. Response: ${text}`
+                );
+                return;
+            }
+
+            if (response.status === 404) {
+                console.error(
+                    `[movies-on-demand] Callback failed with status 404 for job_id: ${config.jobId}. Job not found in database. Response: ${text}`
+                );
+                return;
+            }
+
             console.error(
-                `[movies-on-demand] Failed to send callback: ${error.message}`,
-                error
+                `[movies-on-demand] Callback failed with status ${response.status}: ${text}`
             );
-        });
+
+            if (attempt < maxRetries) {
+                const delay = attempt * 1000;
+                console.log(
+                    `[movies-on-demand] Retrying callback in ${delay}ms...`
+                );
+                await sleep(delay);
+                continue;
+            }
+        } catch (error) {
+            console.error(
+                `[movies-on-demand] Failed to send callback (attempt ${attempt}/${maxRetries}): ${error.message}`
+            );
+
+            if (attempt < maxRetries) {
+                const delay = attempt * 1000;
+                console.log(
+                    `[movies-on-demand] Retrying callback in ${delay}ms...`
+                );
+                await sleep(delay);
+                continue;
+            }
+        }
+    }
+
+    console.error(
+        `[movies-on-demand] Callback failed after ${maxRetries} attempts for status ${status}`
+    );
 }
 
 function sleep(ms) {

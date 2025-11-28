@@ -18,7 +18,7 @@ vi.mock("../movies-on-demand/container", () => {
     return {
         MovieDownloaderContainer: class {
             defaultPort = 8080;
-            sleepAfter = "20m";
+            sleepAfter = "10m";
             manualStart = true;
         },
         handleMovieQueue: vi.fn(async () => {
