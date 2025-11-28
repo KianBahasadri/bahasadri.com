@@ -59,27 +59,16 @@ export async function handleMovieQueue(
     for (const message of batch.messages) {
         const job = message.body;
 
-        console.log(`Processing job: ${job.job_id} for movie: ${String(job.movie_id)}`);
+        console.log(
+            `Processing job: ${job.job_id} for movie: ${String(job.movie_id)}`
+        );
 
         try {
             // Get a unique container instance for this job using the job_id as identifier
             const containerId = env.MOVIE_DOWNLOADER.idFromName(job.job_id);
             const containerStub = env.MOVIE_DOWNLOADER.get(containerId);
 
-            // Build callback URL for progress updates
-            // Always use bahasadri.com, even when running locally
-            const callbackUrl = `https://bahasadri.com/api/movies-on-demand/internal/progress`;
-
-            // Safe regex replacement for masking credentials
-            // Match protocol, then non-colon chars, colon, non-at chars, at sign
-            const maskedUrl = callbackUrl.replace(
-                /(https?:\/\/)[^:]+:[^@]+@/u,
-                "$1***:***@"
-            );
-            console.log(`Using callback URL: ${maskedUrl}`);
-
             // Detect dev mode (local development) - for connection count adjustment
-            // Check ENVIRONMENT instead of callback URL since callback always uses production
             const isDev = env.ENVIRONMENT === "development";
 
             // Build environment variables for the container
@@ -90,8 +79,7 @@ export async function handleMovieQueue(
                 NZB_URL: job.nzb_url,
                 RELEASE_TITLE: job.release_title,
 
-                // Worker callback for progress updates
-                CALLBACK_URL: callbackUrl,
+                // Worker callback for progress updates (hardcoded to production)
                 CF_ACCESS_CLIENT_ID: env.CONTAINER_SERVICE_TOKEN_ID,
                 CF_ACCESS_CLIENT_SECRET: env.CONTAINER_SERVICE_TOKEN_SECRET,
 

@@ -38,7 +38,7 @@ const config = {
     movieId: process.env.MOVIE_ID,
     nzbUrl: process.env.NZB_URL,
     releaseTitle: process.env.RELEASE_TITLE || "movie",
-    callbackUrl: resolveCallbackUrl(),
+    callbackUrl: "https://bahasadri.com/api/movies-on-demand/internal/progress",
     cfId: process.env.CF_ACCESS_CLIENT_ID,
     cfSecret: process.env.CF_ACCESS_CLIENT_SECRET,
     usenetHost: process.env.USENET_HOST,
@@ -119,6 +119,8 @@ class NZBGetClient {
 
 startHealthServer();
 
+let nzbShutdownExpected = false;
+
 const nzbClient = new NZBGetClient(
     "127.0.0.1",
     config.nzbPort,
@@ -158,6 +160,10 @@ async function main() {
     });
 
     nzbProcess.on("exit", (code, signal) => {
+        if (nzbShutdownExpected) {
+            console.log("[movies-on-demand] NZBGet shut down as expected");
+            return;
+        }
         if (code !== null && code !== 0) {
             console.error(
                 `[movies-on-demand] NZBGet process exited with code ${code}, signal ${signal}`
@@ -194,7 +200,18 @@ async function main() {
         "[movies-on-demand] upload complete, sending ready notification"
     );
     await notify("ready", { r2_key: r2Key });
+    nzbShutdownExpected = true;
     nzbProcess.kill("SIGTERM");
+
+    // Wait for process to exit gracefully (with timeout)
+    await new Promise((resolve) => {
+        if (nzbProcess.killed || nzbProcess.exitCode !== null) {
+            resolve();
+            return;
+        }
+        nzbProcess.once("exit", resolve);
+        setTimeout(resolve, 5000); // Timeout after 5 seconds
+    });
 }
 
 function writeNZBConfig(configPath) {
@@ -446,10 +463,6 @@ function decodeHtml(string_) {
 
 async function notify(status, extra = {}, retries = 3) {
     console.log(`[movies-on-demand] notify -> ${status}`);
-    if (!config.callbackUrl) {
-        console.log("No callback URL configured!!!");
-        return;
-    }
 
     const isCritical = status === "error" || status === "ready";
     const maxRetries = isCritical ? retries : 1;
@@ -539,13 +552,4 @@ async function notify(status, extra = {}, retries = 3) {
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function resolveCallbackUrl() {
-    // CALLBACK_URL is always set by the worker (container.ts)
-    // The worker always sets it to bahasadri.com, even for local development
-    return (
-        process.env.CALLBACK_URL ||
-        "https://bahasadri.com/api/movies-on-demand/internal/progress"
-    );
 }
