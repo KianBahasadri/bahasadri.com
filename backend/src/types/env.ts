@@ -33,7 +33,7 @@ export interface Env {
     // Movies on Demand - Container service token (for internal callbacks)
     CONTAINER_SERVICE_TOKEN_ID: string;
     CONTAINER_SERVICE_TOKEN_SECRET: string;
-    // Movies on Demand - Usenet credentials (shared across all FrugalUsenet servers)
+    // Movies on Demand - Usenet credentials (shared across all servers)
     USENET_USERNAME: string;
     USENET_PASSWORD: string;
     // Movies on Demand - Server 1: Primary US server (optional overrides, defaults in container)

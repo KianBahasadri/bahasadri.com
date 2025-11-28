@@ -4,7 +4,7 @@
  * Handles all NZBGet server configuration including:
  * - Writing the initial config file
  * - Configuring Usenet servers via JSON-RPC API
- * - Multi-server setup with priority levels (per FrugalUsenet guide)
+ * - Multi-server setup with priority levels
  */
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
@@ -107,9 +107,8 @@ export async function configureServers(nzbClient, config) {
         { Name: "UnpackPauseQueue", Value: "no" },
 
         // Server 1: Primary server (Priority 0 - main download server)
-        // Per FrugalUsenet guide: "local" server at priority 0 handles bulk of traffic
         ...buildServerSettings(1, {
-            name: "FrugalUsenet-US",
+            name: "Primary Usenet",
             level: 0,
             host: config.usenetServer1Host,
             port: config.usenetServer1Port,
@@ -119,10 +118,9 @@ export async function configureServers(nzbClient, config) {
             password: config.usenetPass,
         }),
 
-        // Server 2: EU server (Priority 1 - failover for missing articles)
-        // Per FrugalUsenet guide: "not local" server at priority 1 for failover
+        // Server 2: Secondary failover server (Priority 1)
         ...buildServerSettings(2, {
-            name: "FrugalUsenet-EU",
+            name: "Secondary Usenet",
             level: 1,
             host: config.usenetServer2Host,
             port: config.usenetServer2Port,
@@ -132,10 +130,9 @@ export async function configureServers(nzbClient, config) {
             password: config.usenetPass,
         }),
 
-        // Server 3: Bonus server (Priority 2 - backup for older/missing posts)
-        // Per FrugalUsenet guide: Bonus server at priority 2 for older posts (3000+ days retention)
+        // Server 3: Backup server (Priority 2 - for older or low-retention posts)
         ...buildServerSettings(3, {
-            name: "FrugalUsenet-Bonus",
+            name: "Backup Usenet",
             level: 2,
             host: config.usenetServer3Host,
             port: config.usenetServer3Port,

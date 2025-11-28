@@ -37,7 +37,7 @@ const config = {
     callbackUrl: "https://bahasadri.com/api/movies-on-demand/internal/progress",
     cfId: process.env.CF_ACCESS_CLIENT_ID,
     cfSecret: process.env.CF_ACCESS_CLIENT_SECRET,
-    // Usenet credentials (shared across all servers for FrugalUsenet)
+    // Usenet credentials (shared across all servers)
     usenetUser: process.env.USENET_USERNAME,
     usenetPass: process.env.USENET_PASSWORD,
     // Server 1: Primary US server (Priority 0)

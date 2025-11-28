@@ -42,7 +42,8 @@ app.get(
                 // It's a movie ID - get latest job
                 const movieIdValidation = validateMovieId(idParam);
                 if (!movieIdValidation.ok) {
-                    const reason = movieIdValidation.error ?? "Invalid movie ID";
+                    const reason =
+                        movieIdValidation.error ?? "Invalid movie ID";
                     logStreamBadRequest(reason);
                     return c.json<ErrorResponse>(
                         { error: reason, code: "INVALID_INPUT" },
@@ -52,7 +53,9 @@ app.get(
 
                 const movieId = movieIdValidation.id;
                 if (!movieId) {
-                    logStreamBadRequest("Invalid movie ID (missing after validation)");
+                    logStreamBadRequest(
+                        "Invalid movie ID (missing after validation)"
+                    );
                     return c.json<ErrorResponse>(
                         {
                             error: "Invalid movie ID",

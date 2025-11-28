@@ -80,12 +80,12 @@ export async function handleMovieQueue(
                 CF_ACCESS_CLIENT_ID: env.CONTAINER_SERVICE_TOKEN_ID,
                 CF_ACCESS_CLIENT_SECRET: env.CONTAINER_SERVICE_TOKEN_SECRET,
 
-                // Usenet credentials (shared across all FrugalUsenet servers)
+                // Usenet credentials (shared across all servers)
                 USENET_USERNAME: env.USENET_USERNAME,
                 USENET_PASSWORD: env.USENET_PASSWORD,
 
-                // Server 1: Primary US server (Priority 0)
-                // Defaults to news.frugalusenet.com:563 with 50 connections, SSL enabled
+                // Server 1: Primary server (Priority 0)
+                // Defaults to the primary Usenet provider with 50 connections and SSL enabled
                 ...(env.USENET_SERVER1_HOST && {
                     USENET_SERVER1_HOST: env.USENET_SERVER1_HOST,
                 }),
@@ -99,8 +99,8 @@ export async function handleMovieQueue(
                     USENET_SERVER1_ENCRYPTION: env.USENET_SERVER1_ENCRYPTION,
                 }),
 
-                // Server 2: EU server (Priority 1 - failover)
-                // Defaults to eunews.frugalusenet.com:563 with 30 connections, SSL enabled
+                // Server 2: Secondary failover server (Priority 1)
+                // Defaults to a failover Usenet provider with 30 connections and SSL enabled
                 ...(env.USENET_SERVER2_HOST && {
                     USENET_SERVER2_HOST: env.USENET_SERVER2_HOST,
                 }),
@@ -114,8 +114,8 @@ export async function handleMovieQueue(
                     USENET_SERVER2_ENCRYPTION: env.USENET_SERVER2_ENCRYPTION,
                 }),
 
-                // Server 3: Bonus server (Priority 2 - backup)
-                // Defaults to bonus.frugalusenet.com:563 with 50 connections, SSL enabled
+                // Server 3: Backup server (Priority 2)
+                // Defaults to a backup Usenet provider with 50 connections and SSL enabled
                 ...(env.USENET_SERVER3_HOST && {
                     USENET_SERVER3_HOST: env.USENET_SERVER3_HOST,
                 }),
