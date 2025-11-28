@@ -1,15 +1,12 @@
 import { spawn } from "node:child_process";
-import { S3Client } from "@aws-sdk/client-s3";
-import { Upload } from "@aws-sdk/lib-storage";
+import { extname } from "node:path";
+import { writeNZBConfig, configureServers } from "./nzbget-config.js";
 import {
-    createReadStream,
-    readdirSync,
-    existsSync,
-    mkdirSync,
-    writeFileSync,
-    statSync,
-} from "node:fs";
-import { join, extname } from "node:path";
+    createR2Client,
+    uploadToR2,
+    findVideoFile,
+    listAllFiles,
+} from "./upload.js";
 
 const REQUIRED_ENV = [
     "JOB_ID",
@@ -17,7 +14,6 @@ const REQUIRED_ENV = [
     "NZB_URL",
     "CF_ACCESS_CLIENT_ID",
     "CF_ACCESS_CLIENT_SECRET",
-    "USENET_HOST",
     "USENET_USERNAME",
     "USENET_PASSWORD",
     "R2_ACCOUNT_ID",
@@ -41,15 +37,33 @@ const config = {
     callbackUrl: "https://bahasadri.com/api/movies-on-demand/internal/progress",
     cfId: process.env.CF_ACCESS_CLIENT_ID,
     cfSecret: process.env.CF_ACCESS_CLIENT_SECRET,
-    usenetHost: process.env.USENET_HOST,
-    usenetPort: Number.parseInt(process.env.USENET_PORT || "563", 10),
+    // Usenet credentials (shared across all servers for FrugalUsenet)
     usenetUser: process.env.USENET_USERNAME,
     usenetPass: process.env.USENET_PASSWORD,
-    usenetConnections: Number.parseInt(
-        process.env.USENET_CONNECTIONS || "40",
+    // Server 1: Primary US server (Priority 0)
+    usenetServer1Host: process.env.USENET_SERVER1_HOST,
+    usenetServer1Port: Number.parseInt(process.env.USENET_SERVER1_PORT, 10),
+    usenetServer1Connections: Number.parseInt(
+        process.env.USENET_SERVER1_CONNECTIONS,
         10
     ),
-    usenetEncryption: process.env.USENET_ENCRYPTION === "true",
+    usenetServer1Encryption: process.env.USENET_SERVER1_ENCRYPTION === "true",
+    // Server 2: EU server (Priority 1) - failover for missing articles
+    usenetServer2Host: process.env.USENET_SERVER2_HOST,
+    usenetServer2Port: Number.parseInt(process.env.USENET_SERVER2_PORT, 10),
+    usenetServer2Connections: Number.parseInt(
+        process.env.USENET_SERVER2_CONNECTIONS,
+        10
+    ),
+    usenetServer2Encryption: process.env.USENET_SERVER2_ENCRYPTION === "true",
+    // Server 3: Bonus server (Priority 2) - backup for older/missing posts
+    usenetServer3Host: process.env.USENET_SERVER3_HOST,
+    usenetServer3Port: Number.parseInt(process.env.USENET_SERVER3_PORT, 10),
+    usenetServer3Connections: Number.parseInt(
+        process.env.USENET_SERVER3_CONNECTIONS,
+        10
+    ),
+    usenetServer3Encryption: process.env.USENET_SERVER3_ENCRYPTION === "true",
     r2Account: process.env.R2_ACCOUNT_ID,
     r2Key: process.env.R2_ACCESS_KEY_ID,
     r2Secret: process.env.R2_SECRET_ACCESS_KEY,
@@ -60,15 +74,6 @@ const config = {
     nzbUser: "nzbget",
     nzbPass: "tegbzn6789",
 };
-
-const videoExtensions = new Set([
-    ".mp4",
-    ".mkv",
-    ".avi",
-    ".mov",
-    ".wmv",
-    ".m4v",
-]);
 
 class NZBGetClient {
     constructor(host, port, username, password) {
@@ -126,13 +131,10 @@ const nzbClient = new NZBGetClient(
     config.nzbPass
 );
 
-const uploader = new S3Client({
-    region: "auto",
-    endpoint: `https://${config.r2Account}.r2.cloudflarestorage.com`,
-    credentials: {
-        accessKeyId: config.r2Key,
-        secretAccessKey: config.r2Secret,
-    },
+const r2Client = createR2Client({
+    accountId: config.r2Account,
+    accessKeyId: config.r2Key,
+    secretAccessKey: config.r2Secret,
 });
 
 main().catch(async (error) => {
@@ -147,7 +149,13 @@ async function main() {
 
     const configPath = "/config/nzbget/nzbget.conf";
     console.log("[movies-on-demand] writing NZBGet config");
-    writeNZBConfig(configPath);
+    writeNZBConfig(configPath, {
+        downloadDir: config.downloadDir,
+        tempDir: config.tempDir,
+        port: config.nzbPort,
+        username: config.nzbUser,
+        password: config.nzbPass,
+    });
     console.log("[movies-on-demand] starting NZBGet daemon");
     const nzbProcess = spawn("nzbget", ["-D", "-c", configPath], {
         stdio: "inherit",
@@ -174,7 +182,7 @@ async function main() {
 
     console.log("[movies-on-demand] waiting for NZBGet to become ready");
     await nzbClient.waitForReady();
-    await configureServer();
+    await configureServers(nzbClient, config);
 
     console.log("[movies-on-demand] adding NZB to queue");
     const nzbId = await addDownload();
@@ -239,7 +247,12 @@ async function main() {
     console.log("[movies-on-demand] uploading video to R2");
     const extension = extname(videoFile) || ".mp4";
     const r2Key = `movies/${config.jobId}/movie${extension}`;
-    await upload(videoFile, r2Key);
+    await uploadToR2(r2Client, {
+        filePath: videoFile,
+        bucket: config.r2Bucket,
+        key: r2Key,
+        onProgress: (progress) => notify("uploading", { progress }),
+    });
 
     console.log(
         "[movies-on-demand] upload complete, sending ready notification"
@@ -257,108 +270,6 @@ async function main() {
         nzbProcess.once("exit", resolve);
         setTimeout(resolve, 5000); // Timeout after 5 seconds
     });
-}
-
-function writeNZBConfig(configPath) {
-    const directory = configPath.split("/").slice(0, -1).join("/");
-    if (!existsSync(directory)) {
-        mkdirSync(directory, { recursive: true });
-    }
-
-    const content = `MainDir=/downloads
-DestDir=${config.downloadDir}
-InterDir=${config.tempDir}
-ControlPort=${config.nzbPort}
-ControlIP=127.0.0.1
-ControlUsername=${config.nzbUser}
-ControlPassword=${config.nzbPass}
-LogFile=/downloads/nzbget.log
-`; // NZBGet expands missing defaults on boot
-
-    writeFileSync(configPath, content);
-}
-
-async function configureServer() {
-    // NZBGet configuration is done in two layers:
-    // 1. Config file (-c flag): Sets directory paths (MainDir, DestDir, InterDir) at startup
-    //    This is written by writeNZBConfig() before NZBGet starts.
-    // 2. API saveconfig: Sets Usenet server credentials and unpacking options at runtime.
-    //    Server credentials can't be in the config file (they're environment-specific).
-    //    Unpacking must be enabled via API because NZBGet's default is to NOT unpack.
-    //    Many Usenet releases are RAR archives that need extraction to get the video file.
-    //
-    // Both are needed - the config file alone doesn't set up the server or enable unpacking.
-
-    // First, check what config NZBGet loaded at startup
-    console.log("[movies-on-demand] checking NZBGet initial config...");
-    const currentConfig = await nzbClient.call("config", []);
-    const relevantSettings = [
-        "MainDir",
-        "DestDir",
-        "InterDir",
-        "TempDir",
-        "NzbDir",
-    ];
-    const initialConfig = {};
-    for (const setting of currentConfig) {
-        if (relevantSettings.includes(setting.Name)) {
-            initialConfig[setting.Name] = setting.Value;
-        }
-    }
-    console.log(
-        `[movies-on-demand] NZBGet initial config (before our changes): ${JSON.stringify(
-            initialConfig
-        )}`
-    );
-
-    console.log("[movies-on-demand] configuring Usenet server and directories");
-    const settings = [
-        // Directory settings - ensure NZBGet uses our paths
-        { Name: "MainDir", Value: "/downloads" },
-        { Name: "DestDir", Value: config.downloadDir },
-        { Name: "InterDir", Value: config.tempDir },
-
-        // Unpacking settings - enable RAR extraction
-        { Name: "Unpack", Value: "yes" },
-        { Name: "DirectUnpack", Value: "yes" },
-        { Name: "UnpackCleanupDisk", Value: "yes" },
-        // unrar-free is installed in the container
-        { Name: "UnrarCmd", Value: "unrar" },
-        // Delete archives after successful extraction
-        { Name: "UnpackPauseQueue", Value: "no" },
-
-        // Server settings
-        { Name: "Server1.Active", Value: "yes" },
-        { Name: "Server1.Host", Value: config.usenetHost },
-        { Name: "Server1.Port", Value: String(config.usenetPort) },
-        {
-            Name: "Server1.Encryption",
-            Value: config.usenetEncryption ? "yes" : "no",
-        },
-        {
-            Name: "Server1.Connections",
-            Value: String(config.usenetConnections),
-        },
-        { Name: "Server1.Username", Value: config.usenetUser },
-        { Name: "Server1.Password", Value: config.usenetPass },
-    ];
-
-    await nzbClient.call("saveconfig", [settings]);
-    await nzbClient.call("reload");
-
-    // Verify the config was applied
-    const updatedConfig = await nzbClient.call("config", []);
-    const finalConfig = {};
-    for (const setting of updatedConfig) {
-        if (relevantSettings.includes(setting.Name)) {
-            finalConfig[setting.Name] = setting.Value;
-        }
-    }
-    console.log(
-        `[movies-on-demand] NZBGet config after our changes: ${JSON.stringify(
-            finalConfig
-        )}`
-    );
 }
 
 async function addDownload() {
@@ -524,100 +435,6 @@ function extractProgress(group) {
 
 function combineParts(lo, hi) {
     return (Number(hi) || 0) * 4_294_967_296 + (Number(lo) || 0);
-}
-
-async function upload(filePath, key) {
-    console.log(`[movies-on-demand] upload started for ${key}`);
-    
-    // Get file size for progress tracking
-    const fileStats = statSync(filePath);
-    const fileSize = fileStats.size;
-    let lastProgressPercent = -1;
-    
-    // Notify that upload has started
-    await notify("uploading", { progress: 0 });
-    
-    const upload = new Upload({
-        client: uploader,
-        params: {
-            Bucket: config.r2Bucket,
-            Key: key,
-            Body: createReadStream(filePath),
-            ContentType: contentType(filePath),
-        },
-    });
-    
-    // Track upload progress
-    upload.on("httpUploadProgress", (progress) => {
-        if (fileSize > 0) {
-            const uploaded = progress.loaded || 0;
-            const progressPercent = Math.min(100, Math.max(0, (uploaded / fileSize) * 100));
-            
-            // Only send progress updates when it changes by at least 1%
-            if (Math.abs(progressPercent - lastProgressPercent) >= 1) {
-                notify("uploading", { progress: Number(progressPercent.toFixed(1)) }).catch(
-                    (error) => {
-                        console.error(
-                            `[movies-on-demand] Failed to send upload progress: ${error.message}`
-                        );
-                    }
-                );
-                lastProgressPercent = progressPercent;
-            }
-        }
-    });
-    
-    await upload.done();
-}
-
-function findVideoFile(directory) {
-    if (!existsSync(directory)) {
-        return null;
-    }
-
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
-        const full = join(directory, entry.name);
-        if (entry.isDirectory()) {
-            const nested = findVideoFile(full);
-            if (nested) return nested;
-        } else if (videoExtensions.has(extname(entry.name).toLowerCase())) {
-            return full;
-        }
-    }
-
-    return null;
-}
-
-/**
- * List all files in a directory recursively (for debugging)
- */
-function listAllFiles(directory, prefix = "") {
-    const files = [];
-    if (!existsSync(directory)) {
-        return files;
-    }
-
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
-        const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
-        if (entry.isDirectory()) {
-            files.push(
-                ...listAllFiles(join(directory, entry.name), relativePath)
-            );
-        } else {
-            files.push(relativePath);
-        }
-    }
-
-    return files;
-}
-
-function contentType(filePath) {
-    const extension = extname(filePath).toLowerCase();
-    if (extension === ".mp4") return "video/mp4";
-    if (extension === ".mkv") return "video/x-matroska";
-    if (extension === ".avi") return "video/x-msvideo";
-    if (extension === ".mov") return "video/quicktime";
-    return "application/octet-stream";
 }
 
 function decodeHtml(string_) {

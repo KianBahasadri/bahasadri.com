@@ -27,3 +27,19 @@ The backend API has **no built-in authentication or authorization** mechanisms i
 -   **D1**: Not publicly accessible
 
 All Cloudflare services are only accessible through Workers service bindings.
+
+### Information Leakage
+
+things that should never be in code:
+
+-   api keys
+-   usenet provider
+-   passwords and credentials
+-   database connection strings
+-   secret keys and tokens (session secrets, encryption keys, etc.)
+-   OAuth client secrets
+-   webhook secrets and signing keys
+-   Cloudflare API tokens and keys
+-   service account credentials
+-   personal information (PII) - email addresses, phone numbers, etc.
+-   internal service URLs and endpoints

@@ -80,16 +80,54 @@ export async function handleMovieQueue(
                 CF_ACCESS_CLIENT_ID: env.CONTAINER_SERVICE_TOKEN_ID,
                 CF_ACCESS_CLIENT_SECRET: env.CONTAINER_SERVICE_TOKEN_SECRET,
 
-                // Usenet server credentials
-                USENET_HOST: env.USENET_HOST,
-                USENET_PORT: env.USENET_PORT || "563",
+                // Usenet credentials (shared across all FrugalUsenet servers)
                 USENET_USERNAME: env.USENET_USERNAME,
                 USENET_PASSWORD: env.USENET_PASSWORD,
-                // Use fewer connections in dev mode to reduce resource usage
-                USENET_CONNECTIONS: isDev
+
+                // Server 1: Primary US server (Priority 0)
+                // Defaults to news.frugalusenet.com:563 with 50 connections, SSL enabled
+                ...(env.USENET_SERVER1_HOST && {
+                    USENET_SERVER1_HOST: env.USENET_SERVER1_HOST,
+                }),
+                ...(env.USENET_SERVER1_PORT && {
+                    USENET_SERVER1_PORT: env.USENET_SERVER1_PORT,
+                }),
+                USENET_SERVER1_CONNECTIONS: isDev
                     ? "5"
-                    : env.USENET_CONNECTIONS || "40",
-                USENET_ENCRYPTION: env.USENET_ENCRYPTION || "true",
+                    : env.USENET_SERVER1_CONNECTIONS || "50",
+                ...(env.USENET_SERVER1_ENCRYPTION && {
+                    USENET_SERVER1_ENCRYPTION: env.USENET_SERVER1_ENCRYPTION,
+                }),
+
+                // Server 2: EU server (Priority 1 - failover)
+                // Defaults to eunews.frugalusenet.com:563 with 30 connections, SSL enabled
+                ...(env.USENET_SERVER2_HOST && {
+                    USENET_SERVER2_HOST: env.USENET_SERVER2_HOST,
+                }),
+                ...(env.USENET_SERVER2_PORT && {
+                    USENET_SERVER2_PORT: env.USENET_SERVER2_PORT,
+                }),
+                USENET_SERVER2_CONNECTIONS: isDev
+                    ? "5"
+                    : env.USENET_SERVER2_CONNECTIONS || "30",
+                ...(env.USENET_SERVER2_ENCRYPTION && {
+                    USENET_SERVER2_ENCRYPTION: env.USENET_SERVER2_ENCRYPTION,
+                }),
+
+                // Server 3: Bonus server (Priority 2 - backup)
+                // Defaults to bonus.frugalusenet.com:563 with 50 connections, SSL enabled
+                ...(env.USENET_SERVER3_HOST && {
+                    USENET_SERVER3_HOST: env.USENET_SERVER3_HOST,
+                }),
+                ...(env.USENET_SERVER3_PORT && {
+                    USENET_SERVER3_PORT: env.USENET_SERVER3_PORT,
+                }),
+                USENET_SERVER3_CONNECTIONS: isDev
+                    ? "5"
+                    : env.USENET_SERVER3_CONNECTIONS || "50",
+                ...(env.USENET_SERVER3_ENCRYPTION && {
+                    USENET_SERVER3_ENCRYPTION: env.USENET_SERVER3_ENCRYPTION,
+                }),
 
                 // R2 credentials for upload
                 R2_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID,
