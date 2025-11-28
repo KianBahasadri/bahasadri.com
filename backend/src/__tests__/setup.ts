@@ -17,7 +17,7 @@ import type { MovieDownloaderContainer } from "../movies-on-demand/container";
 vi.mock("../movies-on-demand/container", () => {
     return {
         MovieDownloaderContainer: class {
-            sleepAfter = "10m";
+            sleepAfter = "5m";
             manualStart = true;
         },
         handleMovieQueue: vi.fn(async () => {

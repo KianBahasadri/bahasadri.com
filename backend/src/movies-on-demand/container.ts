@@ -23,8 +23,8 @@ import type { JobQueueMessage } from "./types";
  * environment variables when processing each queue message.
  */
 export class MovieDownloaderContainer extends Container<Env> {
-    // Container can run for up to 10 minutes for downloads
-    sleepAfter = "10m";
+    // Container can run for up to 5 minutes for downloads
+    sleepAfter = "5m";
 
     // Don't auto-start - we start manually with job-specific env vars
     manualStart = true;

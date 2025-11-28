@@ -30,7 +30,7 @@ try {
 export const MovieDownloaderContainer =
     containerModule?.MovieDownloaderContainer ??
     (class {
-        sleepAfter = "10m";
+        sleepAfter = "5m";
         manualStart = true;
         // eslint-disable-next-line @typescript-eslint/consistent-type-imports
     } as unknown as import("./movies-on-demand/container").MovieDownloaderContainer);
