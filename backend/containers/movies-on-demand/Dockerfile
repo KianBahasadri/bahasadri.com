@@ -3,10 +3,13 @@
 
 FROM node:lts-bookworm-slim
 
-# Install NZBGet, and required tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install NZBGet and required tools
+# Note: unrar (non-free) is required for password-protected RAR archives.
+# unrar-free does NOT support encrypted archives.
+RUN echo "deb http://deb.debian.org/debian bookworm non-free" >> /etc/apt/sources.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
     nzbget \
-    unrar-free \
+    unrar \
     p7zip-full \
     ca-certificates \
     curl \

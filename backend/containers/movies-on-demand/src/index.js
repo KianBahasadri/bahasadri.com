@@ -278,8 +278,55 @@ LogFile=/downloads/nzbget.log
 }
 
 async function configureServer() {
-    console.log("[movies-on-demand] configuring Usenet server");
+    // NZBGet configuration is done in two layers:
+    // 1. Config file (-c flag): Sets directory paths (MainDir, DestDir, InterDir) at startup
+    //    This is written by writeNZBConfig() before NZBGet starts.
+    // 2. API saveconfig: Sets Usenet server credentials and unpacking options at runtime.
+    //    Server credentials can't be in the config file (they're environment-specific).
+    //    Unpacking must be enabled via API because NZBGet's default is to NOT unpack.
+    //    Many Usenet releases are RAR archives that need extraction to get the video file.
+    //
+    // Both are needed - the config file alone doesn't set up the server or enable unpacking.
+
+    // First, check what config NZBGet loaded at startup
+    console.log("[movies-on-demand] checking NZBGet initial config...");
+    const currentConfig = await nzbClient.call("config", []);
+    const relevantSettings = [
+        "MainDir",
+        "DestDir",
+        "InterDir",
+        "TempDir",
+        "NzbDir",
+    ];
+    const initialConfig = {};
+    for (const setting of currentConfig) {
+        if (relevantSettings.includes(setting.Name)) {
+            initialConfig[setting.Name] = setting.Value;
+        }
+    }
+    console.log(
+        `[movies-on-demand] NZBGet initial config (before our changes): ${JSON.stringify(
+            initialConfig
+        )}`
+    );
+
+    console.log("[movies-on-demand] configuring Usenet server and directories");
     const settings = [
+        // Directory settings - ensure NZBGet uses our paths
+        { Name: "MainDir", Value: "/downloads" },
+        { Name: "DestDir", Value: config.downloadDir },
+        { Name: "InterDir", Value: config.tempDir },
+
+        // Unpacking settings - enable RAR extraction
+        { Name: "Unpack", Value: "yes" },
+        { Name: "DirectUnpack", Value: "yes" },
+        { Name: "UnpackCleanupDisk", Value: "yes" },
+        // unrar-free is installed in the container
+        { Name: "UnrarCmd", Value: "unrar" },
+        // Delete archives after successful extraction
+        { Name: "UnpackPauseQueue", Value: "no" },
+
+        // Server settings
         { Name: "Server1.Active", Value: "yes" },
         { Name: "Server1.Host", Value: config.usenetHost },
         { Name: "Server1.Port", Value: String(config.usenetPort) },
@@ -297,6 +344,20 @@ async function configureServer() {
 
     await nzbClient.call("saveconfig", [settings]);
     await nzbClient.call("reload");
+
+    // Verify the config was applied
+    const updatedConfig = await nzbClient.call("config", []);
+    const finalConfig = {};
+    for (const setting of updatedConfig) {
+        if (relevantSettings.includes(setting.Name)) {
+            finalConfig[setting.Name] = setting.Value;
+        }
+    }
+    console.log(
+        `[movies-on-demand] NZBGet config after our changes: ${JSON.stringify(
+            finalConfig
+        )}`
+    );
 }
 
 async function addDownload() {
@@ -381,6 +442,28 @@ async function waitForCompletion(nzbId) {
 
             const entry = history.find((item) => item.NZBID === nzbId);
             if (entry) {
+                // Log the full history entry for debugging
+                console.log(
+                    `[movies-on-demand] NZBGet history entry: ${JSON.stringify(
+                        entry
+                    )}`
+                );
+
+                // Check if files were deleted (health check failure, par failure, etc.)
+                if (entry.DeleteStatus && entry.DeleteStatus !== "NONE") {
+                    const errorDetails = [
+                        `Status: ${entry.Status}`,
+                        `DeleteStatus: ${entry.DeleteStatus}`,
+                        `Health: ${(entry.Health / 10).toFixed(1)}%`,
+                        `ParStatus: ${entry.ParStatus || "NONE"}`,
+                        `UnpackStatus: ${entry.UnpackStatus || "NONE"}`,
+                        `FailedArticles: ${entry.FailedArticles || 0}/${
+                            entry.TotalArticles || 0
+                        }`,
+                    ].join(", ");
+                    throw new Error(`NZBGet deleted files: ${errorDetails}`);
+                }
+
                 if (entry.Status.startsWith("SUCCESS")) {
                     if (lastProgress < 100) {
                         await notify("downloading", {

@@ -32,10 +32,10 @@ docker build -t movies-on-demand:local .
 
 # Set required environment variables for testing
 # export JOB_ID="test-job-$(date +%s)"
-JOB_ID="job_1764280129473_c9gr15cd"
-export MOVIE_ID="${MOVIE_ID:-12345}"
-export NZB_URL="${NZB_URL:-https://api.nzbgeek.info/api?t=get&id=2a84869886df2024c39b1f6b884ac5b6&apikey=${NZBGEEK_API_KEY}}"
-export RELEASE_TITLE="${RELEASE_TITLE:-The.Last.Samurai.2003.480p.DVDR-PANAM}"
+JOB_ID="job_1764297222294_01qckpom"
+export MOVIE_ID="514754"
+export NZB_URL="https://api.nzbgeek.info/api?t=get&id=666732b6a845805ed18bef1634e97b24&apikey=${NZBGEEK_API_KEY}"
+export RELEASE_TITLE="$RELEASE_TITLE"
 
 echo "Starting container with:"
 echo "  JOB_ID: $JOB_ID"
@@ -53,11 +53,11 @@ docker run --rm \
     -e CF_ACCESS_CLIENT_ID="${CONTAINER_SERVICE_TOKEN_ID}" \
     -e CF_ACCESS_CLIENT_SECRET="${CONTAINER_SERVICE_TOKEN_SECRET}" \
     -e USENET_HOST="${USENET_HOST}" \
-    -e USENET_PORT="${USENET_PORT:-563}" \
-    -e USENET_USERNAME="${USENET_USERNAME}" \
-    -e USENET_PASSWORD="${USENET_PASSWORD}" \
-    -e USENET_CONNECTIONS="${USENET_CONNECTIONS:-10}" \
-    -e USENET_ENCRYPTION="${USENET_ENCRYPTION:-true}" \
+    -e USENET_PORT="$USENET_PORT" \
+    -e USENET_USERNAME="$USENET_USERNAME" \
+    -e USENET_PASSWORD="$USENET_PASSWORD" \
+    -e USENET_CONNECTIONS="5" \
+    -e USENET_ENCRYPTION="$USENET_ENCRYPTION" \
     -e R2_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID}" \
     -e R2_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}" \
     -e R2_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}" \
