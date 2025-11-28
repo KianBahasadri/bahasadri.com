@@ -23,9 +23,6 @@ import type { JobQueueMessage } from "./types";
  * environment variables when processing each queue message.
  */
 export class MovieDownloaderContainer extends Container<Env> {
-    // Default port for health checks (the container exposes 8080)
-    defaultPort = 8080;
-
     // Container can run for up to 10 minutes for downloads
     sleepAfter = "10m";
 

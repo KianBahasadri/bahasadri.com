@@ -17,7 +17,6 @@ import type { MovieDownloaderContainer } from "../movies-on-demand/container";
 vi.mock("../movies-on-demand/container", () => {
     return {
         MovieDownloaderContainer: class {
-            defaultPort = 8080;
             sleepAfter = "10m";
             manualStart = true;
         },

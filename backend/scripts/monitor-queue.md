@@ -106,7 +106,6 @@ docker ps --filter "name=movies" --format "{{.Names}}" | xargs -I {} sh -c 'echo
 
 ### Container Logs
 
--   Health check server: `Health check server listening on port 8080`
 -   NZBGet startup: `NZBGet is ready`
 -   Download progress: `Downloading: X/Y MB`
 -   Upload progress: `Upload progress: X%`

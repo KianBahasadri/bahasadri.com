@@ -30,9 +30,6 @@ RUN npm install --production
 # Copy the wrapper script
 COPY src/ ./src/
 
-# Expose port for Cloudflare Container health checks
-EXPOSE 8080
-
 # Run the Node.js wrapper which:
 # 1. Initializes NZBGet config
 # 2. Starts NZBGet in daemon mode

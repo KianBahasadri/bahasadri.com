@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process";
-import { createServer } from "node:http";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import {
@@ -116,8 +115,6 @@ class NZBGetClient {
         }
     }
 }
-
-startHealthServer();
 
 let nzbShutdownExpected = false;
 
@@ -411,18 +408,6 @@ async function upload(filePath, key) {
     });
 
     await upload.done();
-}
-
-function startHealthServer() {
-    console.log("[movies-on-demand] starting health server");
-    const server = createServer((_, res) => {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: true, jobId: config.jobId }));
-    });
-
-    server.listen(8080, "0.0.0.0", () => {
-        console.log("Health server listening on 8080");
-    });
 }
 
 function findVideoFile(directory) {

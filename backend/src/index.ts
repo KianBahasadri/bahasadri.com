@@ -30,7 +30,6 @@ try {
 export const MovieDownloaderContainer =
     containerModule?.MovieDownloaderContainer ??
     (class {
-        defaultPort = 8080;
         sleepAfter = "10m";
         manualStart = true;
         // eslint-disable-next-line @typescript-eslint/consistent-type-imports
