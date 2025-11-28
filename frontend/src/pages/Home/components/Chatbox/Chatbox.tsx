@@ -88,11 +88,35 @@ export default function Chatbox({ onClose }: ChatboxProps): React.JSX.Element {
                     });
                     const audioUrl = URL.createObjectURL(audioBlob);
                     const audio = new Audio(audioUrl);
+
+                    // Amplify audio significantly using Web Audio API
+                    const audioContext = new AudioContext();
+                    const source = audioContext.createMediaElementSource(audio);
+                    const gainNode = audioContext.createGain();
+                    gainNode.gain.value = 8;
+                    source.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    // Make audio unpausable by media controls
+                    const handlePause = (): void => {
+                        if (!audio.ended) {
+                            audio.play().catch(() => {
+                                // Ignore playback errors
+                            });
+                        }
+                    };
+
+                    audio.addEventListener("pause", handlePause);
+                    audio.addEventListener("ended", () => {
+                        audio.removeEventListener("pause", handlePause);
+                        URL.revokeObjectURL(audioUrl);
+                        audioContext.close().catch(() => {
+                            // Ignore context close errors
+                        });
+                    });
+
                     audio.play().catch(() => {
                         // Ignore playback errors (e.g., user interaction required)
-                    });
-                    audio.addEventListener("ended", () => {
-                        URL.revokeObjectURL(audioUrl);
                     });
                 } catch {
                     // Ignore audio playback errors gracefully

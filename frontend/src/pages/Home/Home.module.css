@@ -512,7 +512,7 @@ main {
 
 @media (max-width: 768px) {
     .toolsGrid {
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
     }
 }
 
@@ -534,7 +534,7 @@ main {
     justify-content: center;
     gap: clamp(0.5rem, 1vh, 1rem);
     text-align: center;
-    min-height: 0;
+    min-height: clamp(140px, 25vw, 200px);
 }
 
 .cardMenhera::before {
@@ -604,6 +604,11 @@ main {
 .cardIcon {
     font-size: clamp(1.5rem, 4vw, 3rem);
     animation: iconWiggle 3s ease-in-out infinite;
+    flex-shrink: 0;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 @keyframes iconWiggle {
@@ -625,6 +630,11 @@ main {
     font-size: clamp(1rem, 2.5vw, 1.8rem);
     font-weight: 700;
     margin: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    line-height: 1.2;
+    max-width: 100%;
 }
 
 @media (prefers-color-scheme: dark) {
