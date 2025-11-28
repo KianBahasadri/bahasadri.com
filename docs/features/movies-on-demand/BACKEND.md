@@ -157,13 +157,13 @@ This document focuses solely on backend implementation details not covered in th
 
 **Handler**: `listJobs()`
 
-**Description**: Retrieves a list of all active jobs (queued, downloading, preparing, ready).
+**Description**: Retrieves a list of all active jobs (queued, downloading, ready).
 
 **Implementation**:
 
 -   Extract optional `status` query parameter
 -   Query D1: `SELECT * FROM jobs WHERE status = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?`
--   If no status provided, include all active statuses (queued, downloading, preparing, ready)
+-   If no status provided, include all active statuses (queued, downloading, ready)
 -   Exclude deleted jobs from listing
 
 ### `GET /api/movies-on-demand/movies/{id}/stream`
@@ -255,8 +255,8 @@ CREATE TABLE IF NOT EXISTS movie_metadata (
 **Job Lifecycle States**:
 
 1. `queued` - Job created, waiting in Queue
-2. `downloading` - Downloading from Usenet (progress tracked)
-3. `preparing` - Processing/uploading to R2
+2. `starting` - Container starting up
+3. `downloading` - Downloading from Usenet (progress tracked)
 4. `ready` - Available for streaming
 5. `error` - Failed (error_message populated)
 6. `deleted` - Expired and removed from R2
@@ -393,7 +393,7 @@ await env.MOVIES_D1.prepare(
 // Use a transaction to enforce uniqueness checks for active jobs
 // Typical pattern:
 // 1. BEGIN TRANSACTION
-// 2. SELECT job_id FROM jobs WHERE movie_id = ? AND status IN ('queued','downloading','preparing','ready') LIMIT 1
+// 2. SELECT job_id FROM jobs WHERE movie_id = ? AND status IN ('queued','downloading','ready') LIMIT 1
 // 3. If exists, return existing job_id
 // 4. Else INSERT job and COMMIT
 // Using a transaction prevents duplicated job creation in concurrent requests
@@ -469,7 +469,7 @@ await env.MOVIES_D1.prepare(
     - Connect to Usenet servers (NNTP) using NZBGet (custom container)
     - Download movie file parts (update progress in D1 periodically)
     - Verify/repair using parity data, unpack into final movie file
-    - Update job status to "preparing" in D1
+    - Upload to R2 (no intermediate status needed)
     - Upload to R2: `movies/{job_id}/movie.{ext}`
     - Update job status to "ready", set expiration (24 hours) in D1
     - Clean up and exit

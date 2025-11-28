@@ -74,7 +74,6 @@ app.post(
                 "queued",
                 "starting",
                 "downloading",
-                "preparing",
                 "ready",
                 "error",
                 "deleted",

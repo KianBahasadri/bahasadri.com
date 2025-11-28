@@ -47,8 +47,8 @@ When requesting a movie, users can either:
 Users can see real-time status updates for movies being fetched:
 
 -   **Queued**: Movie request is in the queue
+-   **Starting**: Container is starting up
 -   **Downloading**: Movie is being downloaded from Usenet
--   **Preparing**: File is being verified, repaired, and unpacked
 -   **Ready**: Movie is available for streaming
 -   **Error**: Something went wrong (with error details)
 
@@ -145,8 +145,8 @@ Movies are automatically deleted if they have not been watched for 1 week. This 
 1. After requesting a movie, the details page shows status
 2. Watch status updates in real-time:
     -   "Queued" - waiting to start
+    -   "Starting" - container starting up
     -   "Downloading" - fetching from Usenet (with progress percentage)
-    -   "Preparing" - verifying and unpacking file
     -   "Ready" - available for streaming
 3. Status updates automatically refresh
 

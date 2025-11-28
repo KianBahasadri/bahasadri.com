@@ -132,7 +132,7 @@ interface MovieCardProps {
 -   Click on similar movie to navigate to its details page
 -   Click "Fetch & Watch" to start on-demand movie acquisition
 -   Choose automatic or manual release selection mode
--   View real-time job status (queued, downloading, preparing, ready)
+-   View real-time job status (queued, starting, downloading, ready)
 -   Click "Watch" when status is ready to navigate to player
 -   View download progress percentage during acquisition
 
@@ -300,7 +300,7 @@ interface JobStatusDisplayProps {
 
 **Interactions**:
 
--   Display status: queued, downloading, preparing, ready, error
+-   Display status: queued, starting, downloading, ready, error
 -   Show progress percentage during download
 -   Show error message if status is error
 -   Enable watch button when status is ready
@@ -422,7 +422,7 @@ const useJobStatus = (jobId: string) => {
             if (data?.status === "ready" || data?.status === "error") {
                 return false;
             }
-            return 2000; // Poll every 2 seconds while downloading/preparing
+            return 2000; // Poll every 2 seconds while downloading
         },
     });
 };
@@ -808,7 +808,7 @@ export const getWatchHistory = async (
 
     -   Trigger: Automatic polling after fetch initiated
     -   Flow: Get job status → Update UI with status, progress percentage → Stop polling when ready/error
-    -   Display: Show real-time status (queued, downloading, preparing, ready, error)
+    -   Display: Show real-time status (queued, starting, downloading, ready, error)
 
 -   **Watch Movie**:
     -   Trigger: Click "Watch" button when job status is ready
@@ -843,7 +843,7 @@ export const getWatchHistory = async (
 -   Clean, modern card-based design
 -   Hover effects on interactive elements
 -   Release quality/size badges (720p, 1080p, 4K)
--   Status indicators with color coding (queued=gray, downloading=blue, preparing=orange, ready=green, error=red)
+-   Status indicators with color coding (queued=gray, starting=green, downloading=blue, ready=green, error=red)
 -   Progress bar for download status
 
 ### User Feedback

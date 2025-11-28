@@ -200,7 +200,6 @@ components:
                                       [
                                           queued,
                                           downloading,
-                                          preparing,
                                           ready,
                                           error,
                                       ]
@@ -337,7 +336,7 @@ components:
                 status:
                     type: string
                     enum:
-                        [queued, downloading, preparing, ready, error, deleted]
+                        [queued, starting, downloading, ready, error, deleted]
                     description: Current job status
                     example: "downloading"
                 progress:
@@ -487,7 +486,7 @@ components:
                     example: "job_abc123"
                 status:
                     type: string
-                    enum: [queued, downloading, preparing, ready]
+                    enum: [queued, downloading, ready]
                     description: Initial job status
                     example: "queued"
                 releases:
@@ -808,7 +807,7 @@ paths:
                 - Jobs
             operationId: listJobs
             summary: List active jobs
-            description: Retrieves a list of all active jobs (queued, downloading, preparing, ready).
+            description: Retrieves a list of all active jobs (queued, downloading, ready).
             parameters:
                 - name: status
                   in: query
@@ -816,7 +815,7 @@ paths:
                   description: Filter by status
                   schema:
                       type: string
-                      enum: [queued, downloading, preparing, ready, error]
+                      enum: [queued, downloading, ready, error]
             responses:
                 "200":
                     description: List of jobs
@@ -971,7 +970,6 @@ paths:
                                         [
                                             queued,
                                             downloading,
-                                            preparing,
                                             ready,
                                             error,
                                         ]

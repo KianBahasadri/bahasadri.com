@@ -183,9 +183,56 @@ async function main() {
     await waitForCompletion(nzbId);
 
     console.log("[movies-on-demand] locating downloaded video file");
+
+    // Log all directories to help debug where files ended up
+    const completedFiles = listAllFiles(config.downloadDir);
+    const intermediateFiles = listAllFiles(config.tempDir);
+    const rootDownloadFiles = listAllFiles("/downloads");
+
+    console.log(
+        `[movies-on-demand] Files in completed dir (${
+            config.downloadDir
+        }): ${JSON.stringify(completedFiles)}`
+    );
+    console.log(
+        `[movies-on-demand] Files in intermediate dir (${
+            config.tempDir
+        }): ${JSON.stringify(intermediateFiles)}`
+    );
+    console.log(
+        `[movies-on-demand] Files in /downloads root: ${JSON.stringify(
+            rootDownloadFiles.filter(
+                (f) =>
+                    !f.startsWith("completed/") &&
+                    !f.startsWith("intermediate/")
+            )
+        )}`
+    );
+
     const videoFile = findVideoFile(config.downloadDir);
     if (!videoFile) {
-        throw new Error("Download finished but no video file found");
+        // Also check intermediate and root directories
+        const videoInIntermediate = findVideoFile(config.tempDir);
+        const videoInRoot = findVideoFile("/downloads");
+
+        if (videoInIntermediate) {
+            console.error(
+                `[movies-on-demand] Video found in intermediate dir instead of completed: ${videoInIntermediate}`
+            );
+        }
+        if (videoInRoot && !videoInIntermediate) {
+            console.error(
+                `[movies-on-demand] Video found in root /downloads: ${videoInRoot}`
+            );
+        }
+
+        throw new Error(
+            `Download finished but no video file found in ${config.downloadDir}. ` +
+                `Completed: ${completedFiles.length} files, Intermediate: ${intermediateFiles.length} files. ` +
+                `Files: ${completedFiles.slice(0, 10).join(", ")}${
+                    completedFiles.length > 10 ? "..." : ""
+                }`
+        );
     }
 
     console.log("[movies-on-demand] uploading video to R2");
@@ -426,6 +473,29 @@ function findVideoFile(directory) {
     }
 
     return null;
+}
+
+/**
+ * List all files in a directory recursively (for debugging)
+ */
+function listAllFiles(directory, prefix = "") {
+    const files = [];
+    if (!existsSync(directory)) {
+        return files;
+    }
+
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+        const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) {
+            files.push(
+                ...listAllFiles(join(directory, entry.name), relativePath)
+            );
+        } else {
+            files.push(relativePath);
+        }
+    }
+
+    return files;
 }
 
 function contentType(filePath) {

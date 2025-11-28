@@ -13,11 +13,11 @@ function getStatusColor(status: JobStatus["status"]): string {
         case "queued": {
             return "var(--syringe-metal)";
         }
+        case "starting": {
+            return "var(--terminal-green)";
+        }
         case "downloading": {
             return "var(--terminal-cyan)";
-        }
-        case "preparing": {
-            return "var(--warning-yellow)";
         }
         case "ready": {
             return "var(--terminal-green)";
@@ -39,11 +39,11 @@ function getStatusLabel(status: JobStatus["status"]): string {
         case "queued": {
             return "Queued";
         }
+        case "starting": {
+            return "Starting";
+        }
         case "downloading": {
             return "Downloading";
-        }
-        case "preparing": {
-            return "Preparing";
         }
         case "ready": {
             return "Ready";

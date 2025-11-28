@@ -43,7 +43,7 @@ export interface Credits {
 
 export interface JobStatusInfo {
     job_id: string;
-    status: "queued" | "downloading" | "preparing" | "ready" | "error";
+    status: "queued" | "starting" | "downloading" | "ready" | "error";
     progress?: number;
     error_message?: string | null;
 }
@@ -93,7 +93,13 @@ export interface ReleasesResponse {
 export interface JobStatus {
     job_id: string;
     movie_id: number;
-    status: "queued" | "downloading" | "preparing" | "ready" | "error" | "deleted";
+    status:
+        | "queued"
+        | "starting"
+        | "downloading"
+        | "ready"
+        | "error"
+        | "deleted";
     progress?: number | null;
     error_message?: string | null;
     release_title?: string | null;
@@ -132,7 +138,6 @@ export interface FetchMovieRequest {
 
 export interface FetchMovieResponse {
     job_id: string;
-    status: "queued" | "downloading" | "preparing" | "ready";
+    status: "queued" | "downloading" | "ready";
     releases?: UsenetRelease[] | null;
 }
-

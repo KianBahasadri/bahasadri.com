@@ -72,10 +72,10 @@ From your perspective as the only user, the system works roughly like this:
 
 4. **Wait for Preparation**
    - The UI shows a status such as:
-     - “Queued”
-     - “Downloading”
-     - “Preparing file”
-     - “Ready to watch”
+     - "Queued"
+     - "Starting"
+     - "Downloading"
+     - "Ready to watch"
    - For many movies, this preparation window might be a few minutes or less, depending on file size and Usenet speed.
 
 5. **Watch**
@@ -226,7 +226,7 @@ The result is:
 From a high‑level standpoint:
 
 - **Compute (Containers):**
-  - Only used when actively downloading and preparing content from Usenet.
+  - Only used when actively downloading content from Usenet.
   - Jobs are short‑lived and spin down automatically.
   - At your expected usage (dozens of movies per month), total container cost remains low.
 

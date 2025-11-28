@@ -180,7 +180,7 @@ app.post(
             try {
                 const existingJobResult = await c.env.MOVIES_D1.prepare(
                     `SELECT job_id, status FROM jobs 
-                     WHERE movie_id = ? AND status IN ('queued', 'downloading', 'preparing', 'ready') 
+                     WHERE movie_id = ? AND status IN ('queued', 'downloading', 'ready') 
                      ORDER BY created_at DESC LIMIT 1`
                 )
                     .bind(movieId)
@@ -478,6 +478,19 @@ app.post(
             }
 
             // Enqueue job to Cloudflare Queue for processing
+            console.log(
+                JSON.stringify({
+                    timestamp: new Date().toISOString(),
+                    endpoint,
+                    method: "POST",
+                    level: "info",
+                    message: "Fetching NZB file from URL",
+                    movie_id: movieId,
+                    job_id: jobId,
+                    release_id: selectedRelease.id,
+                    nzb_url: selectedRelease.nzb_url,
+                })
+            );
             try {
                 await c.env.MOVIES_QUEUE.send({
                     job_id: jobId,
@@ -645,13 +658,7 @@ app.get(
             const statusParam = c.req.query("status");
 
             // Validate status if provided
-            const validStatuses = [
-                "queued",
-                "downloading",
-                "preparing",
-                "ready",
-                "error",
-            ];
+            const validStatuses = ["queued", "downloading", "ready", "error"];
             if (statusParam && !validStatuses.includes(statusParam)) {
                 return c.json<ErrorResponse>(
                     { error: "Invalid status filter", code: "INVALID_INPUT" },
@@ -673,7 +680,7 @@ app.get(
             } else {
                 // Get all active jobs (exclude deleted)
                 const result = await c.env.MOVIES_D1.prepare(
-                    `SELECT * FROM jobs WHERE status IN ('queued', 'downloading', 'preparing', 'ready', 'error') 
+                    `SELECT * FROM jobs WHERE status IN ('queued', 'downloading', 'ready', 'error') 
                      ORDER BY updated_at DESC LIMIT 50`
                 ).all();
                 const results = result.results ?? [];
@@ -704,4 +711,3 @@ app.get(
 );
 
 export default app;
-
