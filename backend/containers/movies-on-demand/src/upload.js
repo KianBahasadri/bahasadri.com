@@ -85,8 +85,8 @@ export async function uploadToR2(client, options) {
                 Math.max(0, (uploaded / fileSize) * 100)
             );
 
-            // Only send progress updates when it changes by at least 1%
-            if (Math.abs(progressPercent - lastProgressPercent) >= 1) {
+            // Only send progress updates when it changes by at least ~5%
+            if (Math.abs(progressPercent - lastProgressPercent) >= 5) {
                 onProgress(Number(progressPercent.toFixed(1))).catch(
                     (error) => {
                         console.error(

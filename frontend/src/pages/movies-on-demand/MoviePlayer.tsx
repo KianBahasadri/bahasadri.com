@@ -98,6 +98,7 @@ export default function MoviePlayer(): React.JSX.Element {
 
         const handlePlay = (): void => {
             setIsPlaying(true);
+            setIsLoaded(true);
         };
 
         const handlePause = (): void => {

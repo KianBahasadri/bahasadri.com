@@ -9,6 +9,8 @@ These steps are in sequential order
 ### Not Started
 - C2C for remote computers
 - AI CTF solving platform
+- ai that uses rhvoice to remix old songs
+- spin up cloud instance on demand and connect through terminal
 
 ### Writing Design Documents
 - whatsapp-messenger

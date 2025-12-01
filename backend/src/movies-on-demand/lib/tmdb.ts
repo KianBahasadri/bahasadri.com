@@ -119,6 +119,7 @@ export async function searchMovies(
         {
             query: encodeURIComponent(query),
             page: String(page),
+            include_adult: "true",
         }
     );
     return transformSearchResponse(response);

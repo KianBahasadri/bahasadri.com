@@ -26,7 +26,7 @@ When making decisions, prioritize:
 
 ## WHILE completing any task
 
-Do not write any documentation for your task. You will follow exactly the documentation outlined for you. You will always be provided with a spec and you will satisfy it.
+Do not write any documentation for your task. You will follow exactly the documentation outlined for you. You will always be provided with a spec and you will satisfy it. Always use context7 when I need code generation, setup or configuration steps. This means you should automatically use the Context7 MCP tools to resolve library id and get library docs without me having to explicitly ask.
 
 **Linter Rules**:
 

@@ -111,6 +111,27 @@
     color: var(--pink-soft);
 }
 
+.imdbLink {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border: 1px solid var(--pink-hot);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--pink-light);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+    margin-bottom: 16px;
+}
+
+.imdbLink:hover,
+.imdbLink:focus-visible {
+    border-color: var(--pink-light);
+    transform: translateY(-1px);
+}
+
 .content {
     max-width: 1200px;
     margin: 0 auto;

@@ -136,6 +136,9 @@ export default function MovieDetails(): React.JSX.Element {
 
     const backdropUrl = getImageUrl(movieDetails.backdrop_path, "original");
     const posterUrl = getImageUrl(movieDetails.poster_path, "w500");
+    const imdbUrl = movieDetails.imdb_id
+        ? `https://www.imdb.com/title/${movieDetails.imdb_id}/`
+        : null;
     const currentJob = jobStatus;
     const isReady = currentJob?.status === "ready";
 
@@ -206,6 +209,16 @@ export default function MovieDetails(): React.JSX.Element {
                                     </span>
                                 ))}
                             </div>
+                        ) : null}
+                        {imdbUrl ? (
+                            <a
+                                className={styles["imdbLink"]}
+                                href={imdbUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                View on IMDb
+                            </a>
                         ) : null}
                         {movieDetails.overview ? (
                             <p className={styles["overview"]}>
