@@ -1,0 +1,707 @@
+openapi: 3.1.0
+info:
+    title: Server on Demand API
+    description: >-
+        API contract document defining the interface between frontend and backend.
+        This serves as the single source of truth for coupling.
+        On-demand VPS provisioning service with automatic deprovisioning, browser terminal,
+        and multi-cloud provider support.
+    version: 1.0.0
+    contact:
+        name: API Support
+servers:
+    - url: http://localhost:8787/api
+      description: Development Server
+    - url: https://bahasadri.com/api
+      description: Production Server
+
+tags:
+    - name: Server Sizes
+      description: Server size and provider configuration endpoints
+    - name: Servers
+      description: VPS server lifecycle management endpoints
+    - name: Terminal
+      description: Browser terminal connection endpoints
+
+components:
+    securitySchemes:
+        BearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+
+    schemas:
+        ErrorResponse:
+            type: object
+            required:
+                - error
+            properties:
+                error:
+                    type: string
+                    description: A descriptive error message.
+                    example: "Invalid input provided."
+                code:
+                    type: string
+                    description: Machine-readable error code.
+                    enum:
+                        [
+                            INVALID_INPUT,
+                            NOT_FOUND,
+                            INTERNAL_ERROR,
+                            PROVISIONING_FAILED,
+                            COST_LIMIT_EXCEEDED,
+                            SERVER_NOT_READY,
+                            PROVIDER_UNAVAILABLE,
+                        ]
+                    example: INVALID_INPUT
+
+        ServerSize:
+            type: object
+            required:
+                - id
+                - name
+                - cpu
+                - ram_mb
+                - storage_gb
+                - price_per_hour
+            properties:
+                id:
+                    type: string
+                    description: Unique identifier for the server size.
+                    example: "small"
+                name:
+                    type: string
+                    description: Human-readable name for the size.
+                    example: "Small"
+                cpu:
+                    type: integer
+                    description: Number of CPU cores.
+                    example: 1
+                ram_mb:
+                    type: integer
+                    description: RAM in megabytes.
+                    example: 1024
+                storage_gb:
+                    type: integer
+                    description: Storage in gigabytes.
+                    example: 20
+                price_per_hour:
+                    type: number
+                    format: float
+                    description: Price per hour in USD.
+                    example: 0.01
+
+        CloudProvider:
+            type: object
+            required:
+                - id
+                - name
+                - available
+            properties:
+                id:
+                    type: string
+                    description: Unique identifier for the provider.
+                    example: "digitalocean"
+                name:
+                    type: string
+                    description: Human-readable provider name.
+                    example: "DigitalOcean"
+                available:
+                    type: boolean
+                    description: Whether the provider is currently available.
+                    example: true
+
+        InstanceSpec:
+            type: object
+            required:
+                - provider
+                - region
+                - size
+                - image
+            properties:
+                provider:
+                    type: string
+                    enum: [aws, digitalocean, hetzner]
+                    description: Cloud provider identifier.
+                    example: "digitalocean"
+                region:
+                    type: string
+                    description: Region where the instance will be provisioned.
+                    example: "nyc1"
+                size:
+                    type: string
+                    description: Instance size identifier (provider-specific).
+                    example: "s-1vcpu-1gb"
+                image:
+                    type: string
+                    description: OS image identifier (provider-specific).
+                    example: "ubuntu-22-04-x64"
+
+        TerminalShortcut:
+            type: object
+            required:
+                - command
+                - translation
+            properties:
+                command:
+                    type: string
+                    description: The shortcut command (e.g., "/deploy").
+                    example: "/deploy"
+                translation:
+                    type: string
+                    description: The full command that the shortcut translates to.
+                    example: "npm run build && pm2 restart app"
+
+        Server:
+            type: object
+            required:
+                - id
+                - status
+                - size_id
+                - provider_id
+                - created_at
+                - expires_at
+                - cost_so_far
+                - remaining_budget
+                - hourly_rate
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                    description: Unique identifier for the server.
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                status:
+                    type: string
+                    enum:
+                        [
+                            provisioning,
+                            ready,
+                            active,
+                            deprovisioning,
+                            terminated,
+                            error,
+                        ]
+                    description: Current status of the server.
+                    example: "ready"
+                size_id:
+                    type: string
+                    description: Server size identifier.
+                    example: "small"
+                provider_id:
+                    type: string
+                    description: Cloud provider identifier.
+                    example: "digitalocean"
+                ip_address:
+                    type: string
+                    nullable: true
+                    format: ipv4
+                    description: Server IP address (available when status is ready or active).
+                    example: "192.0.2.1"
+                created_at:
+                    type: string
+                    format: date-time
+                    description: Timestamp when the server was created.
+                    example: "2024-01-15T10:30:00Z"
+                expires_at:
+                    type: string
+                    format: date-time
+                    description: Timestamp when the server will be automatically deprovisioned.
+                    example: "2024-01-15T12:30:00Z"
+                cost_so_far:
+                    type: number
+                    format: float
+                    description: Total cost incurred so far in USD.
+                    example: 0.02
+                remaining_budget:
+                    type: number
+                    format: float
+                    description: Remaining budget before $5 limit in USD.
+                    example: 4.98
+                hourly_rate:
+                    type: number
+                    format: float
+                    description: Hourly rate for this server size in USD.
+                    example: 0.01
+                shortcuts:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/TerminalShortcut"
+                    description: Terminal shortcuts configured for this server.
+                    example:
+                        - command: "/deploy"
+                          translation: "npm run build && pm2 restart app"
+                instance_spec:
+                    $ref: "#/components/schemas/InstanceSpec"
+                    description: Unified instance specification with provider, region, size, and image details.
+
+        CreateServerRequest:
+            type: object
+            required:
+                - size_id
+                - duration_seconds
+            properties:
+                size_id:
+                    type: string
+                    description: Server size identifier.
+                    example: "small"
+                provider_id:
+                    type: string
+                    nullable: true
+                    description: Cloud provider identifier (optional, system will select if not provided).
+                    example: "digitalocean"
+                duration_seconds:
+                    type: integer
+                    description: Duration in seconds until automatic deprovisioning.
+                    minimum: 60
+                    maximum: 18000
+                    example: 7200
+                shortcuts:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/TerminalShortcut"
+                    description: Terminal shortcuts to configure for this server.
+                    example:
+                        - command: "/deploy"
+                          translation: "npm run build && pm2 restart app"
+                instance_spec:
+                    $ref: "#/components/schemas/InstanceSpec"
+                    description: Unified instance specification. If provided, overrides size_id and provider_id. If not provided, system will derive from size_id and provider_id.
+
+        CostEstimate:
+            type: object
+            required:
+                - estimated_cost
+                - max_duration_seconds
+                - hourly_rate
+            properties:
+                estimated_cost:
+                    type: number
+                    format: float
+                    description: Estimated cost in USD for the requested duration.
+                    example: 0.02
+                max_duration_seconds:
+                    type: integer
+                    description: Maximum allowed duration in seconds based on $5 limit.
+                    example: 18000
+                hourly_rate:
+                    type: number
+                    format: float
+                    description: Hourly rate for the selected size in USD.
+                    example: 0.01
+
+        UpdateServerRequest:
+            type: object
+            properties:
+                duration_seconds:
+                    type: integer
+                    description: New duration in seconds (must not exceed $5 limit).
+                    minimum: 60
+                    maximum: 18000
+                    example: 10800
+
+        ServerListResponse:
+            type: object
+            required:
+                - servers
+            properties:
+                servers:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Server"
+                total:
+                    type: integer
+                    description: Total number of servers.
+                    example: 5
+
+        SSHKeyResponse:
+            type: object
+            required:
+                - private_key
+            properties:
+                private_key:
+                    type: string
+                    description: SSH private key for connecting to the server.
+                    example: "-----BEGIN OPENSSH PRIVATE KEY-----\n..."
+
+        TerminalMessage:
+            type: object
+            required:
+                - type
+            properties:
+                type:
+                    type: string
+                    enum: [input, output, error, close, reconnect]
+                    description: Message type. 'reconnect' indicates the Durable Object has reconnected after client disconnection.
+                    example: "output"
+                data:
+                    type: string
+                    description: Message data (command input or terminal output).
+                    example: "Hello, World!"
+                timestamp:
+                    type: string
+                    format: date-time
+                    description: Timestamp of the message.
+                    example: "2024-01-15T10:35:00Z"
+
+    responses:
+        BadRequest:
+            description: Invalid input provided (400).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        invalid_input:
+                            value:
+                                error: "Duration must be between 60 and 18000 seconds."
+                                code: "INVALID_INPUT"
+                        cost_limit:
+                            value:
+                                error: "Requested duration exceeds $5 cost limit for this server size."
+                                code: "COST_LIMIT_EXCEEDED"
+
+        Unauthorized:
+            description: Authentication required (401).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+
+        NotFound:
+            description: Resource not found (404).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        not_found:
+                            value:
+                                error: "Server with ID 123 not found."
+                                code: "NOT_FOUND"
+
+        InternalError:
+            description: Server error (500).
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ErrorResponse"
+                    examples:
+                        server_error:
+                            value:
+                                error: "Unexpected database error."
+                                code: "INTERNAL_ERROR"
+                        provisioning_failed:
+                            value:
+                                error: "Failed to provision server on cloud provider."
+                                code: "PROVISIONING_FAILED"
+
+paths:
+    /server-on-demand/sizes:
+        get:
+            tags:
+                - Server Sizes
+            operationId: getServerSizes
+            summary: Get available server sizes
+            description: Retrieves a list of available server sizes with specifications and pricing.
+            responses:
+                "200":
+                    description: List of available server sizes.
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: "#/components/schemas/ServerSize"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    /server-on-demand/providers:
+        get:
+            tags:
+                - Server Sizes
+            operationId: getCloudProviders
+            summary: Get available cloud providers
+            description: Retrieves a list of available cloud providers.
+            responses:
+                "200":
+                    description: List of available cloud providers.
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: "#/components/schemas/CloudProvider"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    /server-on-demand/estimate:
+        post:
+            tags:
+                - Server Sizes
+            operationId: estimateCost
+            summary: Estimate server cost
+            description: Calculates the estimated cost for a server configuration before provisioning.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - size_id
+                                - duration_seconds
+                            properties:
+                                size_id:
+                                    type: string
+                                    description: Server size identifier.
+                                    example: "small"
+                                duration_seconds:
+                                    type: integer
+                                    description: Duration in seconds.
+                                    minimum: 60
+                                    example: 7200
+            responses:
+                "200":
+                    description: Cost estimate.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/CostEstimate"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    /server-on-demand/servers:
+        get:
+            tags:
+                - Servers
+            operationId: listServers
+            summary: List all servers
+            description: Retrieves a list of all servers (active and terminated).
+            parameters:
+                - name: status
+                  in: query
+                  description: Filter servers by status.
+                  schema:
+                      type: string
+                      enum:
+                          [
+                              provisioning,
+                              ready,
+                              active,
+                              deprovisioning,
+                              terminated,
+                              error,
+                          ]
+                - name: limit
+                  in: query
+                  description: Maximum number of servers to return.
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                      default: 20
+                - name: offset
+                  in: query
+                  description: Number of servers to skip.
+                  schema:
+                      type: integer
+                      minimum: 0
+                      default: 0
+            responses:
+                "200":
+                    description: List of servers.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ServerListResponse"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+        post:
+            tags:
+                - Servers
+            operationId: createServer
+            summary: Create a new server
+            description: Provisions a new VPS server with the specified configuration.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CreateServerRequest"
+            responses:
+                "201":
+                    description: Server created successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Server"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    /server-on-demand/servers/{serverId}:
+        parameters:
+            - name: serverId
+              in: path
+              required: true
+              description: The ID of the server.
+              schema:
+                  type: string
+                  format: uuid
+
+        get:
+            tags:
+                - Servers
+            operationId: getServer
+            summary: Get server details
+            description: Retrieves details about a specific server.
+            responses:
+                "200":
+                    description: Server details.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Server"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+        patch:
+            tags:
+                - Servers
+            operationId: updateServer
+            summary: Update server
+            description: Updates server configuration (e.g., extend countdown timer within $5 limit).
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/UpdateServerRequest"
+            responses:
+                "200":
+                    description: Server updated successfully.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Server"
+                "400":
+                    $ref: "#/components/responses/BadRequest"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+        delete:
+            tags:
+                - Servers
+            operationId: deleteServer
+            summary: Delete server
+            description: Manually deprovisions a server before its automatic expiration.
+            responses:
+                "200":
+                    description: Server deleted successfully.
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                        example: true
+                                    message:
+                                        type: string
+                                        example: "Server deprovisioned successfully."
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    /server-on-demand/servers/{serverId}/ssh-key:
+        parameters:
+            - name: serverId
+              in: path
+              required: true
+              description: The ID of the server.
+              schema:
+                  type: string
+                  format: uuid
+
+        get:
+            tags:
+                - Servers
+            operationId: getSSHKey
+            summary: Get SSH private key
+            description: Retrieves the SSH private key for connecting to the server.
+            responses:
+                "200":
+                    description: SSH private key.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/SSHKeyResponse"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "400":
+                    description: Server not ready.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                            examples:
+                                not_ready:
+                                    value:
+                                        error: "Server is not ready yet. SSH key will be available when status is 'ready'."
+                                        code: "SERVER_NOT_READY"
+                "500":
+                    $ref: "#/components/responses/InternalError"
+
+    /server-on-demand/servers/{serverId}/terminal:
+        parameters:
+            - name: serverId
+              in: path
+              required: true
+              description: The ID of the server.
+              schema:
+                  type: string
+                  format: uuid
+
+        get:
+            tags:
+                - Terminal
+            operationId: connectTerminal
+            summary: Connect to server terminal (WebSocket)
+            description: >-
+                Establishes a WebSocket connection to the server terminal via a Durable Object.
+                Each terminal session is managed by a dedicated Durable Object that:
+                - Handles WebSocket connections between client and server
+                - Automatically translates `/` shortcut commands before sending to the server
+                - Persists session state when the client disconnects
+                - Automatically spins back up when the client reconnects
+                - Manages the SSH connection to the VPS server
+
+                Messages are sent and received as JSON with the TerminalMessage schema.
+                The Durable Object maintains the connection state and can resume after client disconnection.
+            responses:
+                "101":
+                    description: WebSocket connection established.
+                "400":
+                    description: Server not ready or invalid request.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                            examples:
+                                not_ready:
+                                    value:
+                                        error: "Server is not ready yet. Terminal will be available when status is 'ready'."
+                                        code: "SERVER_NOT_READY"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "500":
+                    $ref: "#/components/responses/InternalError"
