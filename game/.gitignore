@@ -1,0 +1,8 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Third-party asset — download from README attribution link
+futuristic_room.glb
+futuristic_room*.png
+futuristic_room*.import

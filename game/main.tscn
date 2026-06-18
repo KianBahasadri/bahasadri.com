@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://kfbl220036lb"]
+
+[ext_resource type="PackedScene" uid="uid://dqxygfvi41os" path="res://player.tscn" id="1_ig7tw"]
+[ext_resource type="PackedScene" uid="uid://bdxxx0bru737e" path="res://futuristic_room.glb" id="2_0xm2m"]
+
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_7dm0k"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_7dm0k"]
+size = Vector2(50, 50)
+
+[node name="Main" type="Node" unique_id=648231077]
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=171497299]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=419627739]
+shape = SubResource("WorldBoundaryShape3D_7dm0k")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=2141244376]
+mesh = SubResource("PlaneMesh_7dm0k")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=96139438]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 278.68317, 0)
+shadow_enabled = true
+
+[node name="Player" parent="." unique_id=1139789678 instance=ExtResource("1_ig7tw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5749604, 0, 0)
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1212758742]
+
+[node name="Sketchfab_Scene" parent="StaticBody3D" unique_id=1473558805 instance=ExtResource("2_0xm2m")]

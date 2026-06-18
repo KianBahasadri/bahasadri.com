@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://dqxygfvi41os"]
+
+[ext_resource type="PackedScene" uid="uid://cmi72hei1yr7a" path="res://mannequiny-0.3.0.glb" id="1_4flbx"]
+[ext_resource type="Script" uid="uid://cyqvsr1hn6uc" path="res://player.gd" id="1_onrkg"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_onrkg"]
+radius = 0.41455078
+height = 1.5678711
+
+[node name="Player" type="CharacterBody3D" unique_id=1139789678]
+script = ExtResource("1_onrkg")
+
+[node name="Pivot" type="Node3D" parent="." unique_id=474845257]
+
+[node name="mannequiny-0_3_0" parent="Pivot" unique_id=1876180423 instance=ExtResource("1_4flbx")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=785111075]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0384698, 0)
+shape = SubResource("CapsuleShape3D_onrkg")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=293806630]
+transform = Transform3D(-0.99999845, -0.00036675838, 0.0017407101, 0, 0.9785166, 0.20616825, -0.0017789276, 0.2061679, -0.978515, -0.02179794, 1.8257133, -2.2391868)
+current = true
